@@ -1,4 +1,4 @@
-![gearbox](header.jpeg)
+![gearbox](header.png)
 
 ## Gearbox protocol
 
