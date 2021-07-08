@@ -1,0 +1,10 @@
+.history/
+.idea/
+node_modules/
+cache/
+build/
+typechain/
+artifacts/
+coverage*
+.env
+.DS_Store
