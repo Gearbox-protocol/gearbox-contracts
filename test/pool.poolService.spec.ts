@@ -14,10 +14,16 @@ import { CoreDeployer } from "../deployer/coreDeployer";
 import { PoolDeployer } from "../deployer/poolDeployer";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
-import {DUMB_ADDRESS, PAUSABLE_REVERT_MSG, PERCENTAGE_FACTOR, RAY, SECONDS_PER_YEAR} from "../model/_constants";
-import {percentMul, rayDiv, rayMul} from "../model/math";
-import {BigNumber} from "ethers";
-import {LinearInterestRateModelDeployer} from "../deployer/linearIRModelDeployer";
+import {
+  DUMB_ADDRESS,
+  PAUSABLE_REVERT_MSG,
+  PERCENTAGE_FACTOR,
+  RAY,
+  SECONDS_PER_YEAR,
+} from "../model/_constants";
+import { percentMul, rayDiv, rayMul } from "../model/math";
+import { BigNumber } from "ethers";
+import { LinearInterestRateModelDeployer } from "../deployer/linearIRModelDeployer";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -383,16 +389,18 @@ describe("PoolService", function () {
     await poolService.connectCreditManager(creditManagerMock.address);
 
     const borrowedAmount = addLiquidity.div(2);
-    const tx = () =>
-      creditManagerMock.lendCreditAccount(
-        borrowedAmount,
-        creditManagerMock.address
-      );
 
-    await expect(tx).to.be.changeTokenBalance(
-      underlyingToken,
-      creditManagerMock,
-      borrowedAmount
+    const cmBalanceBefore = await underlyingToken.balanceOf(
+      creditManagerMock.address
+    );
+
+    await creditManagerMock.lendCreditAccount(
+      borrowedAmount,
+      creditManagerMock.address
+    );
+
+    expect(await underlyingToken.balanceOf(creditManagerMock.address)).to.be.eq(
+      cmBalanceBefore.add(borrowedAmount)
     );
   });
 
@@ -1103,19 +1111,34 @@ describe("PoolService", function () {
     const fee = 50;
     await poolService.setWithdrawFee(fee);
     const treasuryMock = await ts.coreDeployer.getTreasuryMock();
-    // It emits RemoveLiquidity event
-    await expect(() =>
-      poolService
-        .connect(friend)
-        .removeLiquidity(removeLiquidity, liquidityProvider.address)
-    ).to.changeTokenBalances(
-      underlyingToken,
-      [liquidityProvider, treasuryMock],
-      [
-        percentMul(removeLiquidity, PERCENTAGE_FACTOR - fee),
-        percentMul(removeLiquidity, fee),
-      ]
+
+    const lpBalanceBefore = await underlyingToken.balanceOf(
+      liquidityProvider.address
     );
+    const treasureBalanceBefore = await underlyingToken.balanceOf(
+      treasuryMock.address
+    );
+
+    // It emits RemoveLiquidity event
+    await poolService
+      .connect(friend)
+      .removeLiquidity(removeLiquidity, liquidityProvider.address);
+
+    const lpBalanceExpected = lpBalanceBefore.add(
+      percentMul(removeLiquidity, PERCENTAGE_FACTOR - fee)
+    );
+    const treasureBalanceExpected = treasureBalanceBefore.add(
+      percentMul(removeLiquidity, fee)
+    );
+
+    expect(
+      await underlyingToken.balanceOf(liquidityProvider.address),
+      "Incorrect LP balance after operation"
+    ).to.be.eq(lpBalanceExpected);
+    expect(
+      await underlyingToken.balanceOf(treasuryMock.address),
+      "Incorrect treasury balance after operation"
+    ).to.be.eq(treasureBalanceExpected);
   });
 
   it("[PS-35]: connectCreditManager reverts if creditManager is already connected", async function () {

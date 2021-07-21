@@ -309,8 +309,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
 
         // Checks that current Hf < 1
         require(
-            tvw.div(PercentageMath.PERCENTAGE_FACTOR) <
-                creditFilter.calcCreditAccountAccruedInterest(creditAccount),
+            tvw <
+                creditFilter
+                .calcCreditAccountAccruedInterest(creditAccount)
+                .mul(PercentageMath.PERCENTAGE_FACTOR),
             Errors.CM_CAN_LIQUIDATE_WITH_SUCH_HEALTH_FACTOR
         ); // T:[CM-13, 16, 17]
 

@@ -86,14 +86,6 @@ contract CurveV1Adapter is Proxy {
         address tokenIn = ICurvePool(curvePoolAddress).coins(uint256(i));
         address tokenOut= ICurvePool(curvePoolAddress).coins(uint256(j));
 
-        creditFilter.checkCollateralChange(
-            creditAccount,
-            tokenIn,
-            tokenOut,
-            dx,
-            min_dy
-        ); // T:[CVA-2]
-
         creditManager.provideCreditAccountAllowance(
             creditAccount,
             curvePoolAddress,
@@ -110,5 +102,13 @@ contract CurveV1Adapter is Proxy {
             ); // T:[CVA-3]
 
         creditManager.executeOrder(msg.sender, curvePoolAddress, data); // T:[CVA-3]
+
+        creditFilter.checkCollateralChange(
+            creditAccount,
+            tokenIn,
+            tokenOut,
+            dx,
+            min_dy
+        ); // T:[CVA-2]
     }
 }

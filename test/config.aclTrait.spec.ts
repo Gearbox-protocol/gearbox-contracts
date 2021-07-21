@@ -1,4 +1,3 @@
-// @ts-ignore
 import { ethers, waffle } from "hardhat";
 import { solidity } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";

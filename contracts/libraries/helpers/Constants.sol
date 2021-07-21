@@ -11,7 +11,7 @@ library Constants {
 
     // 25% of MAX_INT
     uint256 constant MAX_INT_4 =
-        0x4fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+        0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     // REWARD FOR LEAN DEPLOYMENT MINING
     uint256 constant ACCOUNT_CREATION_REWARD = 1e5;

@@ -1,13 +1,13 @@
-import { ethers, waffle } from "hardhat";
-import { BigNumber } from "ethers";
-import { solidity } from "ethereum-waffle";
+import {ethers} from "hardhat";
+import {BigNumber} from "ethers";
+import {solidity} from "ethereum-waffle";
 import * as chai from "chai";
 
-import { CurveMock, TokenMock } from "../types/ethers-v5";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
-import { TestDeployer } from "../deployer/testDeployer";
-import { MAX_INT } from "../model/_constants";
+import {CurveMock, TokenMock} from "../types/ethers-v5";
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import {IntegrationsDeployer} from "../deployer/integrationsDeployer";
+import {TestDeployer} from "../deployer/testDeployer";
+import {MAX_INT} from "../model/_constants";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -68,19 +68,21 @@ describe("CurveMock", function () {
     await tokenA.mint(user.address, initialAmount);
     await tokenB.mint(curveMock.address, initialAmount);
 
-    const curveTx = () =>
-      curveMock.connect(user).exchange(0, 1, amountDx, amountDy);
 
-    await expect(curveTx).to.changeTokenBalances(
-      tokenA,
-      [user, curveMock],
-      [-amountDx, amountDx]
-    );
-    await expect(curveTx).to.changeTokenBalances(
-      tokenB,
-      [user, curveMock],
-      [amountDy, -amountDy]
-    );
+    const userBalanceABefore = await tokenA.balanceOf(user.address)
+    const userBalanceBBefore = await tokenB.balanceOf(user.address)
+
+    const curveMockBalanceABefore = await tokenA.balanceOf(curveMock.address)
+    const curveMockBalanceBBefore = await tokenB.balanceOf(curveMock.address)
+
+    await curveMock.connect(user).exchange(0, 1, amountDx, amountDy);
+
+    expect(await tokenA.balanceOf(user.address)).to.be.eq(userBalanceABefore.sub(amountDx));
+    expect(await tokenA.balanceOf(curveMock.address)).to.be.eq(curveMockBalanceABefore.add(amountDx));
+
+    expect(await tokenB.balanceOf(user.address)).to.be.eq(userBalanceBBefore.add(amountDy));
+    expect(await tokenB.balanceOf(curveMock.address)).to.be.eq(curveMockBalanceBBefore.sub(amountDy));
+
   });
 
   it("exchange_underlying, get_dx_underlying, get_dy_underlying does nothing", async function () {

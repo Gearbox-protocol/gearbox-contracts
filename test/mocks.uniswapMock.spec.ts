@@ -1,15 +1,20 @@
-import {ethers, waffle} from "hardhat";
-import {BigNumber} from "ethers";
-import {solidity} from "ethereum-waffle";
+import { ethers, waffle } from "hardhat";
+import { BigNumber } from "ethers";
+import { solidity } from "ethereum-waffle";
 import * as chai from "chai";
 
-import {TokenMock, UniswapRouterMock} from "../types/ethers-v5";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {IntegrationsDeployer} from "../deployer/integrationsDeployer";
-import {TestDeployer} from "../deployer/testDeployer";
-import {UniswapModel} from "../model/uniswapModel";
-import {ADDRESS_0x0, MAX_INT, RAY, UNISWAP_EXPIRED,} from "../model/_constants";
-import {arrayify} from "ethers/lib/utils";
+import { TokenMock, UniswapRouterMock } from "../types/ethers-v5";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
+import { UniswapModel } from "../model/uniswapModel";
+import {
+  ADDRESS_0x0,
+  MAX_INT,
+  RAY,
+  UNISWAP_EXPIRED,
+} from "../model/_constants";
+import { arrayify } from "ethers/lib/utils";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -73,16 +78,6 @@ describe("UniswapRouterMock", function () {
 
   it("swapTokensForExactTokens transfers correct amounts of tokens", async function () {
     const deadline = await UniswapModel.getDeadline();
-    const transferTx = () =>
-      uniswapMock
-        .connect(user)
-        .swapTokensForExactTokens(
-          transferB,
-          transferA,
-          [tokenA.address, tokenB.address],
-          user.address,
-          deadline
-        );
 
     const expectedResult = uniswapModel.swapTokensForExactTokens(
       transferB,
@@ -95,46 +90,58 @@ describe("UniswapRouterMock", function () {
     const amountIn = expectedResult.amounts[0];
     const amountOut = expectedResult.amounts[1];
 
-    // Make a transfer using uniswap mock & check balance of tokenA
-    await expect(transferTx).to.changeTokenBalances(
-      tokenA,
-      [user, uniswapMock],
-      [-amountIn, amountIn]
+    const userBalanceABefore = await tokenA.balanceOf(user.address);
+    const userBalanceBBefore = await tokenB.balanceOf(user.address);
+
+    const uniswapMockBalanceABefore = await tokenA.balanceOf(
+      uniswapMock.address
+    );
+    const uniswapMockBalanceBBefore = await tokenB.balanceOf(
+      uniswapMock.address
     );
 
-    // Make a transfer using uniswap mock & check balance of tokenB
-    await expect(transferTx).to.changeTokenBalances(
-      tokenB,
-      [user, uniswapMock],
-      [amountOut, -amountOut]
+    await uniswapMock
+      .connect(user)
+      .swapTokensForExactTokens(
+        transferB,
+        transferA,
+        [tokenA.address, tokenB.address],
+        user.address,
+        deadline
+      );
+
+    expect(await tokenA.balanceOf(user.address)).to.be.eq(
+      userBalanceABefore.sub(amountIn)
+    );
+    expect(await tokenB.balanceOf(user.address)).to.be.eq(
+      userBalanceBBefore.add(amountOut)
+    );
+
+    expect(await tokenA.balanceOf(uniswapMock.address)).to.be.eq(
+      uniswapMockBalanceABefore.add(amountIn)
+    );
+    expect(await tokenB.balanceOf(uniswapMock.address)).to.be.eq(
+      uniswapMockBalanceBBefore.sub(amountOut)
     );
   });
 
   it("swapTokensForExactTokens reverts if excessive input amount", async function () {
     const deadline = await UniswapModel.getDeadline();
-    await expect(uniswapMock
-        .connect(user)
-        .swapTokensForExactTokens(
-            transferB,
-            transferB,
-            [tokenA.address, tokenB.address],
-            user.address,
-            deadline
-        )).to.be.revertedWith("UniswapV2Router: EXCESSIVE_INPUT_AMOUNT");
-  });
-
-  it("swapExactTokensForTokens transfers correct amounts of tokens", async function () {
-    const deadline = await UniswapModel.getDeadline();
-    const transferTx = () =>
+    await expect(
       uniswapMock
         .connect(user)
-        .swapExactTokensForTokens(
-          transferA,
+        .swapTokensForExactTokens(
+          transferB,
           transferB,
           [tokenA.address, tokenB.address],
           user.address,
           deadline
-        );
+        )
+    ).to.be.revertedWith("UniswapV2Router: EXCESSIVE_INPUT_AMOUNT");
+  });
+
+  it("swapExactTokensForTokens transfers correct amounts of tokens", async function () {
+    const deadline = await UniswapModel.getDeadline();
 
     // x10 - rate, 997/1000 - fee
     const expectedResult = uniswapModel.swapExactTokensForTokens(
@@ -148,59 +155,84 @@ describe("UniswapRouterMock", function () {
     const amountIn = expectedResult.amounts[0];
     const amountOut = expectedResult.amounts[1];
 
-    // Make a transfer using uniswap mock & check balance of tokenA
-    await expect(transferTx).to.changeTokenBalances(
-      tokenA,
-      [user, uniswapMock],
-      [-amountIn, amountIn]
+    const userBalanceABefore = await tokenA.balanceOf(user.address);
+    const userBalanceBBefore = await tokenB.balanceOf(user.address);
+
+    const uniswapMockBalanceABefore = await tokenA.balanceOf(
+      uniswapMock.address
+    );
+    const uniswapMockBalanceBBefore = await tokenB.balanceOf(
+      uniswapMock.address
     );
 
-    // Make a transfer using uniswap mock & check balance of tokenB
-    await expect(transferTx).to.changeTokenBalances(
-      tokenB,
-      [user, uniswapMock],
-      [amountOut, -amountOut]
+    await uniswapMock
+      .connect(user)
+      .swapExactTokensForTokens(
+        transferA,
+        transferB,
+        [tokenA.address, tokenB.address],
+        user.address,
+        deadline
+      );
+
+    expect(await tokenA.balanceOf(user.address)).to.be.eq(
+      userBalanceABefore.sub(amountIn)
+    );
+    expect(await tokenB.balanceOf(user.address)).to.be.eq(
+      userBalanceBBefore.add(amountOut)
+    );
+
+    expect(await tokenA.balanceOf(uniswapMock.address)).to.be.eq(
+      uniswapMockBalanceABefore.add(amountIn)
+    );
+    expect(await tokenB.balanceOf(uniswapMock.address)).to.be.eq(
+      uniswapMockBalanceBBefore.sub(amountOut)
     );
   });
 
   it("swapExactTokensForTokens reverts if insufficient output amount", async function () {
     const deadline = await UniswapModel.getDeadline();
-    await expect(uniswapMock
+    await expect(
+      uniswapMock
         .connect(user)
         .swapExactTokensForTokens(
-            transferB,
-            MAX_INT,
-            [tokenA.address, tokenB.address],
-            user.address,
-            deadline
-        )).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT");
+          transferB,
+          MAX_INT,
+          [tokenA.address, tokenB.address],
+          user.address,
+          deadline
+        )
+    ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT");
   });
 
   it("swapExactTokensForTokens reverts if rate is 0", async function () {
-
     integrationsDeployer = new IntegrationsDeployer();
 
     uniswapMock = await integrationsDeployer.getUniswapLikeMock();
     const deadline = await UniswapModel.getDeadline();
-    await expect(uniswapMock
+    await expect(
+      uniswapMock
         .connect(user)
         .swapExactTokensForTokens(
-            transferB,
-            MAX_INT,
-            [tokenA.address, tokenB.address],
-            user.address,
-            deadline
-        )).to.be.revertedWith("UniswapMock: Rate is not setup");
+          transferB,
+          MAX_INT,
+          [tokenA.address, tokenB.address],
+          user.address,
+          deadline
+        )
+    ).to.be.revertedWith("UniswapMock: Rate is not setup");
 
-    await expect(uniswapMock
+    await expect(
+      uniswapMock
         .connect(user)
         .swapTokensForExactTokens(
-            transferB,
-            transferB,
-            [tokenA.address, tokenB.address],
-            user.address,
-            deadline
-        )).to.be.revertedWith("UniswapMock: Rate is not setup");
+          transferB,
+          transferB,
+          [tokenA.address, tokenB.address],
+          user.address,
+          deadline
+        )
+    ).to.be.revertedWith("UniswapMock: Rate is not setup");
   });
 
   it("unused stuff does nothing", async function () {
@@ -269,7 +301,7 @@ describe("UniswapRouterMock", function () {
 
     await uniswapMock.getAmountsOut(0, [tokenA.address, tokenB.address]);
 
-    await uniswapMock.getAmountsIn(0, [tokenA.address, tokenB.address],);
+    await uniswapMock.getAmountsIn(0, [tokenA.address, tokenB.address]);
 
     await uniswapMock.factory();
 

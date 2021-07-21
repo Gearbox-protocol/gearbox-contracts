@@ -1,13 +1,12 @@
-// @ts-ignore
-import {ethers} from "hardhat";
-import {solidity} from "ethereum-waffle";
+import { ethers } from "hardhat";
+import { solidity } from "ethereum-waffle";
 import * as chai from "chai";
 
-import {TestDeployer} from "../deployer/testDeployer";
-import {CreditAccount, Errors} from "../types/ethers-v5";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {CoreDeployer} from "../deployer/coreDeployer";
-import {DUMB_ADDRESS, MAX_INT, OWNABLE_REVERT_MSG} from "../model/_constants";
+import { TestDeployer } from "../deployer/testDeployer";
+import { CreditAccount, Errors } from "../types/ethers-v5";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { CoreDeployer } from "../deployer/coreDeployer";
+import { DUMB_ADDRESS, MAX_INT, OWNABLE_REVERT_MSG } from "../model/_constants";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -21,7 +20,7 @@ describe("CreditAccount", function () {
   let errors: Errors;
 
   beforeEach(async function () {
-    deployer = (await ethers.getSigners())[0];
+    deployer = (await ethers.getSigners())[0] as SignerWithAddress;
     user = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
       accountMinerType: "mock",
@@ -78,9 +77,9 @@ describe("CreditAccount", function () {
     const tokenMock = await testDeployer.getTokenMock("TEST", "TEST");
 
     await creditAccount.approveToken(tokenMock.address, DUMB_ADDRESS);
-    expect(await tokenMock.allowance(creditAccount.address, DUMB_ADDRESS)).to.be.eq(
-      MAX_INT
-    );
+    expect(
+      await tokenMock.allowance(creditAccount.address, DUMB_ADDRESS)
+    ).to.be.eq(MAX_INT);
   });
 
   it("[CA-6]: transfer transfers tokens correctly", async function () {
@@ -90,13 +89,22 @@ describe("CreditAccount", function () {
     const tokenMock = await testDeployer.getTokenMock("TEST", "TEST");
     await tokenMock.mint(creditAccount.address, 10000);
 
-    const transferTx = () =>
-      creditAccount.transfer(tokenMock.address, user.address, amountTransfer);
+    const creditAccountBalanceBefore = await tokenMock.balanceOf(
+      creditAccount.address
+    );
+    const userBalanceBefore = await tokenMock.balanceOf(user.address);
 
-    await expect(transferTx).to.changeTokenBalances(
-      tokenMock,
-      [creditAccount, user],
-      [-amountTransfer, amountTransfer]
+    await creditAccount.transfer(
+      tokenMock.address,
+      user.address,
+      amountTransfer
+    );
+
+    expect(await tokenMock.balanceOf(creditAccount.address)).to.be.eq(
+      creditAccountBalanceBefore.sub(amountTransfer)
+    );
+    expect(await tokenMock.balanceOf(user.address)).to.be.eq(
+      userBalanceBefore.add(amountTransfer)
     );
   });
 

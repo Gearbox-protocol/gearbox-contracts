@@ -760,15 +760,19 @@ describe("CreditManager", function () {
       creditAccountAddress
     );
 
+    const creditAccountBalanceBefore = await underlyingToken.balanceOf(
+        creditAccount.address
+    );
+
+    const poolServiceBalanceBefore = await underlyingToken.balanceOf(
+        poolService.address
+    );
+
     const increasedAmount = 1e5;
 
-    await expect(() =>
-      creditManager.connect(user).increaseBorrowedAmount(increasedAmount)
-    ).to.changeTokenBalances(
-      underlyingToken,
-      [poolService, creditAccount],
-      [-increasedAmount, increasedAmount]
-    );
+    await  creditManager.connect(user).increaseBorrowedAmount(increasedAmount)
+    expect(await underlyingToken.balanceOf(creditAccount.address)).to.be.eq(creditAccountBalanceBefore.add(increasedAmount))
+    expect(await underlyingToken.balanceOf(poolService.address)).to.be.eq(poolServiceBalanceBefore.sub(increasedAmount))
 
     expect(
       await poolService.lendAmount(),
