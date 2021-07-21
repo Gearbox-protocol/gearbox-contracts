@@ -673,6 +673,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     function setLimits(uint256 newMinAmount, uint256 newMaxAmount)
         public
         override
+        nonReentrant
         configuratorOnly // T:[CM-33]
     {
         require(newMinAmount <= newMaxAmount, Errors.CM_INCORRECT_LIMITS); // T:[CM-34]
@@ -691,6 +692,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         uint256 _liquidationDiscount
     )
         public
+        nonReentrant
         configuratorOnly // T:[CM-36]
     {
         require(

@@ -12,6 +12,7 @@ import {AddressProvider} from "../configuration/AddressProvider.sol";
 import {ContractsRegister} from "../configuration/ContractsRegister.sol";
 import {CreditAccount} from "../credit/CreditAccount.sol";
 import {ACLTrait} from "../configuration/ACLTrait.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {Errors} from "../libraries/helpers/Errors.sol";
 
@@ -19,7 +20,7 @@ import "hardhat/console.sol";
 
 /// @title Abstract reusable credit accounts factory
 /// @notice Creates, holds & lend credit accounts to pool contract
-contract AccountFactory is IAccountFactory, ACLTrait {
+contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     //
     //     head
     //      ⬇
@@ -233,7 +234,7 @@ contract AccountFactory is IAccountFactory, ACLTrait {
      *
      *
      */
-    function addCreditAccount() public {
+    function addCreditAccount() public nonReentrant {
         address newCreditAccountAddress = address(new CreditAccount()); // T:[AAF-2]
         _nextCreditAccount[tail] = newCreditAccountAddress; // T:[AAF-2]
         tail = newCreditAccountAddress; // T:[AAF-2]
