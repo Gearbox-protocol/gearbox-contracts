@@ -16,6 +16,8 @@ import { PoolDeployer } from "../deployer/poolDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import {
   ADDRESS_0x0,
+  CHI_THRESHOLD_DEFAULT,
+  CHI_THRESHOLD_MIN,
   DUMB_ADDRESS,
   MAX_INT,
   PERCENTAGE_FACTOR,
@@ -520,7 +522,7 @@ describe("CreditFilter", function () {
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(1);
   });
 
-  it("[CF-20]: checkCollateralChange,  setCollateralProtection reverts if called non-creditManager computes correctly", async function () {
+  it("[CF-20]: checkCollateralChange, initEnabledTokens, checkAndEnableToken reverts if called non-creditManager computes correctly", async function () {
     const revertMsgCM = await errors.CF_CREDIT_MANAGERS_ONLY();
     const revertMsgAdapter = await errors.CF_ADAPTERS_ONLY();
 
@@ -538,14 +540,27 @@ describe("CreditFilter", function () {
       creditFilter.initEnabledTokens(DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsgCM);
 
+    await expect(
+        creditFilter.checkAndEnableToken(DUMB_ADDRESS, DUMB_ADDRESS)
+    ).to.be.revertedWith(revertMsgCM);
+
 
   });
 
+  it("[CF-21]: constructor sets initial parameters correctly", async function () {
+    const addressProvider = await ts.coreDeployer.getAddressProvider();
+    expect(await creditFilter.wethAddress()).to.be.eq(
+      await addressProvider.getWethToken()
+    );
 
-  // it("[CF-21]: setCollateralProtection sets collateral protection correctly", async function () {
-  // });
-  //
-  it("[CF-22]: checkCollateralChange reverts if tokenOut is not allowed", async function () {
+    expect(await creditFilter.underlyingToken()).to.be.eq(
+      await ts.poolService.underlyingToken()
+    );
+
+    expect(await creditFilter.chiThreshold()).to.be.eq(CHI_THRESHOLD_DEFAULT);
+  });
+
+  it("[CF-22]: checkCollateralChange and checkAndEnableToken reverts if tokenOut is not allowed", async function () {
     const revertMsg = await errors.CF_TOKEN_IS_NOT_ALLOWED();
 
     await creditManagerMockForFilter.connectFilter(
@@ -569,9 +584,13 @@ describe("CreditFilter", function () {
         1
       )
     ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      creditManagerMockForFilter.checkAndEnableToken(DUMB_ADDRESS, DUMB_ADDRESS)
+    ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CF-23]: checkCollateralChange enables tokenOut token and sets fastCheckBlock if chi >98%", async function () {
+  it("[CF-23]: checkAndEnableToken enables token", async function () {
     await creditManagerMockForFilter.connectFilter(
       creditFilter.address,
       underlyingToken.address
@@ -597,6 +616,54 @@ describe("CreditFilter", function () {
 
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
 
+    await creditManagerMockForFilter.checkAndEnableToken(
+      DUMB_ADDRESS,
+      underlyingToken.address
+    );
+
+    expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(1);
+
+    await creditManagerMockForFilter.checkAndEnableToken(
+      DUMB_ADDRESS,
+      tokenA.address
+    );
+
+    expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(3);
+  });
+
+  it("[CF-24]: checkCollateralChange enables tokenOut token and sets fastCheckBlock if chi >98%", async function () {
+    await creditManagerMockForFilter.connectFilter(
+      creditFilter.address,
+      underlyingToken.address
+    );
+
+    await creditFilter.allowContract(DUMB_ADDRESS, deployer.address);
+
+    await priceOracle.addPriceFeed(
+      underlyingToken.address,
+      (
+        await creditManagerDeployer.getUnderlyingPriceFeedMock(WAD)
+      ).address
+    );
+
+    await priceOracle.addPriceFeed(
+      tokenA.address,
+      (
+        await creditManagerDeployer.getUnderlyingPriceFeedMock(WAD)
+      ).address
+    );
+
+    await creditFilter.allowToken(tokenA.address, 1000);
+
+    expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
+
+    const fastCheckDelay = 5;
+
+    await creditFilter.setupFastCheckParameters(
+      CHI_THRESHOLD_MIN,
+      fastCheckDelay
+    );
+
     const receipt = await creditFilter.checkCollateralChange(
       DUMB_ADDRESS,
       underlyingToken.address,
@@ -606,11 +673,65 @@ describe("CreditFilter", function () {
     );
 
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(2);
-    expect(await creditFilter.fastCheckBlock(DUMB_ADDRESS)).to.be.eq(receipt.blockNumber);
+    expect(await creditFilter.fastCheckBlock(DUMB_ADDRESS)).to.be.eq(
+      receipt.blockNumber + fastCheckDelay
+    );
   });
 
+  it("[CF-25]: checkCollateralChange reverts for non-fastcheck and Hf<1 after operation", async function () {
+    const revertMsg = await errors.CF_OPERATION_LOW_HEALTH_FACTOR();
 
-  /// 24-25
+    await creditManagerMockForFilter.connectFilter(
+      creditFilter.address,
+      underlyingToken.address
+    );
+
+    await creditManagerMockForFilter.setLinearCumulative(RAY);
+
+    await creditFilter.allowContract(DUMB_ADDRESS, deployer.address);
+
+    await priceOracle.addPriceFeed(
+      underlyingToken.address,
+      (
+        await creditManagerDeployer.getUnderlyingPriceFeedMock(WAD)
+      ).address
+    );
+
+    await priceOracle.addPriceFeed(
+      tokenA.address,
+      (
+        await creditManagerDeployer.getUnderlyingPriceFeedMock(WAD)
+      ).address
+    );
+
+    await creditFilter.allowToken(
+      tokenA.address,
+      UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD - 1
+    );
+
+    expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
+
+    // Setting up extremly hign Chi parameter to disable fast check
+    await creditFilter.setupFastCheckParameters(10000, 0);
+
+    const creditAccount = await ts.testDeployer.getCreditAccount();
+    await creditAccount.initialize(deployer.address);
+    await creditAccount.setGenericParameters(borrowedAmount, RAY);
+    await underlyingToken.transfer(
+      creditAccount.address,
+      amount.add(borrowedAmount)
+    );
+
+    await expect(
+      creditFilter.checkCollateralChange(
+        creditAccount.address,
+        underlyingToken.address,
+        tokenA.address,
+        WAD,
+        WAD
+      )
+    ).to.be.revertedWith(revertMsg);
+  });
 
   it("[CF-26]: calcCreditAccountAccruedInterested computes Account accrued interest correctly", async function () {
     const ciAtOpen = RAY;
@@ -685,9 +806,7 @@ describe("CreditFilter", function () {
     expect(healthFactor).to.be.eq(expectedHealthFactor);
   });
 
-  // 28..29
-
-  it("[CF-30]:getCreditAccountTokenById returns correct token, amount, tv & twv", async function () {
+  it("[CF-28]:getCreditAccountTokenById returns correct token, amount, tv & twv", async function () {
     const chainlinkMock = await testDeployer.getChainlinkPriceFeedMock(
       BigNumber.from(10).mul(WAD),
       18
@@ -716,5 +835,28 @@ describe("CreditFilter", function () {
 
     // ToDo: Add one more token
 
+  });
+
+  it("[CF-29]:setupFastCheckParameters reverts if ChiConstant less than CHI_THRESHOLD_MIN", async function () {
+    const revertMsg = await errors.CF_INCORRECT_CHI_THRESHOLD();
+
+    await expect(
+      creditFilter.setupFastCheckParameters(CHI_THRESHOLD_MIN - 1, 0)
+    ).revertedWith(revertMsg);
+  });
+
+  it("[CF-30]:setupFastCheckParameters set parameters correctly and emits event", async function () {
+    const newChi = (await creditFilter.chiThreshold()).toNumber() + 5;
+    const newFastCheckDelay =
+      (await creditFilter.fastCheckDelay()).toNumber() + 5;
+
+    await expect(
+      creditFilter.setupFastCheckParameters(newChi, newFastCheckDelay)
+    )
+      .to.emit(creditFilter, "NewFastCheckParameters")
+      .withArgs(newChi, newFastCheckDelay);
+
+    expect(await creditFilter.chiThreshold()).to.be.eq(newChi);
+    expect(await creditFilter.fastCheckDelay()).to.be.eq(newFastCheckDelay);
   });
 });

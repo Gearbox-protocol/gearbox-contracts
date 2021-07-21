@@ -110,22 +110,21 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         address _creditFilterAddress,
         address _defaultSwapContract
     ) ACLTrait(_addressProvider) {
-        addressProvider = AddressProvider(_addressProvider);
-        poolService = _poolService;
-        underlyingToken = IPoolService(_poolService).underlyingToken();
-        creditFilter = ICreditFilter(_creditFilterAddress);
+        addressProvider = AddressProvider(_addressProvider); // ToDo: check
+        poolService = _poolService; // ToDo: check
+        underlyingToken = IPoolService(_poolService).underlyingToken(); // ToDo: check
+        creditFilter = ICreditFilter(_creditFilterAddress); // ToDo: check
 
-        creditFilter.connectCreditManager(_poolService);
+        creditFilter.connectCreditManager(_poolService); // ToDo: check
 
-        wethAddress = addressProvider.getWethToken();
-        wethGateway = addressProvider.getWETHGateway();
+        wethAddress = addressProvider.getWethToken(); // ToDo: check
+        wethGateway = addressProvider.getWETHGateway(); // ToDo: check
 
-        defaultSwapContract = _defaultSwapContract;
+        defaultSwapContract = _defaultSwapContract; // ToDo: check
 
-        _accountFactory = IAccountFactory(addressProvider.getAccountFactory());
+        _accountFactory = IAccountFactory(addressProvider.getAccountFactory()); // ToDo: check
 
-        setLimits(_minAmount, _maxAmount);
-        maxLeverageFactor = _maxLeverage;
+        maxLeverageFactor = _maxLeverage; // ToDo: check
 
         // Compute minHealthFactor: https://dev.gearbox.fi/developers/credit/credit_manager#increase-borrow-amount
         minHealthFactor = Constants
@@ -139,12 +138,13 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             Errors.CM_MAX_LEVERAGE_IS_TOO_HIGH
         ); // T:[CM-40]
 
+        setLimits(_minAmount, _maxAmount); // ToDo: check
         setFees(
             Constants.FEE_SUCCESS,
             Constants.FEE_INTEREST,
             Constants.FEE_LIQUIDATION,
             Constants.LIQUIDATION_DISCOUNTED_SUM
-        );
+        ); // ToDo: check
     }
 
     //
@@ -299,13 +299,13 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         whenNotPaused // T:[CM-39]
         nonReentrant
     {
-        address creditAccount = getCreditAccountOrRevert(borrower);
+        address creditAccount = getCreditAccountOrRevert(borrower); // ToDo: Check for unknown borrower
 
         // send assets to "to" address and compute total value (tv) & threshold weighted value (twv)
         (uint256 totalValue, uint256 tvw) = _transferAssetsTo(
             creditAccount,
             to
-        );
+        ); // T:[CM-13, 16, 17]
 
         // Checks that current Hf < 1
         require(
@@ -355,7 +355,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         require(msg.sender == wethGateway, Errors.CM_WETH_GATEWAY_ONLY); // T:[CM-38]
 
         // Difference with usual Repay is that there is borrower in repay implementation call
-        return _repayCreditAccountImpl(borrower, to);
+        return _repayCreditAccountImpl(borrower, to); // ToDo: check return statement
     }
 
     /// @dev Implements logic for repay credit accounts
@@ -491,7 +491,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             );
     }
 
-    // @dev Computes all close parameters based on data
+    /// @dev Computes all close parameters based on data
     /// @param totalValue Credit account total value
     /// @param isLiquidated True if calculations needed for liquidation
     /// @param borrowedAmount Credit account borrow amount
@@ -779,7 +779,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
                     bytes memory data = abi.encodeWithSelector(
                         bytes4(0x38ed1739), // "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
                         amount,
-                        tv.percentMul(amountOutTolerance),
+                        tv.percentMul(amountOutTolerance), // T: [CM-45]
                         path,
                         creditAccount,
                         block.timestamp

@@ -14,8 +14,8 @@
   "devDependencies": {
     "@chainlink/contracts": "^0.1.6",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.0.0",
-    "@nomiclabs/hardhat-waffle": "^2.0.0",
+    "@nomiclabs/hardhat-etherscan": "^2.1.4",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/contracts": "^3.3.0",
     "@typechain/ethers-v5": "^5.0.0",
     "@types/chai": "^4.2.14",
@@ -24,13 +24,11 @@
     "@types/node": "^14.14.6",
     "chai": "^4.2.0",
     "dotenv": "^8.2.0",
-    "ethereum-waffle": "^3.1.2",
-    "ethers": "^5.0.19",
-    "hardhat": "^2.4.1",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.4.1",
+    "hardhat": "^2.4.3",
     "hardhat-abi-exporter": "^2.2.0",
     "hardhat-contract-sizer": "^2.0.3",
-    "hardhat-deploy": "^0.7.0-beta.44",
-    "hardhat-deploy-ethers": "^0.3.0-beta.7",
     "hardhat-gas-reporter": "^1.0.4",
     "hardhat-typechain": "^0.3.3",
     "moment": "^2.29.1",
@@ -44,7 +42,20 @@
     "typescript": "^4.3.5"
   },
   "scripts": {
+    "build": "yarn clean && yarn compile && yarn update_abi",
+    "deploy-local": "yarn build && npx hardhat run scripts/localDeploy.ts --network localhost",
+    "deploy-fork": "yarn build && npx hardhat run scripts/forkDeploy.ts --network localhost",
+    "deploy-kovan": "yarn build && npx hardhat run scripts/kovanDeploy.ts --network kovan",
+    "deploy-kovan-cntd": "npx hardhat run scripts/kovanDeploy.ts --network kovan",
+    "chainlink-test": "npx hardhat run scripts/chainlinkTest.ts --network mainnet",
+    "charge": "npx hardhat run scripts/fulfillFuzzler.ts --network localhost",
+    "size": "yarn clean && yarn compile && node scripts/size.ts",
+    "clean": "npx hardhat clean",
+    "fork": "scripts/fork.sh",
+    "abigen": "scripts/abigen.sh",
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "update_abi": "scripts/abiCopy.sh",
+    "coverage": "yarn build && npx hardhat coverage --temp artifacts"
   }
 }

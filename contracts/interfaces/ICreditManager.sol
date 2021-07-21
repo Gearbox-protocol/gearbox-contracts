@@ -34,13 +34,16 @@ interface ICreditManager is IAppCreditManager {
         uint256 remainingFunds
     );
 
+    // Emits each time when borrower increases borrowed amount
     event IncreaseBorrowedAmount(address indexed borrower, uint256 amount);
 
+    // Emits each time when borrower adds collateral
     event AddCollateral(address indexed onBehalfOf, address indexed token, uint256 value);
 
     // Emits each time when the credit account is repaid
     event RepayCreditAccount(address indexed owner, address indexed to);
 
+    // Emit each time when financial order is executed
     event ExecuteOrder(address indexed borrower, address indexed target);
 
     // Emits each time when new limits are set

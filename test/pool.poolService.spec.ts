@@ -1,17 +1,22 @@
 // @ts-ignore
-import {ethers} from "hardhat";
-import {BigNumber} from "ethers";
-import {solidity} from "ethereum-waffle";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { ethers } from "hardhat";
+import { solidity } from "ethereum-waffle";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import * as chai from "chai";
 
-import {DieselToken, Errors, TestPoolService, TokenMock,} from "../types/ethers-v5";
-import {CoreDeployer} from "../deployer/coreDeployer";
-import {PoolDeployer} from "../deployer/poolDeployer";
-import {DUMB_ADDRESS, PAUSABLE_REVERT_MSG, PERCENTAGE_FACTOR, RAY, SECONDS_PER_YEAR,} from "../model/_constants";
-import {PoolTestSuite} from "../deployer/poolTestSuite";
+import {
+  DieselToken,
+  Errors,
+  TestPoolService,
+  TokenMock,
+} from "../types/ethers-v5";
+import { CoreDeployer } from "../deployer/coreDeployer";
+import { PoolDeployer } from "../deployer/poolDeployer";
+import { PoolTestSuite } from "../deployer/poolTestSuite";
+import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
+import {DUMB_ADDRESS, PAUSABLE_REVERT_MSG, PERCENTAGE_FACTOR, RAY, SECONDS_PER_YEAR} from "../model/_constants";
 import {percentMul, rayDiv, rayMul} from "../model/math";
-import {CreditManagerTestSuite} from "../deployer/creditManagerTestSuite";
+import {BigNumber} from "ethers";
 import {LinearInterestRateModelDeployer} from "../deployer/linearIRModelDeployer";
 
 chai.use(solidity);
@@ -300,6 +305,11 @@ describe("PoolService", function () {
 
     expect(await poolService.creditManagersCount()).to.be.eq(0);
 
+    const events = await poolService.queryFilter(
+      poolService.filters.NewCreditManagerConnected(null)
+    );
+    expect(events.length).to.be.eq(0);
+
     await vts.setupCreditManager();
 
     expect(await poolService.creditManagersCount()).to.be.eq(1);
@@ -310,6 +320,11 @@ describe("PoolService", function () {
       .to.be.true;
     expect(await poolService.creditManagersCanRepay(vts.creditManager.address))
       .to.be.true;
+
+    const eventsAfter = await poolService.queryFilter(
+      poolService.filters.NewCreditManagerConnected(vts.creditManager.address)
+    );
+    expect(eventsAfter.length).to.be.eq(1);
   });
 
   it("[PS-12]: lendCreditAccount, repayCreditAccount reverts if called non-CreditManager", async function () {
@@ -1054,17 +1069,16 @@ describe("PoolService", function () {
   });
 
   it("[PS-31]: addLiquidity reverts if expectLiquidity > limit", async function () {
-    const revertMsg = await errors.POOL_MORE_THAN_EXPECTED_LIQUIDITY_LIMIT();
+    const revertedMsg = await errors.POOL_MORE_THAN_EXPECTED_LIQUIDITY_LIMIT();
 
-    const elLimit = 9823223;
-    await poolService.setExpectedLiquidityLimit(elLimit);
-    await poolService.setExpectedLiquidity(elLimit + 1);
+    await poolService.setExpectedLiquidityLimit(addLiquidity);
+    await poolService
+      .connect(liquidityProvider)
+      .addLiquidity(addLiquidity, friend.address, referral);
 
     await expect(
-      poolService
-        .connect(liquidityProvider)
-        .addLiquidity(addLiquidity, friend.address, referral)
-    ).to.be.revertedWith(revertMsg);
+      poolService.addLiquidity(1, friend.address, referral)
+    ).to.revertedWith(revertedMsg);
   });
 
   it("[PS-32]: setWithdrawFee reverts in fee > 1%", async function () {
@@ -1102,5 +1116,18 @@ describe("PoolService", function () {
         percentMul(removeLiquidity, fee),
       ]
     );
+  });
+
+  it("[PS-35]: connectCreditManager reverts if creditManager is already connected", async function () {
+    const revertMsg = await errors.POOL_CANT_ADD_CREDIT_MANAGER_TWICE();
+    const vts = new CreditManagerTestSuite();
+    await vts.getSuite({ poolService });
+
+    expect(await poolService.creditManagersCount()).to.be.eq(0);
+
+    await vts.setupCreditManager();
+    await expect(
+      poolService.connectCreditManager(vts.creditManager.address)
+    ).to.be.revertedWith(revertMsg);
   });
 });

@@ -107,16 +107,16 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             AddressProvider(_addressProvider).getPriceOracle()
         );
 
-        wethAddress = AddressProvider(_addressProvider).getWethToken();
+        wethAddress = AddressProvider(_addressProvider).getWethToken(); // T:[CF-21]
 
-        underlyingToken = _underlyingToken;
+        underlyingToken = _underlyingToken; // T:[CF-21]
 
         allowToken(
             underlyingToken,
             Constants.UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD
         ); // T:[CF-8]
 
-        chiThreshold = Constants.CHI_THRESHOLD;
+        chiThreshold = Constants.CHI_THRESHOLD; // ToDo: Check
     }
 
     //
@@ -222,21 +222,21 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         override
         adapterOnly // T:[CF-20]
     {
-        _checkAndEnableToken(creditAccount, tokenOut); //T:[CF-22]
+        _checkAndEnableToken(creditAccount, tokenOut); // T:[CF-22]
 
         // Convert to WETH is more gas efficient and doesn't make difference for ratio
         uint256 amountInCollateral = _priceOracle.convert(
             amountIn,
             tokenIn,
             wethAddress
-        ); //
+        ); // T:[CF-24]
 
         // Convert to WETH is more gas efficient and doesn't make difference for ratio
         uint256 amountOutCollateral = _priceOracle.convert(
             amountOut,
             tokenOut,
             wethAddress
-        ); //
+        ); // T:[CF-24]
 
         if (
             amountOutCollateral.mul(PercentageMath.PERCENTAGE_FACTOR).div(
@@ -245,13 +245,14 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             chiThreshold &&
             fastCheckBlock[creditAccount] < block.number
         ) {
-            fastCheckBlock[creditAccount] = block.number + fastCheckDelay; // T:[CF-23]
+            fastCheckBlock[creditAccount] = block.number + fastCheckDelay; // T:[CF-24]
         } else {
+            // Require Hf > 1
             require(
                 calcCreditAccountHealthFactor(creditAccount) >=
                     PercentageMath.PERCENTAGE_FACTOR,
                 Errors.CF_OPERATION_LOW_HEALTH_FACTOR
-            );
+            ); // ToDo: T:[CF-25]
         }
     }
 
@@ -268,19 +269,20 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     function checkAndEnableToken(address creditAccount, address token)
         external
         override
-        creditManagerOnly // ToDo
+        creditManagerOnly // [CF-20]
     {
-        _checkAndEnableToken(creditAccount, token);
+        _checkAndEnableToken(creditAccount, token); // T:[CF-22, 23]
     }
 
-    function _checkAndEnableToken (address creditAccount, address token)
-    internal {
+    function _checkAndEnableToken(address creditAccount, address token)
+        internal
+    {
         revertIfTokenNotAllowed(token); //T:[CF-22]
 
         if (enabledTokens[creditAccount] & tokenMasksMap[token] == 0) {
             enabledTokens[creditAccount] =
-            enabledTokens[creditAccount] |
-            tokenMasksMap[token];
+                enabledTokens[creditAccount] |
+                tokenMasksMap[token];
         } // T:[CF-23]
     }
 
@@ -291,13 +293,14 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         external
         configuratorOnly // T:[CF-1]
     {
-        chiThreshold = _chiThreshold;
         require(
-            chiThreshold > Constants.CHI_THRESHOLD_MIN,
+            _chiThreshold >= Constants.CHI_THRESHOLD_MIN,
             Errors.CF_INCORRECT_CHI_THRESHOLD
-        );
-        fastCheckDelay = _fastCheckDelay;
-        emit NewFastCheckParameters(_chiThreshold, _fastCheckDelay);
+        ); // T:[CF-29]
+
+        chiThreshold = _chiThreshold; // T:[CF-30]
+        fastCheckDelay = _fastCheckDelay; // T:[CF-30]
+        emit NewFastCheckParameters(_chiThreshold, _fastCheckDelay); // T:[CF-30]
     }
 
     //
@@ -397,11 +400,13 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             uint256 tvw
         )
     {
-        token = allowedTokens[id]; // T:[CF-30]
-        balance = IERC20(token).balanceOf(creditAccount); // T:[CF-30]
+        token = allowedTokens[id]; // T:[CF-28]
+        balance = IERC20(token).balanceOf(creditAccount); // T:[CF-28]
+
+        // balance ==0 : T: [CF-28]
         if (balance > 1) {
-            tv = _priceOracle.convert(balance, token, underlyingToken);
-            tvw = tv.mul(tokenLiquidationThresholds[token]);
+            tv = _priceOracle.convert(balance, token, underlyingToken); // T:[CF-28]
+            tvw = tv.mul(tokenLiquidationThresholds[token]); // T:[CF-28]
         }
     }
 
@@ -415,12 +420,12 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         override
         returns (uint256)
     {
-        uint256 borrowedAmount = ICreditAccount(creditAccount).borrowedAmount();
+        uint256 borrowedAmount = ICreditAccount(creditAccount).borrowedAmount(); // T: [CF-26]
 
         return
             borrowedAmount
                 .mul(IPoolService(poolService).calcLinearCumulative_RAY())
-                .div(ICreditAccount(creditAccount).cumulativeIndexAtOpen()); // T:[GM-3]
+                .div(ICreditAccount(creditAccount).cumulativeIndexAtOpen()); // T: [CF-26]
     }
 
     /**

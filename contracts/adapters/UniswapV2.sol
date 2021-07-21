@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: MIT
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;

@@ -50,6 +50,8 @@ library Errors {
 
     string public constant POOL_INCORRECT_WITHDRAW_FEE = "P3";
 
+    string public constant POOL_CANT_ADD_CREDIT_MANAGER_TWICE = "P4";
+
     //
     // Credit Manager
     //

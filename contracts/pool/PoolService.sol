@@ -142,7 +142,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         nonReentrant
     {
         require(
-            expectedLiquidity() < expectedLiquidityLimit,
+            expectedLiquidity() + amount <= expectedLiquidityLimit,
             Errors.POOL_MORE_THAN_EXPECTED_LIQUIDITY_LIMIT
         ); // T:[PS-31]
 
@@ -423,10 +423,14 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
             Errors.POOL_INCOMPATIBLE_CREDIT_ACCOUNT_MANAGER
         ); // T:[PS-10]
 
+        require(
+            !creditManagersCanRepay[_creditManager], Errors.POOL_CANT_ADD_CREDIT_MANAGER_TWICE
+        ); // T:[PS-35]
+
         creditManagersCanBorrow[_creditManager] = true; // T:[PS-11]
         creditManagersCanRepay[_creditManager] = true; // T:[PS-11]
         creditManagers.push(_creditManager); // T:[PS-11]
-        emit NewCreditManagerConnected(_creditManager); // ToDo: ADD CHECK HERE
+        emit NewCreditManagerConnected(_creditManager); // T:[PS-11]
     }
 
     /// @dev Forbid to borrow for particulat credif manager

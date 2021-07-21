@@ -566,10 +566,16 @@ describe("CreditManager", function () {
     const borrowedAmountWithInterest =
       PoolServiceModel.getBorrowedAmountWithInterest(ba, ciAtClose, ciAtOpen);
 
+    const tokenAamountConverted = await ts.priceOracle.convert(
+      uniswapInitBalance,
+      tokenA.address,
+      underlyingToken.address
+    );
+
     const fee = percentMul(
       amount
         // we should uniswapInitBalance, cause rate is 1, we set one chainlink mock for both assets
-        .add(uniswapInitBalance)
+        .add(tokenAamountConverted)
         .add(ba)
         .sub(borrowedAmountWithInterest),
       FEE_SUCCESS
@@ -1006,13 +1012,12 @@ describe("CreditManager", function () {
     ).to.revertedWith(PAUSABLE_REVERT_MSG);
 
     await expect(
-        creditManager.connect(user).addCollateral(DUMB_ADDRESS, DUMB_ADDRESS, 12)
+      creditManager.connect(user).addCollateral(DUMB_ADDRESS, DUMB_ADDRESS, 12)
     ).to.revertedWith(PAUSABLE_REVERT_MSG);
 
     // await expect(
     //     creditManager.connect(user).provideCreditAccountAllowance(DUMB_ADDRESS, DUMB_ADDRESS, DUMB_ADDRESS)
     // ).to.revertedWith(PAUSABLE_REVERT_MSG);
-
   });
 
   it("[CM-40]: constructor reverts if minHeathFactor is too high", async function () {
@@ -1187,28 +1192,34 @@ describe("CreditManager", function () {
     ).to.be.eq(expectedBalanceAfter);
   });
 
-  // it("[TCM-8]: closeCreditAccount reverts if someone change uniswap dramatically", async function () {
-  //   // Open default credit account
-  //   await ts.openDefaultCreditAccount();
-  //
-  //   await uniswapV2Adapter
-  //     .connect(user)
-  //     .swapExactTokensForTokens(
-  //       amount.add(borrowedAmount),
-  //       0,
-  //       [underlyingToken.address, tokenA.address],
-  //       await UniswapModel.getDeadline()
-  //     );
-  //
-  //   // it moves timestamp in one year ahead to compute interest rate greater than 0
-  //   await ts.oneYearAhead();
-  //
-  //   await uniswapMock.setRate(tokenA.address, underlyingToken.address, 1);
-  //
-  //   await expect(
-  //     creditManager
-  //       .connect(user)
-  //       .closeCreditAccount(friend.address, amountOutTolerance)
-  //   ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT");
-  // });
+  it("[CM-45]: closeCreditAccount reverts if someone change uniswap rate dramatically", async function () {
+    // Open default credit account
+    await ts.openDefaultCreditAccount();
+    await ts.setupUniswapV2Adapter();
+
+    await creditManager
+      .connect(user)
+      .addCollateral(user.address, tokenA.address, swapAmountA);
+
+    // Uniswap rate equals chainlink rate
+    const rate = await ts.uniswapMock.getRate([
+      tokenA.address,
+      underlyingToken.address,
+    ]);
+    const edgeRate = rate.mul(amountOutTolerance).div(PERCENTAGE_FACTOR);
+
+    await ts.uniswapMock.setRate(
+      tokenA.address,
+      underlyingToken.address,
+      edgeRate.sub(1)
+    );
+
+    await expect(
+      creditManager
+        .connect(user)
+        .closeCreditAccount(friend.address, amountOutTolerance)
+    ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT");
+  });
+
+
 });
