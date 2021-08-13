@@ -6,7 +6,7 @@ import * as chai from "chai";
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import { AddressProvider, Errors } from "../types/ethers-v5";
-import { DUMB_ADDRESS, OWNABLE_REVERT_MSG } from "../model/_constants";
+import { DUMB_ADDRESS, OWNABLE_REVERT_MSG } from "../core/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { formatBytes32String } from "ethers/lib/utils";
 

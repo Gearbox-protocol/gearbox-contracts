@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -70,13 +70,13 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     address public treasuryAddress;
 
     // Cumulative index in RAY
-    uint256 public _cumulativeIndex_RAY;
+    uint256 public override _cumulativeIndex_RAY;
 
     // Current borrow rate in RAY: https://dev.gearbox.fi/developers/pools/economy#borrow-apy
     uint256 public override borrowAPY_RAY;
 
     // Timestamp of last update
-    uint256 public _timestampLU;
+    uint256 public override _timestampLU;
 
     // Withdraw fee in PERCENTAGE FORMAT
     uint256 public override withdrawFee;

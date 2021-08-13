@@ -1,12 +1,14 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+pragma abicoder v2;
+
+import {DataTypes} from "../../libraries/data/Types.sol";
 
 /// @title Optimised for front-end credit Manager interface
 /// @notice It's optimised for light-weight abi
 interface IAppCreditManager {
-
     function openCreditAccount(
         uint256 amount,
         address payable onBehalfOf,
@@ -14,8 +16,8 @@ interface IAppCreditManager {
         uint256 referralCode
     ) external;
 
-    function closeCreditAccount(address to, uint256 amountOutTolerance)
-        external;
+    function closeCreditAccount(address to, DataTypes.Exchange[] calldata paths)
+    external;
 
     function repayCreditAccount(address to) external;
 
@@ -25,17 +27,20 @@ interface IAppCreditManager {
         address onBehalfOf,
         address token,
         uint256 amount
-    )
-    external;
+    ) external;
 
     function calcRepayAmount(address borrower, bool isLiquidated)
         external
         view
         returns (uint256);
 
-
     function getCreditAccountOrRevert(address borrower)
         external
         view
         returns (address);
+
+    function hasOpenedCreditAccount(address borrower)
+        external
+        view
+        returns (bool);
 }

@@ -1,16 +1,14 @@
-import { ethers, waffle } from "hardhat";
+// @ts-ignore
+import { ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import * as chai from "chai";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
-import { ACL, Errors, ACLTraitTest } from "../types/ethers-v5";
+import { ACL, ACLTraitTest, Errors } from "../types/ethers-v5";
 
-import {
-  PAUSABLE_NOT_PAUSED_REVERT_MSG,
-  PAUSABLE_REVERT_MSG,
-} from "../model/_constants";
+import { PAUSABLE_NOT_PAUSED_REVERT_MSG, PAUSABLE_REVERT_MSG } from "../core/constants";
 
 chai.use(solidity);
 const { expect } = chai;

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+pragma abicoder v2;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -23,6 +24,7 @@ import {ACLTrait} from "../configuration/ACLTrait.sol";
 
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
+import {DataTypes} from "../libraries/data/Types.sol";
 
 import "hardhat/console.sol";
 
@@ -251,10 +253,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
      * More info: https://dev.gearbox.fi/developers/credit/credit_manager#close-credit-account
      *
      * @param to Address to send remaining funds
-     * @param amountOutTolerance Coefficient to amountOut during sale on default swap
-     *        in percentage math
+     * @param paths Exchange type data which provides paths + amountMinOut
      */
-    function closeCreditAccount(address to, uint256 amountOutTolerance)
+    function closeCreditAccount(address to,  DataTypes.Exchange[] calldata paths)
         external
         override
         whenNotPaused // T:[CM-39]
@@ -263,7 +264,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         address creditAccount = getCreditAccountOrRevert(msg.sender); // T: [CM-44]
 
         // Converts all assets to underlying one. _convertAllAssetsToUnderlying is virtual
-        _convertAllAssetsToUnderlying(creditAccount, amountOutTolerance); // T: [CM-44]
+        _convertAllAssetsToUnderlying(creditAccount, paths); // T: [CM-44]
 
         // total value equals underlying assets after converting all assets
         uint256 totalValue = IERC20(underlyingToken).balanceOf(creditAccount); // T: [CM-44]
@@ -751,13 +752,17 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         }
     }
 
+    struct Exchange {
+        address[] path;
+        uint256 amountOutMin;
+    }
+
     /// @dev Converts all assets to underlying one using uniswap V2 protocol
     /// @param creditAccount Credit Account address
-    /// @param amountOutTolerance Value which represents 100% - slippage tolerance in PERCENTAGE FORMAT
-    ///        for example, if slippage tol. 0.5%, it equal 9950 [(100% - 0.5%)*100]
+    /// @param paths Exchange type data which provides paths + amountMinOut
     function _convertAllAssetsToUnderlying(
         address creditAccount,
-        uint256 amountOutTolerance
+        DataTypes.Exchange[] calldata paths
     ) internal {
         uint256 tokenMask;
         uint256 enabledTokens = creditFilter.enabledTokens(creditAccount); // T: [CM-44]
@@ -765,14 +770,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         for (uint256 i = 1; i < creditFilter.allowedTokensCount(); i++) {
             tokenMask = 1 << i;
             if (enabledTokens & tokenMask > 0) {
-                (address tokenAddr, uint256 amount, uint256 tv, ) = creditFilter
+                (address tokenAddr, uint256 amount, , ) = creditFilter
                 .getCreditAccountTokenById(creditAccount, i); // T: [CM-44]
 
                 if (amount > 0) {
-                    // Sell on vault
-                    address[] memory path = new address[](2); // T: [CM-44]
-                    path[0] = tokenAddr; // T: [CM-44]
-                    path[1] = underlyingToken; // T: [CM-44]
 
                     _provideCreditAccountAllowance(
                         creditAccount,
@@ -780,11 +781,15 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
                         tokenAddr
                     ); // T: [CM-44]
 
+                    address[] memory currentPath = paths[i].path;
+                    currentPath[0] = tokenAddr;
+                    currentPath[paths[i].path.length-1] = underlyingToken;
+
                     bytes memory data = abi.encodeWithSelector(
                         bytes4(0x38ed1739), // "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
                         amount,
-                        tv.percentMul(amountOutTolerance), // T: [CM-45]
-                        path,
+                        paths[i].amountOutMin, // T: [CM-45]
+                        currentPath,
                         creditAccount,
                         block.timestamp
                     ); // T: [CM-44]

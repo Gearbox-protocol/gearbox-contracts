@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -10,6 +10,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ICreditAccount} from "../interfaces/ICreditAccount.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
+import {CreditManager} from "../credit/CreditManager.sol";
 import {IPoolService} from "../interfaces/IPoolService.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 
@@ -25,9 +26,8 @@ contract DataCompressor {
     using SafeMath for uint256;
     using PercentageMath for uint256;
     AddressProvider public addressProvider;
-    ContractsRegister immutable public contractsRegister;
-    address immutable public WETHToken;
-
+    ContractsRegister public immutable contractsRegister;
+    address public immutable WETHToken;
 
     /// @dev Allows provide data for registered pools only to eliminated usage for non-gearbox contracts
     modifier registeredPoolOnly(address pool) {
@@ -39,7 +39,6 @@ contract DataCompressor {
 
         _;
     }
-
 
     /// @dev Allows provide data for registered credit managers only to eliminated usage for non-gearbox contracts
     modifier registeredCreditManagerOnly(address creditManager) {
@@ -81,7 +80,10 @@ contract DataCompressor {
                 count++;
             }
         }
-        DataTypes.CreditAccountData[] memory result = new DataTypes.CreditAccountData[](count);
+
+
+            DataTypes.CreditAccountData[] memory result
+         = new DataTypes.CreditAccountData[](count);
 
         // Get data & fill the array
         count = 0;
@@ -99,6 +101,16 @@ contract DataCompressor {
             }
         }
         return result;
+    }
+
+    function hasOpenedCreditAccount(address _creditManager, address borrower)
+        public
+        view
+        registeredCreditManagerOnly(_creditManager)
+        returns (bool)
+    {
+        ICreditManager creditManager = ICreditManager(_creditManager);
+        return creditManager.hasOpenedCreditAccount(borrower);
     }
 
     /// @dev Returns CreditAccountData for particular account for creditManager and borrower
@@ -125,8 +137,9 @@ contract DataCompressor {
         address creditAccount = creditManager.creditAccounts(borrower);
         result.addr = creditAccount;
 
-        ICreditFilter creditFilter =
-            ICreditFilter(ICreditManager(creditManager).creditFilter());
+        ICreditFilter creditFilter = ICreditFilter(
+            ICreditManager(creditManager).creditFilter()
+        );
 
         result.underlyingToken = creditFilter.underlyingToken();
 
@@ -145,12 +158,12 @@ contract DataCompressor {
         for (uint256 i = 0; i < allowedTokenCount; i++) {
             DataTypes.TokenBalance memory balance;
             (balance.token, balance.balance, , ) = creditFilter
-                .getCreditAccountTokenById(creditAccount, i);
+            .getCreditAccountTokenById(creditAccount, i);
             result.balances[i] = balance;
         }
 
         result.borrowedAmountPlusInterest = creditFilter
-            .calcCreditAccountAccruedInterest(creditAccount);
+        .calcCreditAccountAccruedInterest(creditAccount);
 
         return result;
     }
@@ -168,8 +181,10 @@ contract DataCompressor {
         returns (DataTypes.CreditAccountDataExtended memory)
     {
         DataTypes.CreditAccountDataExtended memory result;
-        DataTypes.CreditAccountData memory data =
-            getCreditAccountData(creditManager, borrower);
+        DataTypes.CreditAccountData memory data = getCreditAccountData(
+            creditManager,
+            borrower
+        );
 
         result.addr = data.addr;
         result.borrower = data.borrower;
@@ -181,12 +196,12 @@ contract DataCompressor {
         result.borrowRate = data.borrowRate;
         result.balances = data.balances;
 
-        address creditAccount =
-            ICreditManager(creditManager).getCreditAccountOrRevert(borrower);
+        address creditAccount = ICreditManager(creditManager)
+        .getCreditAccountOrRevert(borrower);
 
         result.borrowedAmount = ICreditAccount(creditAccount).borrowedAmount();
         result.cumulativeIndexAtOpen = ICreditAccount(creditAccount)
-            .cumulativeIndexAtOpen();
+        .cumulativeIndexAtOpen();
 
         result.since = ICreditAccount(creditAccount).since();
         result.repayAmount = ICreditManager(creditManager).calcRepayAmount(
@@ -194,11 +209,15 @@ contract DataCompressor {
             false
         );
         result.liquidationAmount = ICreditManager(creditManager)
-            .calcRepayAmount(borrower, true);
+        .calcRepayAmount(borrower, true);
+
+        (, , , , uint256 loss) = CreditManager(creditManager)
+        ._calcClosePayments(creditAccount, data.totalValue, false);
+
+        result.canBeClosed = loss == 0;
 
         return result;
     }
-
 
     /// @dev Returns Credit account parameters
     function getCreditAccountParameters(address creditAccount)
@@ -225,11 +244,12 @@ contract DataCompressor {
         view
         returns (DataTypes.CreditManagerData[] memory)
     {
-        uint256 creditManagersCount =
-            contractsRegister.getCreditManagersCount();
+        uint256 creditManagersCount = contractsRegister
+        .getCreditManagersCount();
 
-        DataTypes.CreditManagerData[] memory result =
-            new DataTypes.CreditManagerData[](creditManagersCount);
+
+            DataTypes.CreditManagerData[] memory result
+         = new DataTypes.CreditManagerData[](creditManagersCount);
 
         for (uint256 i = 0; i < creditManagersCount; i++) {
             address creditManager = contractsRegister.creditManagers(i);
@@ -255,8 +275,9 @@ contract DataCompressor {
         result.addr = _creditManager;
         result.hasAccount = creditManager.hasOpenedCreditAccount(borrower);
 
-        ICreditFilter creditFilter =
-            ICreditFilter(ICreditManager(creditManager).creditFilter());
+        ICreditFilter creditFilter = ICreditFilter(
+            ICreditManager(creditManager).creditFilter()
+        );
 
         result.underlyingToken = creditFilter.underlyingToken();
         result.isWETH = result.underlyingToken == WETHToken;
@@ -278,11 +299,15 @@ contract DataCompressor {
 
         uint256 allowedContractsCount = creditFilter.allowedContractsCount();
 
-        result.adapters = new DataTypes.ContractAdapter[](allowedContractsCount);
+        result.adapters = new DataTypes.ContractAdapter[](
+            allowedContractsCount
+        );
         for (uint256 i = 0; i < allowedContractsCount; i++) {
             DataTypes.ContractAdapter memory adapter;
             adapter.allowedContract = creditFilter.allowedContracts(i);
-            adapter.adapter = creditFilter.contractToAdapter(adapter.allowedContract);
+            adapter.adapter = creditFilter.contractToAdapter(
+                adapter.allowedContract
+            );
             result.adapters[i] = adapter;
         }
 
@@ -313,27 +338,34 @@ contract DataCompressor {
         result.dieselRate_RAY = pool.getDieselRate_RAY();
         result.withdrawFee = pool.withdrawFee();
         result.isWETH = result.underlyingToken == WETHToken;
+        result.timestampLU = pool._timestampLU();
+        result.cumulativeIndex_RAY = pool._cumulativeIndex_RAY();
 
         uint256 dieselSupply = IERC20(result.dieselToken).totalSupply();
         uint256 totalLP = pool.fromDiesel(dieselSupply);
         result.depositAPY_RAY = totalLP == 0
             ? result.borrowAPY_RAY
             : result
-                .borrowAPY_RAY
-                .mul(result.totalBorrowed)
-                .percentMul(
+            .borrowAPY_RAY
+            .mul(result.totalBorrowed)
+            .percentMul(
                 PercentageMath.PERCENTAGE_FACTOR.sub(result.withdrawFee)
-            )
-                .div(totalLP);
+            ).div(totalLP);
 
         return result;
     }
 
     /// @dev Returns PoolData for all registered pools
-    function getPoolsList() external view returns (DataTypes.PoolData[] memory) {
+    function getPoolsList()
+        external
+        view
+        returns (DataTypes.PoolData[] memory)
+    {
         uint256 poolsCount = contractsRegister.getPoolsCount();
 
-        DataTypes.PoolData[] memory result = new DataTypes.PoolData[](poolsCount);
+        DataTypes.PoolData[] memory result = new DataTypes.PoolData[](
+            poolsCount
+        );
 
         for (uint256 i = 0; i < poolsCount; i++) {
             address pool = contractsRegister.pools(i);
@@ -345,7 +377,11 @@ contract DataCompressor {
 
     /// @dev Returns compressed token data for particular token.
     /// Be careful, it can be reverted for non-standart tokens which has no "symbol" method for example
-    function getTokenData(address addr) public view returns (DataTypes.TokenInfo memory) {
+    function getTokenData(address addr)
+        public
+        view
+        returns (DataTypes.TokenInfo memory)
+    {
         DataTypes.TokenInfo memory result;
         ERC20 token = ERC20(addr);
         result.addr = addr;

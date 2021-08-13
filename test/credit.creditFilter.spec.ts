@@ -24,7 +24,7 @@ import {
   RAY,
   UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
   WAD,
-} from "../model/_constants";
+} from "../core/constants";
 import { CreditManagerDeployer } from "../deployer/creditManagerDeployer";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
 import { STANDARD_VA_MANAGER } from "../deployer/creditManagerType";
@@ -712,7 +712,7 @@ describe("CreditFilter", function () {
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
 
     // Setting up extremly hign Chi parameter to disable fast check
-    await creditFilter.setupFastCheckParameters(10000, 0);
+    await creditFilter.setupFastCheckParameters(10000, 1);
 
     const creditAccount = await ts.testDeployer.getCreditAccount();
     await creditAccount.initialize(deployer.address);

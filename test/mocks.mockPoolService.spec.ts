@@ -7,7 +7,7 @@ import { MockPoolService, TokenMock } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
-import {DUMB_ADDRESS, MAX_INT, RAY} from "../model/_constants";
+import {DUMB_ADDRESS, MAX_INT, RAY} from "../core/constants";
 
 chai.use(solidity);
 const { expect } = chai;

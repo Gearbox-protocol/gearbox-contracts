@@ -26,7 +26,7 @@ import {
   RAY,
   SECONDS_PER_YEAR,
   WAD,
-} from "../model/_constants";
+} from "../core/constants";
 import { BigNumber } from "ethers";
 import { rayDiv } from "../model/math";
 import { PoolServiceModel } from "../model/poolService";

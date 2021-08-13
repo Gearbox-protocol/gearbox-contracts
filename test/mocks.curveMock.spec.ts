@@ -7,7 +7,7 @@ import {CurveMock, TokenMock} from "../types/ethers-v5";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import {IntegrationsDeployer} from "../deployer/integrationsDeployer";
 import {TestDeployer} from "../deployer/testDeployer";
-import {MAX_INT} from "../model/_constants";
+import {MAX_INT} from "../core/constants";
 
 chai.use(solidity);
 const { expect } = chai;

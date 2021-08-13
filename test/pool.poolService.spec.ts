@@ -20,7 +20,7 @@ import {
   PERCENTAGE_FACTOR,
   RAY,
   SECONDS_PER_YEAR,
-} from "../model/_constants";
+} from "../core/constants";
 import { percentMul, rayDiv, rayMul } from "../model/math";
 import { BigNumber } from "ethers";
 import { LinearInterestRateModelDeployer } from "../deployer/linearIRModelDeployer";

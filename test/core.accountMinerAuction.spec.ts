@@ -1,6 +1,7 @@
-import { ethers, waffle } from "hardhat";
+// @ts-ignore
+import { ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
-import * as chai from 'chai';
+import * as chai from "chai";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
@@ -8,13 +9,7 @@ import { AccountMinerAuction, Errors } from "../types/ethers-v5";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { Bid } from "../core/accountMinerAuction";
-import {
-  ACCOUNT_CREATION_REWARD,
-  ADDRESS_0x0,
-  DEPLOYMENT_COST,
-  DUMB_ADDRESS,
-  PAUSABLE_REVERT_MSG,
-} from "../model/_constants";
+import { ACCOUNT_CREATION_REWARD, ADDRESS_0x0, DEPLOYMENT_COST, PAUSABLE_REVERT_MSG } from "../core/constants";
 import { formatBytes32String } from "ethers/lib/utils";
 
 chai.use(solidity);

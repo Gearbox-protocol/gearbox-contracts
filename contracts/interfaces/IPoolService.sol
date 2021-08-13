@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -177,8 +177,13 @@ interface IPoolService is IAppPoolService{
     function creditManagersCanBorrow(address id) external view returns(bool);
 
     function toDiesel(uint256 amount) external view returns (uint256);
+
     function fromDiesel(uint256 amount) external view returns (uint256);
 
     function withdrawFee() external view returns (uint256);
+
+    function _timestampLU() external view returns (uint256);
+
+    function _cumulativeIndex_RAY() external view returns (uint256);
 
 }

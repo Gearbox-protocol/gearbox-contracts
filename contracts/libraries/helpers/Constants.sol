@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -52,4 +52,6 @@ library Constants {
     uint256 constant CHI_THRESHOLD_MIN = 9500;
 
     uint256 constant CHI_THRESHOLD = 9800;
+
+    uint256 constant FAST_CHECK_DELAY_MIN = 1;
 }

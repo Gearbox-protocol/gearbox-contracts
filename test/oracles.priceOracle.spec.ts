@@ -17,7 +17,7 @@ import {
   WETHMock,
 } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { DUMB_ADDRESS, WAD } from "../model/_constants";
+import { DUMB_ADDRESS, WAD } from "../core/constants";
 
 chai.use(solidity);
 const { expect } = chai;

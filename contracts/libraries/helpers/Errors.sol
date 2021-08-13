@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -136,20 +136,20 @@ library Errors {
     //
 
     string public constant AS_ADDRESS_NOT_FOUND = "S1";
-        // "AddressStorage: Address not found";
+    // "AddressStorage: Address not found";
 
     //
     // CONTRACTS REGISTER
     //
 
     string public constant CR_ALLOWED_FOR_VIRTUAL_ACCOUNT_MANAGERS_ONLY = "R1";
-        // "ContractsRegister: allowed for credit Managers only";
+    // "ContractsRegister: allowed for credit Managers only";
 
     string public constant CR_POOL_ALREADY_ADDED = "R2";
-        // "ContractsRegister: pool already added";
+    // "ContractsRegister: pool already added";
 
     string public constant CR_VA_MANAGER_ALREADY_ADDED = "R3";
-        // "ContractsRegister: credit Manager is already set";
+    // "ContractsRegister: credit Manager is already set";
 
     //
     // CREDIT_FILTER
@@ -178,22 +178,25 @@ library Errors {
     string public constant CF_INCORRECT_CHI_THRESHOLD = "C7";
     // "CF: incorrect chi threshold:"
 
+    string public constant CF_INCORRECT_FAST_CHECK = "C8";
+    // "CF: incorrect chi threshold:"
+
     //
     // CREDIT ACCOUNT
     //
 
     string public constant CA_CREDIT_MANAGER_ONLY = "A1";
-        // "VA: called by non-credit Manager";
+    // "VA: called by non-credit Manager";
 
     //
     // PRICE ORACLE
     //
 
     string public constant PO_PRICE_FEED_DOESNT_EXIST = "P0";
-        // "Price Oracle: price feed doesn't exists";
+    // "Price Oracle: price feed doesn't exists";
 
     string public constant PO_TOKENS_WITH_DECIMALS_MORE_18_ISNT_ALLOWED = "P1";
-        // "Price Oracle: tokens with decimals >18 is not allowed";
+    // "Price Oracle: tokens with decimals >18 is not allowed";
 
     //
     // ACL
@@ -210,17 +213,17 @@ library Errors {
     //
 
     string public constant WG_DESTINATION_IS_NOT_WETH_COMPATIBLE = "W1";
-        // "WETH Gateway: Destination is not WETH compatible";
+    // "WETH Gateway: Destination is not WETH compatible";
 
     string public constant WG_DESTINATION_IS_NOT_POOL = "W2";
-        // "WETH Gateway: Destination is not pool";
+    // "WETH Gateway: Destination is not pool";
 
     string public constant WG_DESTINATION_IS_NOT_CREDIT_MANAGER = "W3";
-        // "WETH Gateway: Destination is not credit Manager";
+    // "WETH Gateway: Destination is not credit Manager";
 
     string public constant WG_RECEIVE_IS_NOT_ALLOWED = "W4";
-        // "WETH Gateway: Receive is not allowed";
+    // "WETH Gateway: Receive is not allowed";
 
     string public constant WG_FALLBACK_IS_NOT_ALLOWED = "W5";
-        // "WETH Gateway: Fallback is not allowed";
+    // "WETH Gateway: Fallback is not allowed";
 }

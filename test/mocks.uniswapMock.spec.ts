@@ -13,7 +13,7 @@ import {
   MAX_INT,
   RAY,
   UNISWAP_EXPIRED,
-} from "../model/_constants";
+} from "../core/constants";
 import { arrayify } from "ethers/lib/utils";
 
 chai.use(solidity);

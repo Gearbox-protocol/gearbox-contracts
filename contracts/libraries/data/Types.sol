@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -6,6 +6,11 @@ pragma solidity ^0.7.4;
 /// @title DataType library
 /// @notice Contains data types used in data compressor.
 library DataTypes {
+    struct Exchange {
+        address[] path;
+        uint256 amountOutMin;
+    }
+
     struct TokenBalance {
         address token;
         uint256 balance;
@@ -42,6 +47,7 @@ library DataTypes {
         TokenBalance[] balances;
         uint256 repayAmount;
         uint256 liquidationAmount;
+        bool canBeClosed;
         uint256 borrowedAmount;
         uint256 cumulativeIndexAtOpen;
         uint256 since;
@@ -76,6 +82,8 @@ library DataTypes {
         uint256 borrowAPY_RAY;
         uint256 dieselRate_RAY;
         uint256 withdrawFee;
+        uint256 cumulativeIndex_RAY;
+        uint256 timestampLU;
     }
 
     struct TokenInfo {

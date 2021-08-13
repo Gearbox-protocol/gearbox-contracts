@@ -1,20 +1,12 @@
-import { ethers, waffle } from "hardhat";
+// @ts-ignore
+import { ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
-import * as chai from 'chai';
+import * as chai from "chai";
 
-import {
-  AccountFactory,
-  ContractsRegister,
-  CreditAccount__factory,
-  Errors,
-} from "../types/ethers-v5";
+import { AccountFactory, ContractsRegister, CreditAccount__factory, Errors } from "../types/ethers-v5";
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
-import {
-  DEPLOYMENT_COST,
-  DUMB_ADDRESS,
-  UNISWAP_EXPIRED,
-} from "../model/_constants";
+import { DEPLOYMENT_COST, DUMB_ADDRESS } from "../core/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { BigNumber } from "ethers";

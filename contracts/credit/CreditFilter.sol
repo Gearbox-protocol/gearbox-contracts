@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -64,7 +64,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     mapping(address => address) public override contractToAdapter;
 
     // Price oracle - uses in evaluation credit account
-    IPriceOracle internal immutable _priceOracle;
+    IPriceOracle public immutable _priceOracle;
 
     // Underlying token address
     address public override underlyingToken;
@@ -297,6 +297,11 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             _chiThreshold >= Constants.CHI_THRESHOLD_MIN,
             Errors.CF_INCORRECT_CHI_THRESHOLD
         ); // T:[CF-29]
+
+        require(
+            _fastCheckDelay >= Constants.FAST_CHECK_DELAY_MIN,
+            Errors.CF_INCORRECT_FAST_CHECK
+        ); // ToDo: add check
 
         chiThreshold = _chiThreshold; // T:[CF-30]
         fastCheckDelay = _fastCheckDelay; // T:[CF-30]

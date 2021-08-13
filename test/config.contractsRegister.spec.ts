@@ -1,13 +1,13 @@
 // @ts-ignore
-import { ethers } from 'hardhat';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
-import { solidity } from 'ethereum-waffle';
-import * as chai from 'chai';
+import { ethers } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { solidity } from "ethereum-waffle";
+import * as chai from "chai";
 
-import { CoreDeployer } from '../deployer/coreDeployer';
-import { TestDeployer } from '../deployer/testDeployer';
-import { DUMB_ADDRESS } from '../model/_constants';
-import { ContractsRegister, Errors } from '../types/ethers-v5';
+import { CoreDeployer } from "../deployer/coreDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
+import { DUMB_ADDRESS } from "../core/constants";
+import { ContractsRegister, Errors } from "../types/ethers-v5";
 
 chai.use(solidity);
 const { expect } = chai;
@@ -80,19 +80,14 @@ describe("ContractsRegister", function () {
   });
 
   it("[CR-6]: addCreditManager correctly adds creditManager", async function () {
-    await contractsRegister
-      .connect(deployer)
-      .addCreditManager(DUMB_ADDRESS);
+    await contractsRegister.connect(deployer).addCreditManager(DUMB_ADDRESS);
 
     // Checking pool count
-    expect(await contractsRegister.getCreditManagersCount()).to.be.eq(
-      1
-    );
+    expect(await contractsRegister.getCreditManagersCount()).to.be.eq(1);
 
     const getAddress = await contractsRegister.creditManagers(0);
     expect(getAddress).to.be.hexEqual(DUMB_ADDRESS);
-    expect(await contractsRegister.isCreditManager(DUMB_ADDRESS)).to.be
-      .true;
+    expect(await contractsRegister.isCreditManager(DUMB_ADDRESS)).to.be.true;
   });
 
   it("[CR-7]: addCreditManager emits event NewCreditManagerAdded", async function () {

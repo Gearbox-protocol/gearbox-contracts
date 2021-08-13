@@ -32,7 +32,7 @@ import {
   RAY,
   UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
   WAD,
-} from "../model/_constants";
+} from "../core/constants";
 import { BigNumber } from "ethers";
 import { percentMul, rayMul } from "../model/math";
 import { PoolServiceModel } from "../model/poolService";
@@ -288,105 +288,105 @@ describe("CreditManager", function () {
   // CLOSE ACCOUNT
   //
 
-  it("[CM-9]: closeCreditAccount reverts for user who has no opened credit account", async function () {
-    const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
-    await expect(
-      creditManager
-        .connect(user)
-        .closeCreditAccount(user.address, amountOutTolerance)
-    ).to.revertedWith(revertMsg);
-  });
+  // it("[CM-9]: closeCreditAccount reverts for user who has no opened credit account", async function () {
+  //   const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
+  //   await expect(
+  //     creditManager
+  //       .connect(user)
+  //       .closeCreditAccount(user.address, amountOutTolerance)
+  //   ).to.revertedWith(revertMsg);
+  // });
+  //
+  // it("[CM-10]: closeCreditAccount emits CloseCreditAccount correctly", async function () {
+  //   // Open default credit account
+  //   await ts.openDefaultCreditAccount();
+  //
+  //   const [, ciAtOpen] = await ts.getCreditAccountParameters(user.address);
+  //
+  //   const ciAtClose = RAY.mul(102).div(100);
+  //   await poolService.setCumulative_RAY(ciAtClose);
+  //
+  //   const borrowedAmountWithInterest =
+  //     PoolServiceModel.getBorrowedAmountWithInterest(
+  //       borrowedAmount,
+  //       ciAtClose,
+  //       ciAtOpen
+  //     );
+  //
+  //   // user balance = amount + borrowed amount
+  //   const fee = percentMul(
+  //     amount.add(borrowedAmount).sub(borrowedAmountWithInterest),
+  //     FEE_SUCCESS
+  //   ).add(
+  //     percentMul(borrowedAmountWithInterest.sub(borrowedAmount), FEE_INTEREST)
+  //   );
+  //
+  //   const remainingFunds = amount
+  //     .add(borrowedAmount)
+  //     .sub(borrowedAmountWithInterest)
+  //     .sub(fee)
+  //     .sub(1); // 1 for Michael Egorov gas efficiency trick
+  //
+  //   await expect(
+  //     creditManager
+  //       .connect(user)
+  //       .closeCreditAccount(friend.address, amountOutTolerance)
+  //   )
+  //     .to.emit(creditManager, "CloseCreditAccount")
+  //     .withArgs(user.address, friend.address, remainingFunds);
+  // });
 
-  it("[CM-10]: closeCreditAccount emits CloseCreditAccount correctly", async function () {
-    // Open default credit account
-    await ts.openDefaultCreditAccount();
-
-    const [, ciAtOpen] = await ts.getCreditAccountParameters(user.address);
-
-    const ciAtClose = RAY.mul(102).div(100);
-    await poolService.setCumulative_RAY(ciAtClose);
-
-    const borrowedAmountWithInterest =
-      PoolServiceModel.getBorrowedAmountWithInterest(
-        borrowedAmount,
-        ciAtClose,
-        ciAtOpen
-      );
-
-    // user balance = amount + borrowed amount
-    const fee = percentMul(
-      amount.add(borrowedAmount).sub(borrowedAmountWithInterest),
-      FEE_SUCCESS
-    ).add(
-      percentMul(borrowedAmountWithInterest.sub(borrowedAmount), FEE_INTEREST)
-    );
-
-    const remainingFunds = amount
-      .add(borrowedAmount)
-      .sub(borrowedAmountWithInterest)
-      .sub(fee)
-      .sub(1); // 1 for Michael Egorov gas efficiency trick
-
-    await expect(
-      creditManager
-        .connect(user)
-        .closeCreditAccount(friend.address, amountOutTolerance)
-    )
-      .to.emit(creditManager, "CloseCreditAccount")
-      .withArgs(user.address, friend.address, remainingFunds);
-  });
-
-  it("[CM-11]: closeCreditAccount repay pool & transfer remaining funds to borrower account correctly", async function () {
-    await ts.openDefaultCreditAccount();
-
-    const poolBalanceBefore = await poolService.availableLiquidity();
-
-    const [, ciAtOpen] = await ts.getCreditAccountParameters(user.address);
-
-    const ciAtClose = RAY.mul(102).div(100);
-    await poolService.setCumulative_RAY(ciAtClose);
-
-    await creditManager
-      .connect(user)
-      .closeCreditAccount(friend.address, amountOutTolerance);
-
-    const borrowedAmountWithInterest =
-      PoolServiceModel.getBorrowedAmountWithInterest(
-        borrowedAmount,
-        ciAtClose,
-        ciAtOpen
-      );
-
-    const fee = percentMul(
-      amount.add(borrowedAmount).sub(borrowedAmountWithInterest),
-      FEE_SUCCESS
-    ).add(
-      percentMul(borrowedAmountWithInterest.sub(borrowedAmount), FEE_INTEREST)
-    );
-
-    const remainingFunds = amount
-      .add(borrowedAmount)
-      .sub(borrowedAmountWithInterest)
-      .sub(fee);
-
-    expect(await poolService.repayAmount(), "Incorrect repay amount").to.be.eq(
-      borrowedAmount
-    );
-    expect(await poolService.repayProfit(), "Incorrectly profit").to.be.eq(fee);
-    expect(await poolService.repayLoss(), "Incorrect loss").to.be.eq(0);
-
-    expect(
-      await poolService.availableLiquidity(),
-      "Pool balance updated incorrectly"
-    ).to.be.eq(poolBalanceBefore.add(borrowedAmountWithInterest).add(fee));
-
-    expect(
-      await underlyingToken.balanceOf(friend.address),
-      "Remaining funds sent incorrectly"
-    ).to.be.eq(
-      remainingFunds.sub(1) // Michael Egorov efficiency trick
-    );
-  });
+  // it("[CM-11]: closeCreditAccount repay pool & transfer remaining funds to borrower account correctly", async function () {
+  //   await ts.openDefaultCreditAccount();
+  //
+  //   const poolBalanceBefore = await poolService.availableLiquidity();
+  //
+  //   const [, ciAtOpen] = await ts.getCreditAccountParameters(user.address);
+  //
+  //   const ciAtClose = RAY.mul(102).div(100);
+  //   await poolService.setCumulative_RAY(ciAtClose);
+  //
+  //   await creditManager
+  //     .connect(user)
+  //     .closeCreditAccount(friend.address, amountOutTolerance);
+  //
+  //   const borrowedAmountWithInterest =
+  //     PoolServiceModel.getBorrowedAmountWithInterest(
+  //       borrowedAmount,
+  //       ciAtClose,
+  //       ciAtOpen
+  //     );
+  //
+  //   const fee = percentMul(
+  //     amount.add(borrowedAmount).sub(borrowedAmountWithInterest),
+  //     FEE_SUCCESS
+  //   ).add(
+  //     percentMul(borrowedAmountWithInterest.sub(borrowedAmount), FEE_INTEREST)
+  //   );
+  //
+  //   const remainingFunds = amount
+  //     .add(borrowedAmount)
+  //     .sub(borrowedAmountWithInterest)
+  //     .sub(fee);
+  //
+  //   expect(await poolService.repayAmount(), "Incorrect repay amount").to.be.eq(
+  //     borrowedAmount
+  //   );
+  //   expect(await poolService.repayProfit(), "Incorrectly profit").to.be.eq(fee);
+  //   expect(await poolService.repayLoss(), "Incorrect loss").to.be.eq(0);
+  //
+  //   expect(
+  //     await poolService.availableLiquidity(),
+  //     "Pool balance updated incorrectly"
+  //   ).to.be.eq(poolBalanceBefore.add(borrowedAmountWithInterest).add(fee));
+  //
+  //   expect(
+  //     await underlyingToken.balanceOf(friend.address),
+  //     "Remaining funds sent incorrectly"
+  //   ).to.be.eq(
+  //     remainingFunds.sub(1) // Michael Egorov efficiency trick
+  //   );
+  // });
 
   // LIQUIDATE ACCOUNT
 
@@ -714,16 +714,16 @@ describe("CreditManager", function () {
     expect(await creditManager.hasOpenedCreditAccount(user.address)).to.be.true;
   });
 
-  it("[CM-27]: closeCreditAccount remove hasOpenedAccount property", async function () {
-    // Open default credit account
-    await ts.openDefaultCreditAccount();
-
-    await creditManager
-      .connect(user)
-      .closeCreditAccount(friend.address, amountOutTolerance);
-    expect(await creditManager.hasOpenedCreditAccount(user.address)).to.be
-      .false;
-  });
+  // it("[CM-27]: closeCreditAccount remove hasOpenedAccount property", async function () {
+  //   // Open default credit account
+  //   await ts.openDefaultCreditAccount();
+  //
+  //   await creditManager
+  //     .connect(user)
+  //     .closeCreditAccount(friend.address, amountOutTolerance);
+  //   expect(await creditManager.hasOpenedCreditAccount(user.address)).to.be
+  //     .false;
+  // });
 
   // INCREASE BORROW AMOUNT
 
@@ -996,7 +996,7 @@ describe("CreditManager", function () {
     ).to.revertedWith(PAUSABLE_REVERT_MSG);
 
     await expect(
-      creditManager.closeCreditAccount(DUMB_ADDRESS, 10)
+      creditManager.closeCreditAccount(DUMB_ADDRESS, [])
     ).to.revertedWith(PAUSABLE_REVERT_MSG);
 
     await expect(
@@ -1057,21 +1057,21 @@ describe("CreditManager", function () {
     );
   });
 
-  it("[CM-42]: closeCreditAccount reverts if loss accrued", async function () {
-    const revertMsg = await errors.CM_CANT_CLOSE_WITH_LOSS();
-    await ts.openDefaultCreditAccount();
-
-    await ts.getCreditAccountParameters(user.address);
-
-    const ciAtClose = RAY.mul(2);
-    await poolService.setCumulative_RAY(ciAtClose);
-
-    await expect(
-      creditManager
-        .connect(user)
-        .closeCreditAccount(friend.address, amountOutTolerance)
-    ).to.be.revertedWith(revertMsg);
-  });
+  // it("[CM-42]: closeCreditAccount reverts if loss accrued", async function () {
+  //   const revertMsg = await errors.CM_CANT_CLOSE_WITH_LOSS();
+  //   await ts.openDefaultCreditAccount();
+  //
+  //   await ts.getCreditAccountParameters(user.address);
+  //
+  //   const ciAtClose = RAY.mul(2);
+  //   await poolService.setCumulative_RAY(ciAtClose);
+  //
+  //   await expect(
+  //     creditManager
+  //       .connect(user)
+  //       .closeCreditAccount(friend.address, amountOutTolerance)
+  //   ).to.be.revertedWith(revertMsg);
+  // });
 
   it("[CM-43]: constructor reverts if underlying token is not consistent", async function () {
     const revertMsg = await errors.CF_UNDERLYING_TOKEN_FILTER_CONFLICT();
@@ -1105,125 +1105,125 @@ describe("CreditManager", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CM-44]: closeCreditAccount converts tokens to underlying asset and correctly compute remaining amount", async function () {
-    // Open default credit account
-    await ts.openDefaultCreditAccount();
-    await ts.setupUniswapV2Adapter();
-
-    const uniswapModel = ts.uniswapModel;
-
-    await creditManager
-      .connect(user)
-      .addCollateral(user.address, tokenA.address, swapAmountA);
-
-    // it moves timestamp in one year ahead to compute interest rate greater than 0
-    // await ts.oneYearAhead();
-    const newCumuativeIndex = RAY.mul(11).div(10);
-    await ts.mockPoolService.setCumulative_RAY(newCumuativeIndex);
-
-    const rateRAY = ts.uniswapModel.getRate([
-      tokenA.address,
-      underlyingToken.address,
-    ]);
-
-    const expectedClosureTrade = uniswapModel.swapExactTokensForTokens(
-      swapAmountA,
-      BigNumber.from(0),
-
-      [tokenA.address, underlyingToken.address]
-    );
-
-    if (expectedClosureTrade.isReverted === true) {
-      throw new Error("Unexpected revert");
-    }
-
-    const expectedTokenAToUnderlying = BigNumber.from(
-      expectedClosureTrade.amounts[1]
-    );
-
-    const totalValue = amount
-      .add(borrowedAmount)
-      .add(expectedTokenAToUnderlying);
-
-    const borrowedAmountWithInterest = borrowedAmount
-      .mul(newCumuativeIndex)
-      .div(RAY); // rayMul(borrowedAmount, interestAccrued);
-
-    expect(
-      expectedTokenAToUnderlying,
-      "Expected token A to underlying"
-    ).to.be.eq(
-      swapAmountA
-        .mul(rateRAY)
-        .div(RAY)
-        .mul(UniswapModel.FEE)
-        .div(UniswapModel.FEE_discriminator)
-    );
-
-    const feeSuccess = await creditManager.feeSuccess();
-    const feeInterest = await creditManager.feeInterest();
-
-    const fee = percentMul(
-      totalValue.sub(borrowedAmountWithInterest),
-      feeSuccess.toNumber()
-    ).add(
-      percentMul(
-        borrowedAmountWithInterest.sub(borrowedAmount),
-        feeInterest.toNumber()
-      )
-    );
-
-    const expectedBalanceAfter = totalValue
-      .sub(borrowedAmountWithInterest)
-      .sub(fee)
-      .sub(1); // 1 for Michael Egorov gas efficiency trick
-
-    //
-    //  CLOSING CREDIT ACCOUNT
-    //
-
-    await expect(
-      creditManager
-        .connect(user)
-        .closeCreditAccount(friend.address, amountOutTolerance)
-    )
-      .to.emit(creditManager, "CloseCreditAccount")
-      .withArgs(user.address, friend.address, expectedBalanceAfter);
-
-    expect(
-      await underlyingToken.balanceOf(friend.address),
-      "Remaining funds"
-    ).to.be.eq(expectedBalanceAfter);
-  });
-
-  it("[CM-45]: closeCreditAccount reverts if someone change uniswap rate dramatically", async function () {
-    // Open default credit account
-    await ts.openDefaultCreditAccount();
-    await ts.setupUniswapV2Adapter();
-
-    await creditManager
-      .connect(user)
-      .addCollateral(user.address, tokenA.address, swapAmountA);
-
-    // Uniswap rate equals chainlink rate
-    const rate = await ts.uniswapMock.getRate([
-      tokenA.address,
-      underlyingToken.address,
-    ]);
-    const edgeRate = rate.mul(amountOutTolerance).div(PERCENTAGE_FACTOR);
-
-    await ts.uniswapMock.setRate(
-      tokenA.address,
-      underlyingToken.address,
-      edgeRate.sub(1)
-    );
-
-    await expect(
-      creditManager
-        .connect(user)
-        .closeCreditAccount(friend.address, amountOutTolerance)
-    ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT");
-  });
+  // it("[CM-44]: closeCreditAccount converts tokens to underlying asset and correctly compute remaining amount", async function () {
+  //   // Open default credit account
+  //   await ts.openDefaultCreditAccount();
+  //   await ts.setupUniswapV2Adapter();
+  //
+  //   const uniswapModel = ts.uniswapModel;
+  //
+  //   await creditManager
+  //     .connect(user)
+  //     .addCollateral(user.address, tokenA.address, swapAmountA);
+  //
+  //   // it moves timestamp in one year ahead to compute interest rate greater than 0
+  //   // await ts.oneYearAhead();
+  //   const newCumuativeIndex = RAY.mul(11).div(10);
+  //   await ts.mockPoolService.setCumulative_RAY(newCumuativeIndex);
+  //
+  //   const rateRAY = ts.uniswapModel.getRate([
+  //     tokenA.address,
+  //     underlyingToken.address,
+  //   ]);
+  //
+  //   const expectedClosureTrade = uniswapModel.swapExactTokensForTokens(
+  //     swapAmountA,
+  //     BigNumber.from(0),
+  //
+  //     [tokenA.address, underlyingToken.address]
+  //   );
+  //
+  //   if (expectedClosureTrade.isReverted === true) {
+  //     throw new Error("Unexpected revert");
+  //   }
+  //
+  //   const expectedTokenAToUnderlying = BigNumber.from(
+  //     expectedClosureTrade.amounts[1]
+  //   );
+  //
+  //   const totalValue = amount
+  //     .add(borrowedAmount)
+  //     .add(expectedTokenAToUnderlying);
+  //
+  //   const borrowedAmountWithInterest = borrowedAmount
+  //     .mul(newCumuativeIndex)
+  //     .div(RAY); // rayMul(borrowedAmount, interestAccrued);
+  //
+  //   expect(
+  //     expectedTokenAToUnderlying,
+  //     "Expected token A to underlying"
+  //   ).to.be.eq(
+  //     swapAmountA
+  //       .mul(rateRAY)
+  //       .div(RAY)
+  //       .mul(UniswapModel.FEE)
+  //       .div(UniswapModel.FEE_discriminator)
+  //   );
+  //
+  //   const feeSuccess = await creditManager.feeSuccess();
+  //   const feeInterest = await creditManager.feeInterest();
+  //
+  //   const fee = percentMul(
+  //     totalValue.sub(borrowedAmountWithInterest),
+  //     feeSuccess.toNumber()
+  //   ).add(
+  //     percentMul(
+  //       borrowedAmountWithInterest.sub(borrowedAmount),
+  //       feeInterest.toNumber()
+  //     )
+  //   );
+  //
+  //   const expectedBalanceAfter = totalValue
+  //     .sub(borrowedAmountWithInterest)
+  //     .sub(fee)
+  //     .sub(1); // 1 for Michael Egorov gas efficiency trick
+  //
+  //   //
+  //   //  CLOSING CREDIT ACCOUNT
+  //   //
+  //
+  //   await expect(
+  //     creditManager
+  //       .connect(user)
+  //       .closeCreditAccount(friend.address, amountOutTolerance)
+  //   )
+  //     .to.emit(creditManager, "CloseCreditAccount")
+  //     .withArgs(user.address, friend.address, expectedBalanceAfter);
+  //
+  //   expect(
+  //     await underlyingToken.balanceOf(friend.address),
+  //     "Remaining funds"
+  //   ).to.be.eq(expectedBalanceAfter);
+  // });
+  //
+  // it("[CM-45]: closeCreditAccount reverts if someone change uniswap rate dramatically", async function () {
+  //   // Open default credit account
+  //   await ts.openDefaultCreditAccount();
+  //   await ts.setupUniswapV2Adapter();
+  //
+  //   await creditManager
+  //     .connect(user)
+  //     .addCollateral(user.address, tokenA.address, swapAmountA);
+  //
+  //   // Uniswap rate equals chainlink rate
+  //   const rate = await ts.uniswapMock.getRate([
+  //     tokenA.address,
+  //     underlyingToken.address,
+  //   ]);
+  //   const edgeRate = rate.mul(amountOutTolerance).div(PERCENTAGE_FACTOR);
+  //
+  //   await ts.uniswapMock.setRate(
+  //     tokenA.address,
+  //     underlyingToken.address,
+  //     edgeRate.sub(1)
+  //   );
+  //
+  //   await expect(
+  //     creditManager
+  //       .connect(user)
+  //       .closeCreditAccount(friend.address,amountOutTolerance)
+  //   ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT");
+  // });
 
 
 });

@@ -4,7 +4,7 @@ import * as chai from "chai";
 
 import { LinearInterestRateModel } from "../types/ethers-v5";
 import { LinearInterestRateModelDeployer } from "../deployer/linearIRModelDeployer";
-import { RAY } from "../model/_constants";
+import { RAY } from "../core/constants";
 
 chai.use(solidity);
 const { expect } = chai;

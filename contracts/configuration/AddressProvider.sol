@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -63,7 +63,7 @@ contract AddressProvider is Ownable, IAppAddressProvider {
     }
 
     /// @return Address of PriceOracle
-    function getPriceOracle() external view returns (address) {
+    function getPriceOracle() external override view returns (address) {
         return _getAddress(PRICE_ORACLE); // T:[AP-5]
     }
 

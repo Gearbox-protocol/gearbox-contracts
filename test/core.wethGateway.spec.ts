@@ -9,7 +9,7 @@ import {CreditManagerTestSuite} from "../deployer/creditManagerTestSuite";
 import {STANDARD_INTEREST_MODEL_PARAMS} from "../deployer/poolConfig";
 import {PoolTestSuite} from "../deployer/poolTestSuite";
 import {BigNumber} from "ethers";
-import {DUMB_ADDRESS, MAX_INT, WAD} from "../model/_constants";
+import {DUMB_ADDRESS, MAX_INT, WAD} from "../core/constants";
 
 chai.use(solidity);
 const { expect } = chai;

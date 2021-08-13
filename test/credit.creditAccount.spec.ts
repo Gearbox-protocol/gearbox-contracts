@@ -1,3 +1,4 @@
+// @ts-ignore
 import { ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
 import * as chai from "chai";
@@ -6,7 +7,7 @@ import { TestDeployer } from "../deployer/testDeployer";
 import { CreditAccount, Errors } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { CoreDeployer } from "../deployer/coreDeployer";
-import { DUMB_ADDRESS, MAX_INT, OWNABLE_REVERT_MSG } from "../model/_constants";
+import { DUMB_ADDRESS, MAX_INT, OWNABLE_REVERT_MSG } from "../core/constants";
 
 chai.use(solidity);
 const { expect } = chai;

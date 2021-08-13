@@ -12,7 +12,7 @@ import {
 import {CoreDeployer} from "../deployer/coreDeployer";
 import {BigNumber} from "ethers";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {DUMB_ADDRESS, RAY} from "../model/_constants";
+import {DUMB_ADDRESS, RAY} from "../core/constants";
 import {UniswapModel} from "../model/uniswapModel";
 import {PoolDeployer} from "../deployer/poolDeployer";
 import {PoolTestSuite} from "../deployer/poolTestSuite";

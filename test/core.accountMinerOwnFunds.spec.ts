@@ -1,12 +1,13 @@
-import { ethers, waffle } from "hardhat";
+// @ts-ignore
+import { ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
-import * as chai from 'chai';
+import * as chai from "chai";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import { AccountMinerOwnFunds, Errors } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { DEPLOYMENT_COST, DUMB_ADDRESS, WAD } from "../model/_constants";
+import { DEPLOYMENT_COST } from "../core/constants";
 import { formatBytes32String } from "ethers/lib/utils";
 
 chai.use(solidity);

@@ -1,15 +1,20 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: BSL-1.1
 // Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+pragma abicoder v2;
+
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {IAppCreditManager} from "./app/IAppCreditManager.sol";
+import {DataTypes} from "../libraries/data/Types.sol";
+
 /// @title Credit Manager interface
 /// @notice It encapsulates business logic for managing credit accounts
 ///
 /// More info: https://dev.gearbox.fi/developers/credit/credit_manager
 
 interface ICreditManager is IAppCreditManager {
+
     // Emits each time when the credit account is opened
     event OpenCreditAccount(
         address indexed sender,
@@ -38,7 +43,11 @@ interface ICreditManager is IAppCreditManager {
     event IncreaseBorrowedAmount(address indexed borrower, uint256 amount);
 
     // Emits each time when borrower adds collateral
-    event AddCollateral(address indexed onBehalfOf, address indexed token, uint256 value);
+    event AddCollateral(
+        address indexed onBehalfOf,
+        address indexed token,
+        uint256 value
+    );
 
     // Emits each time when the credit account is repaid
     event RepayCreditAccount(address indexed owner, address indexed to);
@@ -97,11 +106,10 @@ interface ICreditManager is IAppCreditManager {
      * More info: https://dev.gearbox.fi/developers/credit/credit_manager#close-credit-account
      *
      * @param to Address to send remaining funds
-     * @param amountOutTolerance Coefficient to amountOut during sale on default swap
-     *        in percenatage math
+     * @param paths Exchange type data which provides paths + amountMinOut
      */
-    function closeCreditAccount(address to, uint256 amountOutTolerance)
-        external override;
+    function closeCreditAccount(address to, DataTypes.Exchange[] calldata paths)
+    external override;
 
     /**
      * @dev Liquidates credit account
@@ -122,7 +130,7 @@ interface ICreditManager is IAppCreditManager {
     /// More info: https://dev.gearbox.fi/developers/credit/credit_manager#repay-credit-account
     ///
     /// @param to Address to send credit account assets
-    function repayCreditAccount(address to) external  override;
+    function repayCreditAccount(address to) external override;
 
     /// @dev Repays credit account with ETH. Restricted to be called by WETH Gateway only
     ///
@@ -137,7 +145,7 @@ interface ICreditManager is IAppCreditManager {
     /// More info: https://dev.gearbox.fi/developers/credit/credit_manager#increase-borrowed-amount
     ///
     /// @param amount Amount to increase borrowed amount
-    function increaseBorrowedAmount(uint256 amount) external  override;
+    function increaseBorrowedAmount(uint256 amount) external override;
 
     /// @dev Adds collateral to borrower's credit account
     /// @param onBehalfOf Address of borrower to add funds
@@ -147,14 +155,14 @@ interface ICreditManager is IAppCreditManager {
         address onBehalfOf,
         address token,
         uint256 amount
-    )
-    external  override;
+    ) external override;
 
     /// @dev Returns true if the borrower has opened a credit account
     /// @param borrower Borrower account
     function hasOpenedCreditAccount(address borrower)
         external
         view
+        override
         returns (bool);
 
     /// @dev Calculates Repay amount = borrow amount + interest accrued + fee
@@ -167,8 +175,8 @@ interface ICreditManager is IAppCreditManager {
     function calcRepayAmount(address borrower, bool isLiquidated)
         external
         view
-    override
-        returns (uint256)  ;
+        override
+        returns (uint256);
 
     /// @dev Returns minimal amount for open credit account
     function minAmount() external view returns (uint256);
@@ -216,6 +224,6 @@ interface ICreditManager is IAppCreditManager {
     function getCreditAccountOrRevert(address borrower)
         external
         view
-    override
+        override
         returns (address);
 }
