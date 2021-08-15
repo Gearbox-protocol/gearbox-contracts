@@ -4,23 +4,17 @@ import { HardhatUserConfig } from "hardhat/types";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
-import "hardhat-typechain";
-import "hardhat-deploy";
-import "hardhat-deploy-ethers";
+import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
-
-// TODO: reenable solidity-coverage when it works
 import "solidity-coverage";
-import { LOCAL_NETWORK, MAINNET_NETWORK } from "./model/_constants";
+import { LOCAL_NETWORK, MAINNET_NETWORK } from "@diesellabs/gearbox-sdk";
 
 // gets data from .env file
 dotEnvConfig();
-// import {task} from "hardhat/config";
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "";
 const KOVAN_PRIVATE_KEY =
   process.env.KOVAN_PRIVATE_KEY! ||
   "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"; // well known private key
@@ -44,13 +38,10 @@ const config: HardhatUserConfig = {
     },
 
     kovan: {
-      url: `https://eth-kovan.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+      url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
       accounts: [KOVAN_PRIVATE_KEY],
+      minGasPrice: 1e9,
     },
-
-    // coverage: {
-    //   // url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
-    // },
   },
   etherscan: {
     // Your API key for Etherscan
@@ -75,8 +66,8 @@ const config: HardhatUserConfig = {
   contractSizer: {
     alphaSort: false,
     disambiguatePaths: false,
-    runOnCompile: true
-  }
+    runOnCompile: true,
+  },
 };
 
 export default config;
