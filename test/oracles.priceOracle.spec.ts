@@ -1,26 +1,24 @@
-import { ethers, waffle } from "hardhat";
-import { solidity } from "ethereum-waffle";
-import * as chai from "chai";
+// @ts-ignore
+import { ethers } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { WAD } from "@diesellabs/gearbox-sdk";
+import { expect } from "../utils/expect";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import {
   ChainlinkPriceFeedMock,
+  ContractsRegister,
   DieselToken,
   DieselToken__factory,
   Errors,
   IPriceOracle,
-  ContractsRegister,
   PriceOracle,
   TokenMock,
-  TokenMock__factory,
   WETHMock,
 } from "../types/ethers-v5";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { DUMB_ADDRESS, WAD } from "../core/constants";
 
-chai.use(solidity);
-const { expect } = chai;
+import { DUMB_ADDRESS } from "../core/constants";
 
 const amount = WAD.mul(4);
 const tokenAWETHRate = WAD.mul(244).div(1000);
@@ -77,7 +75,8 @@ describe("PriceOracle", function () {
   });
 
   it("[PO-3]: addPriceFeed reverts on tokens with digits > 18", async function () {
-    const revertMsg = await errors.PO_TOKENS_WITH_DECIMALS_MORE_18_ISNT_ALLOWED();
+    const revertMsg =
+      await errors.PO_TOKENS_WITH_DECIMALS_MORE_18_ISNT_ALLOWED();
 
     const mockTokenArtifact = (await ethers.getContractFactory(
       "DieselToken"

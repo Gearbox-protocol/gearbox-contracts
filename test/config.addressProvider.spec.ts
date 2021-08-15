@@ -1,6 +1,6 @@
 // @ts-ignore
 import { ethers, waffle } from "hardhat";
-import { solidity } from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import * as chai from "chai";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
@@ -9,9 +9,6 @@ import { AddressProvider, Errors } from "../types/ethers-v5";
 import { DUMB_ADDRESS, OWNABLE_REVERT_MSG } from "../core/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { formatBytes32String } from "ethers/lib/utils";
-
-chai.use(solidity);
-const { expect } = chai;
 
 describe("Address Provider", function () {
   let deployer: SignerWithAddress;
@@ -40,9 +37,7 @@ describe("Address Provider", function () {
 
   it("[AP-1]: getAddress reverts if contact not found", async function () {
     const error = await errors.AS_ADDRESS_NOT_FOUND();
-    await expect(addressProvider.getAccountFactory()).to.be.revertedWith(
-      error
-    );
+    await expect(addressProvider.getAccountFactory()).to.be.revertedWith(error);
   });
 
   it("[AP-2]: _setAddress emits event correctly", async function () {

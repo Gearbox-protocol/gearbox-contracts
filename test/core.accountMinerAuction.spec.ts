@@ -1,7 +1,6 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { solidity } from "ethereum-waffle";
-import * as chai from "chai";
+import { expect } from "../utils/expect";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
@@ -9,11 +8,13 @@ import { AccountMinerAuction, Errors } from "../types/ethers-v5";
 import { BigNumber } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { Bid } from "../core/accountMinerAuction";
-import { ACCOUNT_CREATION_REWARD, ADDRESS_0x0, DEPLOYMENT_COST, PAUSABLE_REVERT_MSG } from "../core/constants";
+import {
+  ACCOUNT_CREATION_REWARD,
+  ADDRESS_0x0,
+  DEPLOYMENT_COST,
+  PAUSABLE_REVERT_MSG,
+} from "../core/constants";
 import { formatBytes32String } from "ethers/lib/utils";
-
-chai.use(solidity);
-const { expect } = chai;
 
 const bidIncrement = BigNumber.from(10).pow(5);
 
@@ -62,7 +63,10 @@ describe("AccountMinerAuction", function () {
     const addressProvider = await coreDeployer.getAddressProvider();
     await addressProvider.setAccountFactory(deployer.address);
 
-    accountMiner = (await coreDeployer.getAccountMiner("auction", false)) as AccountMinerAuction;
+    accountMiner = (await coreDeployer.getAccountMiner(
+      "auction",
+      false
+    )) as AccountMinerAuction;
     errors = await testDeployer.getErrors();
   });
 

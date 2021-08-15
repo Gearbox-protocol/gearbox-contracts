@@ -1,13 +1,8 @@
-import { ethers, waffle } from "hardhat";
-import { solidity } from "ethereum-waffle";
-import * as chai from "chai";
+import { expect } from "../utils/expect";
 
 import { Errors, WadRayMathTest } from "../types/ethers-v5";
-import { MAX_INT, RAY, WAD } from "../core/constants";
 import { TestDeployer } from "../deployer/testDeployer";
-
-chai.use(solidity);
-const { expect } = chai;
+import { MAX_INT, RAY, WAD } from "@diesellabs/gearbox-sdk";
 
 describe("WadRayMathTest", function () {
   let testDeployer: TestDeployer;
@@ -83,16 +78,18 @@ describe("WadRayMathTest", function () {
   });
 
   it("[WRM-7]: rayToWad() computes correctly", async function () {
-    const revertMsg = await errors.MATH_ADDITION_OVERFLOW()
-    await expect(wadRayMathTest.rayToWad(MAX_INT)).to.be.revertedWith(revertMsg);
+    const revertMsg = await errors.MATH_ADDITION_OVERFLOW();
+    await expect(wadRayMathTest.rayToWad(MAX_INT)).to.be.revertedWith(
+      revertMsg
+    );
     expect(await wadRayMathTest.rayToWad(RAY)).to.be.eq(WAD);
   });
 
   it("[WRM-8]: wadToRay() computes correctly", async function () {
     const revertMsg = await errors.MATH_MULTIPLICATION_OVERFLOW();
-    await expect(wadRayMathTest.wadToRay(MAX_INT)).to.be.revertedWith(revertMsg);
+    await expect(wadRayMathTest.wadToRay(MAX_INT)).to.be.revertedWith(
+      revertMsg
+    );
     expect(await wadRayMathTest.wadToRay(WAD)).to.be.eq(RAY);
   });
-
-
 });

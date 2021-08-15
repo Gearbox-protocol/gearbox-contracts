@@ -1,16 +1,13 @@
-import {ethers} from "hardhat";
-import {BigNumber} from "ethers";
-import {solidity} from "ethereum-waffle";
-import * as chai from "chai";
+// @ts-ignore
+import { ethers } from "hardhat";
+import { BigNumber } from "ethers";
+import { expect } from "../utils/expect";
 
-import {CurveMock, TokenMock} from "../types/ethers-v5";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {IntegrationsDeployer} from "../deployer/integrationsDeployer";
-import {TestDeployer} from "../deployer/testDeployer";
-import {MAX_INT} from "../core/constants";
-
-chai.use(solidity);
-const { expect } = chai;
+import { CurveMock, TokenMock } from "../types/ethers-v5";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
+import { MAX_INT } from "@diesellabs/gearbox-sdk";
 
 const initialSwapAmount = BigNumber.from(10).pow(18).mul(10000);
 const initialUserAmount = BigNumber.from(10).pow(18).mul(8800);
@@ -68,21 +65,27 @@ describe("CurveMock", function () {
     await tokenA.mint(user.address, initialAmount);
     await tokenB.mint(curveMock.address, initialAmount);
 
+    const userBalanceABefore = await tokenA.balanceOf(user.address);
+    const userBalanceBBefore = await tokenB.balanceOf(user.address);
 
-    const userBalanceABefore = await tokenA.balanceOf(user.address)
-    const userBalanceBBefore = await tokenB.balanceOf(user.address)
-
-    const curveMockBalanceABefore = await tokenA.balanceOf(curveMock.address)
-    const curveMockBalanceBBefore = await tokenB.balanceOf(curveMock.address)
+    const curveMockBalanceABefore = await tokenA.balanceOf(curveMock.address);
+    const curveMockBalanceBBefore = await tokenB.balanceOf(curveMock.address);
 
     await curveMock.connect(user).exchange(0, 1, amountDx, amountDy);
 
-    expect(await tokenA.balanceOf(user.address)).to.be.eq(userBalanceABefore.sub(amountDx));
-    expect(await tokenA.balanceOf(curveMock.address)).to.be.eq(curveMockBalanceABefore.add(amountDx));
+    expect(await tokenA.balanceOf(user.address)).to.be.eq(
+      userBalanceABefore.sub(amountDx)
+    );
+    expect(await tokenA.balanceOf(curveMock.address)).to.be.eq(
+      curveMockBalanceABefore.add(amountDx)
+    );
 
-    expect(await tokenB.balanceOf(user.address)).to.be.eq(userBalanceBBefore.add(amountDy));
-    expect(await tokenB.balanceOf(curveMock.address)).to.be.eq(curveMockBalanceBBefore.sub(amountDy));
-
+    expect(await tokenB.balanceOf(user.address)).to.be.eq(
+      userBalanceBBefore.add(amountDy)
+    );
+    expect(await tokenB.balanceOf(curveMock.address)).to.be.eq(
+      curveMockBalanceBBefore.sub(amountDy)
+    );
   });
 
   it("exchange_underlying, get_dx_underlying, get_dy_underlying does nothing", async function () {

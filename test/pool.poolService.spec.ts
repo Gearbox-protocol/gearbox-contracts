@@ -1,8 +1,15 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { solidity } from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import * as chai from "chai";
+import {
+  PERCENTAGE_FACTOR,
+  percentMul,
+  RAY,
+  rayDiv,
+  rayMul,
+  SECONDS_PER_YEAR,
+} from "@diesellabs/gearbox-sdk";
 
 import {
   DieselToken,
@@ -14,19 +21,9 @@ import { CoreDeployer } from "../deployer/coreDeployer";
 import { PoolDeployer } from "../deployer/poolDeployer";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
-import {
-  DUMB_ADDRESS,
-  PAUSABLE_REVERT_MSG,
-  PERCENTAGE_FACTOR,
-  RAY,
-  SECONDS_PER_YEAR,
-} from "../core/constants";
-import { percentMul, rayDiv, rayMul } from "../model/math";
+import { DUMB_ADDRESS, PAUSABLE_REVERT_MSG } from "../core/constants";
 import { BigNumber } from "ethers";
 import { LinearInterestRateModelDeployer } from "../deployer/linearIRModelDeployer";
-
-chai.use(solidity);
-const { expect } = chai;
 
 const {
   liquidityProviderInitBalance,
@@ -52,7 +49,6 @@ describe("PoolService", function () {
   let errors: Errors;
 
   beforeEach(async function () {
-    ts = new PoolTestSuite();
     ts = new PoolTestSuite();
     await ts.getSuite();
     await ts.setupVanillaPoolService(true);

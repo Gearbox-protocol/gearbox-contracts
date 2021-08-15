@@ -1,16 +1,16 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { solidity } from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import * as chai from "chai";
 
 import { TestDeployer } from "../deployer/testDeployer";
 import { CreditAccount, Errors } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { CoreDeployer } from "../deployer/coreDeployer";
-import { DUMB_ADDRESS, MAX_INT, OWNABLE_REVERT_MSG } from "../core/constants";
+import { DUMB_ADDRESS, OWNABLE_REVERT_MSG } from "../core/constants";
+import { MAX_INT } from "@diesellabs/gearbox-sdk";
 
-chai.use(solidity);
-const { expect } = chai;
+
 
 describe("CreditAccount", function () {
   let deployer: SignerWithAddress;

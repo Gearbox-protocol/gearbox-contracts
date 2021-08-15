@@ -1,18 +1,20 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { solidity } from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import * as chai from "chai";
 
-import { AccountFactory, ContractsRegister, CreditAccount__factory, Errors } from "../types/ethers-v5";
+import {
+  AccountFactory,
+  ContractsRegister,
+  CreditAccount__factory,
+  Errors,
+} from "../types/ethers-v5";
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import { DEPLOYMENT_COST, DUMB_ADDRESS } from "../core/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { BigNumber } from "ethers";
-
-chai.use(solidity);
-const { expect } = chai;
 
 /**
  * @title TraderAccountFactory test
@@ -196,7 +198,8 @@ describe("AccountFactory", function () {
   });
 
   it("[TAF-2]: takeCreditAccount, returns creditAccount reverts if was called by non creditManagers", async function () {
-    const revertMsg = await errors.CR_ALLOWED_FOR_VIRTUAL_ACCOUNT_MANAGERS_ONLY();
+    const revertMsg =
+      await errors.CR_ALLOWED_FOR_VIRTUAL_ACCOUNT_MANAGERS_ONLY();
     await expect(
       accountFactory.takeCreditAccount(DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);

@@ -1,18 +1,21 @@
-import {solidity} from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import * as chai from "chai";
 
-import {CoreDeployer} from "../deployer/coreDeployer";
-import {TestDeployer} from "../deployer/testDeployer";
-import {CreditManager, Errors, WETHGateway, WETHMock,} from "../types/ethers-v5";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {CreditManagerTestSuite} from "../deployer/creditManagerTestSuite";
-import {STANDARD_INTEREST_MODEL_PARAMS} from "../deployer/poolConfig";
-import {PoolTestSuite} from "../deployer/poolTestSuite";
-import {BigNumber} from "ethers";
-import {DUMB_ADDRESS, MAX_INT, WAD} from "../core/constants";
-
-chai.use(solidity);
-const { expect } = chai;
+import { CoreDeployer } from "../deployer/coreDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
+import {
+  CreditManager,
+  Errors,
+  WETHGateway,
+  WETHMock,
+} from "../types/ethers-v5";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
+import { PoolTestSuite } from "../deployer/poolTestSuite";
+import { BigNumber } from "ethers";
+import { DUMB_ADDRESS } from "../core/constants";
+import { MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
+import { STANDARD_INTEREST_MODEL_PARAMS } from "../core/pool";
 
 const { addLiquidity } = PoolTestSuite;
 const { leverageFactor } = CreditManagerTestSuite;
@@ -39,21 +42,14 @@ describe("WETHGateway", function () {
     ts = new CreditManagerTestSuite({
       poolConfig: {
         interestModel: STANDARD_INTEREST_MODEL_PARAMS,
-        underlyingToken: {
-          type: "real",
-          address: wethToken.address,
-        },
+        underlyingToken: wethToken.address,
       },
       coreConfig: {
-        weth: {
-          type: "real",
-          wethAddress: wethToken.address,
-        },
+        weth: wethToken.address,
       },
     });
     await ts.getSuite();
     await ts.setupCreditManager();
-
 
     deployer = ts.deployer;
     user = ts.user;
@@ -71,10 +67,7 @@ describe("WETHGateway", function () {
       coreConfig: {
         accountMinerType: "mock",
         treasury: "mock",
-        weth: {
-          type: "real",
-          wethAddress: wethToken.address,
-        },
+        weth: wethToken.address,
         realNetwork: false,
       },
       poolConfig: {

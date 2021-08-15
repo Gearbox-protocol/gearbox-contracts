@@ -1,6 +1,6 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { solidity } from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import * as chai from "chai";
 
 import {
@@ -19,19 +19,15 @@ import {
   CHI_THRESHOLD_DEFAULT,
   CHI_THRESHOLD_MIN,
   DUMB_ADDRESS,
-  MAX_INT,
-  PERCENTAGE_FACTOR,
-  RAY,
   UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
-  WAD,
 } from "../core/constants";
 import { CreditManagerDeployer } from "../deployer/creditManagerDeployer";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
-import { STANDARD_VA_MANAGER } from "../deployer/creditManagerType";
 import { BigNumber } from "ethers";
+import { MAX_INT, PERCENTAGE_FACTOR, RAY, WAD } from "@diesellabs/gearbox-sdk";
+import { DEFAULT_CREDIT_MANAGER } from "../core/credit";
 
-chai.use(solidity);
-const { expect } = chai;
+
 
 const { amount, borrowedAmount } = CreditManagerTestSuite;
 
@@ -56,7 +52,7 @@ describe("CreditFilter", function () {
 
     creditManagerDeployer = new CreditManagerDeployer({
       config: {
-        ...STANDARD_VA_MANAGER,
+        ...DEFAULT_CREDIT_MANAGER,
         allowedTokens: [],
         uniswapAddress: await ts.integrationsDeployer.getUniswapAddress(),
       },

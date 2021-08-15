@@ -1,16 +1,11 @@
-import { ethers, waffle } from "hardhat";
-import { BigNumber } from "ethers";
-import { solidity } from "ethereum-waffle";
-import * as chai from "chai";
+// @ts-ignore
+import { ethers } from "hardhat";
+import { expect } from "../utils/expect";
 
-import { MockPoolService, TokenMock, WETHMock } from "../types/ethers-v5";
+import { WETHMock } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
-import { DUMB_ADDRESS, MAX_INT, RAY } from "../core/constants";
-
-chai.use(solidity);
-const { expect } = chai;
+import { DUMB_ADDRESS } from "../core/constants";
 
 describe("WETHMock", function () {
   let deployer: SignerWithAddress;
@@ -48,7 +43,6 @@ describe("WETHMock", function () {
   });
 
   it("[WM-2]: withdraw burns tokens, returns ether and emits event", async function () {
-
     await expect(wethMock.withdraw(1000)).to.be.reverted;
 
     await wethMock.deposit({ value: 3 * smallAmount });

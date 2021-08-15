@@ -1,16 +1,12 @@
 // @ts-ignore
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { solidity } from "ethereum-waffle";
-import * as chai from "chai";
+import { expect } from "../utils/expect";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import { DUMB_ADDRESS } from "../core/constants";
 import { ContractsRegister, Errors } from "../types/ethers-v5";
-
-chai.use(solidity);
-const { expect } = chai;
 
 describe("ContractsRegister", function () {
   let deployer: SignerWithAddress;

@@ -1,13 +1,9 @@
-import { ethers, waffle } from "hardhat";
-import { solidity } from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import * as chai from "chai";
 
 import { Errors, PercentageMathTest } from "../types/ethers-v5";
-import { MAX_INT, PERCENTAGE_FACTOR } from "../core/constants";
 import { TestDeployer } from "../deployer/testDeployer";
-
-chai.use(solidity);
-const { expect } = chai;
+import { MAX_INT, PERCENTAGE_FACTOR } from "@diesellabs/gearbox-sdk";
 
 describe("PercentageMathTest", function () {
   let testDeployer: TestDeployer;

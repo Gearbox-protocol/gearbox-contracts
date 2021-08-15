@@ -1,15 +1,15 @@
-import {ethers, waffle} from "hardhat";
-import {BigNumber} from "ethers";
-import {solidity} from "ethereum-waffle";
+// @ts-ignore
+import { ethers } from "hardhat";
+import { BigNumber } from "ethers";
+import { expect } from "../utils/expect";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import * as chai from "chai";
 
-import {ChainlinkPriceFeedMock} from "../types/ethers-v5";
-import {IntegrationsDeployer} from "../deployer/integrationsDeployer";
-import {TestDeployer} from "../deployer/testDeployer";
+import { ChainlinkPriceFeedMock } from "../types/ethers-v5";
+import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
 
-chai.use(solidity);
-const { expect } = chai;
+
 
 const rate = BigNumber.from(11);
 const roundId = 80;

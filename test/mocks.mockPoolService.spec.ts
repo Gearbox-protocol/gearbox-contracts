@@ -1,17 +1,12 @@
-import { ethers, waffle } from "hardhat";
-import { BigNumber } from "ethers";
-import { solidity } from "ethereum-waffle";
-import * as chai from "chai";
+// @ts-ignore
+import { ethers } from "hardhat";
+import { expect } from "../utils/expect";
 
-import { MockPoolService, TokenMock } from "../types/ethers-v5";
+import { MockPoolService } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
-import {DUMB_ADDRESS, MAX_INT, RAY} from "../core/constants";
-
-chai.use(solidity);
-const { expect } = chai;
-
+import { DUMB_ADDRESS } from "../core/constants";
+import { RAY } from "@diesellabs/gearbox-sdk";
 
 describe("MockPoolService", function () {
   let deployer: SignerWithAddress;
@@ -25,11 +20,12 @@ describe("MockPoolService", function () {
 
     testDeployer = new TestDeployer();
 
-    mocksMockPoolService = await testDeployer.getPoolMockForCreditManagerTest(DUMB_ADDRESS);
+    mocksMockPoolService = await testDeployer.getPoolMockForCreditManagerTest(
+      DUMB_ADDRESS
+    );
   });
 
   it("[MPS-1]: stubFunctions works as excected", async function () {
-
     expect(await mocksMockPoolService.expectedLiquidity()).to.be.eq(0);
     expect(await mocksMockPoolService.getDieselRate_RAY()).to.be.eq(RAY);
     expect(await mocksMockPoolService.creditManagersCount()).to.be.eq(1);
@@ -37,6 +33,5 @@ describe("MockPoolService", function () {
     await mocksMockPoolService.removeLiquidity(12, DUMB_ADDRESS);
     await mocksMockPoolService.forbidCreditManagerToBorrow(DUMB_ADDRESS);
     await mocksMockPoolService.newInterestRateModel(DUMB_ADDRESS);
-
   });
 });

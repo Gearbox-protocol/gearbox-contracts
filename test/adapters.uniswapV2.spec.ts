@@ -1,58 +1,31 @@
-import {solidity} from "ethereum-waffle";
+import { expect } from "../utils/expect";
 
-import {
-  CreditManager,
-  DieselToken,
-  Errors,
-  IPoolService,
-  TokenMock,
-  UniswapRouterMock,
-  UniswapV2Adapter,
-} from "../types/ethers-v5";
-import {CoreDeployer} from "../deployer/coreDeployer";
-import {BigNumber} from "ethers";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import {DUMB_ADDRESS, RAY} from "../core/constants";
-import {UniswapModel} from "../model/uniswapModel";
-import {PoolDeployer} from "../deployer/poolDeployer";
-import {PoolTestSuite} from "../deployer/poolTestSuite";
-import {CreditManagerTestSuite} from "../deployer/creditManagerTestSuite";
-
-const chai = require("chai");
-
-chai.use(solidity);
-const { expect } = chai;
-
-const { userInitBalance } = PoolTestSuite;
+import { CreditManager, Errors, TokenMock, UniswapV2Adapter } from "../types/ethers-v5";
+import { BigNumber } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { DUMB_ADDRESS } from "../core/constants";
+import { UniswapModel } from "../model/uniswapModel";
+import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
+import { RAY } from "@diesellabs/gearbox-sdk";
 
 const {
   amount,
   borrowedAmount,
   swapAmountA,
   swapAmountB,
-  uniRateTokenA,
-  amountOutTolerance,
 } = CreditManagerTestSuite;
 
 describe("UniswapV2 Adapter", function () {
   let ts: CreditManagerTestSuite;
 
   let deployer: SignerWithAddress;
-  let liquidityProvider: SignerWithAddress;
   let user: SignerWithAddress;
   let friend: SignerWithAddress;
-  let liquidator: SignerWithAddress;
 
-  let coreDeployer: CoreDeployer;
-  let poolDeployer: PoolDeployer;
-
-  let poolService: IPoolService;
   let creditManager: CreditManager;
 
-  let dieselToken: DieselToken;
   let underlyingToken: TokenMock;
 
-  let uniswapMock: UniswapRouterMock;
   let uniswapModel: UniswapModel;
   let uniswapV2Adapter: UniswapV2Adapter;
 
@@ -66,22 +39,13 @@ describe("UniswapV2 Adapter", function () {
     await ts.setupUniswapV2Adapter();
 
     deployer = ts.deployer;
-    liquidityProvider = ts.liquidityProvider;
     user = ts.user;
     friend = ts.friend;
-    liquidator = ts.liquidator;
 
-    coreDeployer = ts.coreDeployer;
-    poolDeployer = ts.poolDeployer;
-
-    poolService = ts.poolService;
     creditManager = ts.creditManager;
     uniswapV2Adapter = ts.uniswapV2adapter;
 
-    dieselToken = ts.dieselToken;
     underlyingToken = ts.underlyingToken;
-
-    uniswapMock = ts.uniswapMock;
 
     tokenA = ts.tokenA;
     errors = ts.errors;
@@ -108,7 +72,7 @@ describe("UniswapV2 Adapter", function () {
   //   expect(await creditManager.kind()).to.be.eq(kind);
   // });
 
-  it("[UV2A-2]: swapTokensForExactTokens, swapTokensForExactTokens reverts if user has no accounts", async function () {
+  it("[UV2A-2]: swapTokensForExactTokens, swapTokensForExactTokens reverts if user hasn't opened account", async function () {
     const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
     // Adding liquidity to be able to open credit account
     // Open default credit account

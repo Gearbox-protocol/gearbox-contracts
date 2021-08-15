@@ -1,6 +1,6 @@
 // @ts-ignore
 import { ethers } from "hardhat";
-import { solidity } from "ethereum-waffle";
+import { expect } from "../utils/expect";
 import * as chai from "chai";
 
 import {
@@ -26,22 +26,22 @@ import {
   FEE_SUCCESS,
   LEVERAGE_DECIMALS,
   LIQUIDATION_DISCOUNTED_SUM,
-  MAX_INT,
   PAUSABLE_REVERT_MSG,
-  PERCENTAGE_FACTOR,
-  RAY,
   UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
-  WAD,
 } from "../core/constants";
 import { BigNumber } from "ethers";
-import { percentMul, rayMul } from "../model/math";
 import { PoolServiceModel } from "../model/poolService";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
-import { UniswapModel } from "../model/uniswapModel";
-
-chai.use(solidity);
-const { expect } = chai;
+import {
+  MAX_INT,
+  PERCENTAGE_FACTOR,
+  percentMul,
+  RAY,
+  WAD,
+} from "@diesellabs/gearbox-sdk";
+import exp = require("constants");
+import { DEFAULT_CREDIT_MANAGER } from "../core/credit";
 
 const { userInitBalance, addLiquidity } = PoolTestSuite;
 
@@ -113,13 +113,81 @@ describe("CreditManager", function () {
       .transfer(poolService.address, addLiquidity);
   });
 
-  it("[CM-1]: minHealthFactor computes correctly", async function () {
-    const minHealhFactor = Math.floor(
+  it("[CM-1]: constructor set parameters correctly", async function () {
+    const [
+      apContract,
+      poolContract,
+      cfContract,
+      wtContract,
+      wgContract,
+      dsContract,
+    ] = await Promise.all([
+      creditManager.addressProvider(),
+      creditManager.poolService(),
+      creditManager.creditFilter(),
+      creditManager.wethAddress(),
+      creditManager.wethGateway(),
+      creditManager.defaultSwapContract(),
+    ]);
+
+    const apExpected = await coreDeployer.getAddressProvider();
+    expect(apContract, "AddressProvider").to.be.eq(apExpected.address);
+
+    const poolExpected = poolService.address;
+    expect(poolContract, "PoolService").to.be.eq(poolExpected);
+
+    const cfExpected = creditFilter.address;
+    expect(cfContract, "CreditFilter").to.be.eq(cfExpected);
+
+    const wtExpectted = await coreDeployer.getWethTokenAddress();
+    expect(wtContract, "WETHToken").to.be.eq(wtExpectted);
+
+    const wgExpected = await coreDeployer.getWETHGateway();
+    expect(wgContract, "WETHGateway").to.be.eq(wgExpected.address);
+
+    const dsExpected = await ts.integrationsDeployer.getUniswapAddress();
+    expect(dsContract, "DefaultSwap").to.be.eq(dsExpected);
+
+    const [
+      maxLeverageFactor,
+      minHeathFactor,
+      minAmount,
+      maxAmount,
+      feeSuccess,
+      feeInterest,
+      feeLiquidation,
+      liquidationDiscount,
+    ] = await Promise.all([
+      creditManager.maxLeverageFactor(),
+      creditManager.minHealthFactor(),
+      creditManager.minAmount(),
+      creditManager.maxAmount(),
+      creditManager.feeSuccess(),
+      creditManager.feeInterest(),
+      creditManager.feeLiquidation(),
+      creditManager.liquidationDiscount(),
+    ]);
+
+    expect(maxLeverageFactor, "MaxLeverageFactor").to.be.eq(maxLeverage);
+
+    const mhfExpected = Math.floor(
       (UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD * (maxLeverage + 100)) /
         maxLeverage
     );
 
-    expect(await creditManager.minHealthFactor()).to.be.eq(minHealhFactor);
+    expect(minHeathFactor, "minHealthFactor").to.be.eq(mhfExpected);
+    expect(minAmount, "minAmount").to.be.eq(DEFAULT_CREDIT_MANAGER.minAmount);
+    expect(maxAmount, "maxAmount").to.be.eq(DEFAULT_CREDIT_MANAGER.maxAmount);
+    expect(feeSuccess.toNumber(), "FEE_SUCCESS").to.be.eq(FEE_SUCCESS);
+    expect(feeInterest.toNumber(), "FEE_INTEREST").to.be.eq(FEE_INTEREST);
+    expect(feeLiquidation.toNumber(), "FEE_LIQUIDATION").to.be.eq(
+      FEE_LIQUIDATION
+    );
+
+    expect(
+      liquidationDiscount.toNumber(),
+      "LIQUIDATION_DISCOUNTED_SUM"
+    ).to.be.eq(LIQUIDATION_DISCOUNTED_SUM);
   });
 
   it("[CM-2]: openCreditAccount reverts if amount < minAmount or amount > maxAmount", async function () {
@@ -202,26 +270,33 @@ describe("CreditManager", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CM-5]: openCreditAccount sets correct general credit account parameters", async function () {
+  it("[CM-5]: openCreditAccount sets correct general credit account parameters and enable tokens", async function () {
     // Open trader account
     const receipt = await creditManager
       .connect(user)
       .openCreditAccount(amount, user.address, leverageFactor, referral);
 
-    const va = await testDeployer.getCreditAccount(
+    await testDeployer.getCreditAccount(
       await creditManager.creditAccounts(user.address)
     );
 
     const [borrowedAmountReal, ciAtOpen, since] =
       await ts.getCreditAccountParameters(user.address);
 
-    expect(borrowedAmountReal).to.be.eq(borrowedAmount);
-    expect(ciAtOpen).to.be.eq(
+    expect(borrowedAmountReal, "borrowedAmount").to.be.eq(borrowedAmount);
+    expect(ciAtOpen, "cumulativeIndexAtOpen").to.be.eq(
       await poolService.calcLinearCumulative_RAY({
         blockTag: receipt.blockNumber,
       })
     );
-    expect(since).to.be.eq(receipt.blockNumber); // last block
+    expect(since, "since").to.be.eq(receipt.blockNumber); // last block
+
+    const caAddress = await creditManager.getCreditAccountOrRevert(
+      user.address
+    );
+    const enabledTokens = await creditFilter.enabledTokens(caAddress);
+
+    expect(enabledTokens, "enabledTokens").to.be.eq(1);
   });
 
   it("[CM-6]: openCreditAccount transfers correct amount of user tokens to new credit account", async function () {
@@ -284,18 +359,36 @@ describe("CreditManager", function () {
       );
   });
 
+  it("[CM-9]: getCreditAccountOrRevert, closeCreditAccount, addCollateral, increaseBorrowAmount, liquidateAccount reverts for user who has no opened credit account", async function () {
+    const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
+
+    await expect(
+      creditManager.connect(user).getCreditAccountOrRevert(user.address)
+    ).to.revertedWith(revertMsg);
+
+    await expect(
+      creditManager.connect(user).closeCreditAccount(user.address, [])
+    ).to.revertedWith(revertMsg);
+
+    await expect(
+      creditManager.connect(user).addCollateral(user.address, DUMB_ADDRESS, 0)
+    ).to.revertedWith(revertMsg);
+
+    await expect(
+      creditManager.connect(user).increaseBorrowedAmount(10)
+    ).to.revertedWith(revertMsg);
+
+    await expect(
+      creditManager
+        .connect(deployer)
+        .liquidateCreditAccount(user.address, friend.address)
+    ).to.revertedWith(revertMsg);
+  });
+
   //
   // CLOSE ACCOUNT
   //
 
-  // it("[CM-9]: closeCreditAccount reverts for user who has no opened credit account", async function () {
-  //   const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
-  //   await expect(
-  //     creditManager
-  //       .connect(user)
-  //       .closeCreditAccount(user.address, amountOutTolerance)
-  //   ).to.revertedWith(revertMsg);
-  // });
   //
   // it("[CM-10]: closeCreditAccount emits CloseCreditAccount correctly", async function () {
   //   // Open default credit account
@@ -632,7 +725,9 @@ describe("CreditManager", function () {
     const revertMsg =
       await errors.AF_CANT_CLOSE_CREDIT_ACCOUNT_IN_THE_SAME_BLOCK();
     await expect(
-      flashLoanAttacker.attackClose(amount, leverageFactor),
+      flashLoanAttacker.attackClose(amount, leverageFactor, [
+        { path: [], amountOutMin: WAD },
+      ]),
       "Error during close attack"
     ).to.revertedWith(revertMsg);
 
@@ -761,18 +856,22 @@ describe("CreditManager", function () {
     );
 
     const creditAccountBalanceBefore = await underlyingToken.balanceOf(
-        creditAccount.address
+      creditAccount.address
     );
 
     const poolServiceBalanceBefore = await underlyingToken.balanceOf(
-        poolService.address
+      poolService.address
     );
 
     const increasedAmount = 1e5;
 
-    await  creditManager.connect(user).increaseBorrowedAmount(increasedAmount)
-    expect(await underlyingToken.balanceOf(creditAccount.address)).to.be.eq(creditAccountBalanceBefore.add(increasedAmount))
-    expect(await underlyingToken.balanceOf(poolService.address)).to.be.eq(poolServiceBalanceBefore.sub(increasedAmount))
+    await creditManager.connect(user).increaseBorrowedAmount(increasedAmount);
+    expect(await underlyingToken.balanceOf(creditAccount.address)).to.be.eq(
+      creditAccountBalanceBefore.add(increasedAmount)
+    );
+    expect(await underlyingToken.balanceOf(poolService.address)).to.be.eq(
+      poolServiceBalanceBefore.sub(increasedAmount)
+    );
 
     expect(
       await poolService.lendAmount(),
@@ -1224,6 +1323,119 @@ describe("CreditManager", function () {
   //       .closeCreditAccount(friend.address,amountOutTolerance)
   //   ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT");
   // });
+  it("[CM-45]: constructor set parameters correctly", async function () {
+    const tests = [
+      {
+        case: "totalFunds > borrowedAmountWithInterest, close",
+        input: {
+          totalValue: WAD.mul(2),
+          isLiquidated: false,
+          borrowedAmount: WAD,
+          cumulativeIndexAtOpen: RAY,
+          cumulativeIndexNow: RAY,
+        },
+        expected: {
+          borrowedAmount: WAD,
+          amountToPool: WAD.mul(PERCENTAGE_FACTOR + FEE_SUCCESS).div(
+            PERCENTAGE_FACTOR
+          ),
+          remainingFunds: WAD.mul(PERCENTAGE_FACTOR - FEE_SUCCESS).div(
+            PERCENTAGE_FACTOR
+          ),
+          profit: WAD.mul(FEE_SUCCESS).div(PERCENTAGE_FACTOR),
+          loss: BigNumber.from(0),
+        },
+      },
+      {
+        case: "totalFunds > borrowedAmountWithInterest, liquidation",
+        input: {
+          totalValue: WAD.mul(2),
+          isLiquidated: true,
+          borrowedAmount: WAD,
+          cumulativeIndexAtOpen: RAY,
+          cumulativeIndexNow: RAY,
+        },
+        expected: {
+          borrowedAmount: WAD,
+          amountToPool: WAD.mul(2)
+            .mul(LIQUIDATION_DISCOUNTED_SUM)
+            .div(PERCENTAGE_FACTOR)
+            .mul(FEE_LIQUIDATION)
+            .div(PERCENTAGE_FACTOR)
+            .add(WAD),
+          remainingFunds: WAD.mul(2).sub(
+            WAD.mul(LIQUIDATION_DISCOUNTED_SUM).div(
+              PERCENTAGE_FACTOR + FEE_LIQUIDATION
+            )
+          ),
+          profit: WAD.mul(2)
+            .mul(LIQUIDATION_DISCOUNTED_SUM)
+            .div(PERCENTAGE_FACTOR)
+            .mul(FEE_LIQUIDATION)
+            .div(PERCENTAGE_FACTOR),
+          loss: BigNumber.from(0),
+        },
+      },
+      {
+        case: "totalFunds  < borrowedAmountWithInterest, close",
+        input: {
+          totalValue: WAD,
+          isLiquidated: false,
+          borrowedAmount: WAD,
+          cumulativeIndexAtOpen: RAY,
+          cumulativeIndexNow: RAY.mul(12).div(10),
+        },
+        expected: {
+          borrowedAmount: WAD,
+          amountToPool: WAD.sub(1),
+          remainingFunds: BigNumber.from(0),
+          profit: BigNumber.from(0),
+          loss: WAD.mul(2).div(10).add(1),
+        },
+      },
+      {
+        case: "totalFunds  < borrowedAmountWithInterest, liquidation",
+        input: {
+          totalValue: WAD,
+          isLiquidated: true,
+          borrowedAmount: WAD,
+          cumulativeIndexAtOpen: RAY,
+          cumulativeIndexNow: RAY.mul(12).div(10),
+        },
+        expected: {
+          borrowedAmount: WAD,
+          amountToPool: WAD.mul(LIQUIDATION_DISCOUNTED_SUM)
+            .div(PERCENTAGE_FACTOR)
+            .sub(1),
+          remainingFunds: BigNumber.from(0),
+          profit: BigNumber.from(0),
+          loss: WAD.mul(12)
+            .div(10)
+            .sub(
+              WAD.mul(LIQUIDATION_DISCOUNTED_SUM).div(PERCENTAGE_FACTOR).sub(1)
+            ),
+        },
+      },
+    ];
 
+    for (let test of tests) {
+      const result = await creditManager._calcClosePaymentsPure(
+        test.input.totalValue,
+        test.input.isLiquidated,
+        test.input.borrowedAmount,
+        test.input.cumulativeIndexAtOpen,
+        test.input.cumulativeIndexNow
+      );
 
+      expect(result._borrowedAmount, `${test.case} borrowedAmount`).to.be.eq(
+        test.expected.borrowedAmount
+      );
+
+      ["amountToPool", " remainingFunds", "profit", "loss"].forEach((param) => {
+        expect(result[param], `[${test.case}]: ${param}`).to.be.eq(
+          test.expected[param]
+        );
+      });
+    }
+  });
 });

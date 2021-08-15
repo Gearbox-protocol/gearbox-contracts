@@ -1,6 +1,5 @@
 // @ts-import
-import { ethers, waffle } from "hardhat";
-// import { solidity } from "ethereum-waffle";
+// import { expect } from "../utils/expect";
 // import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 // import * as chai from "chai";
 //
@@ -248,7 +247,10 @@ import { ethers, waffle } from "hardhat";
 //     }
 //   });
 //
-//   it("[GM-5]: calcBorrowAmountPlusFee computes correctly", async function () {
+  import { FEE_INTEREST, FEE_LIQUIDATION, FEE_SUCCESS } from "../core/constants";
+import { percentMul, RAY, WAD } from "@diesellabs/gearbox-sdk";
+
+// it("[GM-5]: calcBorrowAmountPlusFee computes correctly", async function () {
 //     const borrowAmount = WAD.div(2).sub(WAD.div(4));
 //     const borrowedAmountWithInterest = WAD.div(2);
 //

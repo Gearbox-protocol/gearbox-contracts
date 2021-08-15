@@ -1,16 +1,13 @@
 // @ts-ignore
-import {ethers} from "hardhat";
-import {solidity} from "ethereum-waffle";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import * as chai from "chai";
+import { ethers } from "hardhat";
+import { expect } from "../utils/expect";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 
-import {CoreDeployer} from "../deployer/coreDeployer";
-import {TestDeployer} from "../deployer/testDeployer";
-import {ACL, Errors} from "../types/ethers-v5";
-import {DUMB_ADDRESS, OWNABLE_REVERT_MSG} from "../core/constants";
+import { CoreDeployer } from "../deployer/coreDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
+import { ACL, Errors } from "../types/ethers-v5";
+import { DUMB_ADDRESS, OWNABLE_REVERT_MSG } from "../core/constants";
 
-chai.use(solidity);
-const { expect } = chai;
 
 describe("ACL", function () {
   let deployer: SignerWithAddress;

@@ -1,25 +1,10 @@
-import { solidity } from "ethereum-waffle";
-
-import {
-  CreditManager,
-  CurveMock,
-  CurveV1Adapter,
-  DieselToken,
-  Errors,
-  IPoolService,
-  PoolService,
-  TokenMock,
-} from "../types/ethers-v5";
-import { CoreDeployer } from "../deployer/coreDeployer";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { expect } from "../utils/expect";
+import { CreditManager, CurveMock, CurveV1Adapter, Errors, TokenMock } from "../types/ethers-v5";
+import { CoreDeployer } from "../deployer/coreDeployer";
 import { CurveModel } from "../model/curveModel";
 import { PoolDeployer } from "../deployer/poolDeployer";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
-
-const chai = require("chai");
-
-chai.use(solidity);
-const { expect } = chai;
 
 const { amount, borrowedAmount, swapAmountA, swapAmountB } =
   CreditManagerTestSuite;
@@ -27,20 +12,14 @@ const { amount, borrowedAmount, swapAmountA, swapAmountB } =
 describe("CurveV1 adapter", function () {
   let ts: CreditManagerTestSuite;
 
-  let deployer: SignerWithAddress;
-  let liquidityProvider: SignerWithAddress;
   let user: SignerWithAddress;
-  let friend: SignerWithAddress;
-  let liquidator: SignerWithAddress;
 
   let coreDeployer: CoreDeployer;
   let poolDeployer: PoolDeployer;
 
-  let poolService: IPoolService;
   let creditManager: CreditManager;
   let curveV1Adapter: CurveV1Adapter;
 
-  let dieselToken: DieselToken;
   let underlyingToken: TokenMock;
 
   let curveMock: CurveMock;
@@ -55,20 +34,14 @@ describe("CurveV1 adapter", function () {
     await ts.setupCreditManager();
     await ts.setupCurveV1Adapter();
 
-    deployer = ts.deployer;
-    liquidityProvider = ts.liquidityProvider;
     user = ts.user;
-    friend = ts.friend;
-    liquidator = ts.liquidator;
 
     coreDeployer = ts.coreDeployer;
     poolDeployer = ts.poolDeployer;
 
-    poolService = ts.poolService;
     creditManager = ts.creditManager;
     curveV1Adapter = ts.curveV1adapter;
 
-    dieselToken = ts.dieselToken;
     underlyingToken = ts.underlyingToken;
 
     curveMock = ts.curveMock;

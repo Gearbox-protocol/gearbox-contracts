@@ -1,15 +1,11 @@
 // @ts-ignore
-import { ethers } from 'hardhat';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
-import { solidity } from 'ethereum-waffle';
-import * as chai from 'chai';
+import { ethers } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { expect } from "../utils/expect";
 
-import { CoreDeployer } from '../deployer/coreDeployer';
-import { TestDeployer } from '../deployer/testDeployer';
-import { AccountMinerMock, Errors } from '../types/ethers-v5';
-
-chai.use(solidity);
-const { expect } = chai;
+import { CoreDeployer } from "../deployer/coreDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
+import { AccountMinerMock, Errors } from "../types/ethers-v5";
 
 describe("AccountMinerMock", function () {
   let deployer: SignerWithAddress;
@@ -33,12 +29,12 @@ describe("AccountMinerMock", function () {
     const addressProvider = await coreDeployer.getAddressProvider();
     await addressProvider.setAccountFactory(deployer.address);
 
-    accountMiner = ((await coreDeployer.getAccountMiner(
-      "mock", false
-    )) as undefined) as AccountMinerMock;
+    accountMiner = (await coreDeployer.getAccountMiner(
+      "mock",
+      false
+    )) as undefined as AccountMinerMock;
     errors = await testDeployer.getErrors();
   });
-
 
   it("[AMM-5]: mineAccount reverts for non-factory calls", async function () {
     const revertMsg = await errors.AM_ACCOUNT_FACTORY_ONLY();

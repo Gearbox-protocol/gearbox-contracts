@@ -1,23 +1,17 @@
-import { ethers, waffle } from "hardhat";
+// @ts-ignore
+import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { solidity } from "ethereum-waffle";
-import * as chai from "chai";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { arrayify } from "ethers/lib/utils";
+import { MAX_INT, RAY } from "@diesellabs/gearbox-sdk";
+import { expect } from "../utils/expect";
 
 import { TokenMock, UniswapRouterMock } from "../types/ethers-v5";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import { UniswapModel } from "../model/uniswapModel";
-import {
-  ADDRESS_0x0,
-  MAX_INT,
-  RAY,
-  UNISWAP_EXPIRED,
-} from "../core/constants";
-import { arrayify } from "ethers/lib/utils";
-
-chai.use(solidity);
-const { expect } = chai;
+import { ADDRESS_0x0, UNISWAP_EXPIRED } from "../core/constants";
 
 const initialSwapAmount = BigNumber.from(10).pow(18).mul(10000);
 const initialUserAmount = BigNumber.from(10).pow(18).mul(8800);
