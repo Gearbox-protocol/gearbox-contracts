@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
@@ -8,8 +8,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import {AddressProvider} from "../configuration/AddressProvider.sol";
-import {ContractsRegister} from "../configuration/ContractsRegister.sol";
+import {AddressProvider} from "./AddressProvider.sol";
+import {ContractsRegister} from "./ContractsRegister.sol";
 
 import {IPoolService} from "../interfaces/IPoolService.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
@@ -195,16 +195,20 @@ contract WETHGateway is IWETHGateway {
     }
 
     function addCollateralETH(address creditManager, address onBehalfOf)
-    external
-    payable
-    override
-    creditManagerOnly(creditManager) {
-        uint256 amount = msg.value; // Todo
+        external
+        payable
+        override
+        creditManagerOnly(creditManager)
+    {
+        uint256 amount = msg.value; // T:[WG-14]
 
-        IWETH(wethAddress).deposit{value: amount}(); // Todo
-        _checkAllowance(creditManager, amount); // Todo
-        ICreditManager(creditManager)
-        .addCollateral(onBehalfOf, wethAddress, amount);
+        IWETH(wethAddress).deposit{value: amount}(); // T:[WG-14]
+        _checkAllowance(creditManager, amount); // T:[WG-14]
+        ICreditManager(creditManager).addCollateral(
+            onBehalfOf,
+            wethAddress,
+            amount
+        ); // T:[WG-14]
     }
 
     /// @dev Converts WETH to ETH, it's used when credit manager sends tokens, and one of them is WETH

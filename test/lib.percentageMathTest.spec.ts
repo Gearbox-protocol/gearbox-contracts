@@ -1,5 +1,4 @@
 import { expect } from "../utils/expect";
-import * as chai from "chai";
 
 import { Errors, PercentageMathTest } from "../types/ethers-v5";
 import { TestDeployer } from "../deployer/testDeployer";

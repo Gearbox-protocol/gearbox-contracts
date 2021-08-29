@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
@@ -19,7 +19,6 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 import "hardhat/console.sol";
 
 /// @title CurveV1 adapter
-/// More: https://dev.gearbox.fi/developers/credit/traderpoolservice
 contract CurveV1Adapter is Proxy {
     using SafeMath for uint256;
 

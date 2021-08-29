@@ -22,7 +22,6 @@ describe("Address Provider", function () {
     deployer = (await ethers.getSigners())[0];
     user = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
-      accountMinerType: "mock",
       treasury: "mock",
       weth: "mock",
     });
@@ -78,12 +77,6 @@ describe("Address Provider", function () {
     expect(getAddress).to.be.hexEqual(DUMB_ADDRESS);
   });
 
-  it("[AP-10]: setAccountMiner correctly sets AccountMiner", async function () {
-    await addressProvider.setAccountMiner(DUMB_ADDRESS);
-    const getAddress = await addressProvider.getAccountMiner();
-    expect(getAddress).to.be.hexEqual(DUMB_ADDRESS);
-  });
-
   it("[AP-11]: setTreasuryContract correctly sets TreasuryContract", async function () {
     await addressProvider.setTreasuryContract(DUMB_ADDRESS);
     const getAddress = await addressProvider.getTreasuryContract();
@@ -127,10 +120,6 @@ describe("Address Provider", function () {
 
     await expect(
       addressProvider.connect(user).setDataCompressor(DUMB_ADDRESS)
-    ).to.be.revertedWith(OWNABLE_REVERT_MSG);
-
-    await expect(
-      addressProvider.connect(user).setAccountMiner(DUMB_ADDRESS)
     ).to.be.revertedWith(OWNABLE_REVERT_MSG);
 
     await expect(

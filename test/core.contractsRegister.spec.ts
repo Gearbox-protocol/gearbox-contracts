@@ -20,7 +20,6 @@ describe("ContractsRegister", function () {
     deployer = (await ethers.getSigners())[0];
     trader = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
-      accountMinerType: "mock",
       treasury: "mock",
       weth: "mock",
     });
@@ -68,7 +67,7 @@ describe("ContractsRegister", function () {
   });
 
   it("[CR-5]: addCreditManager  reverts if address is already exists", async function () {
-    const error = await errors.CR_VA_MANAGER_ALREADY_ADDED();
+    const error = await errors.CR_CREDIT_MANAGER_ALREADY_ADDED();
     await contractsRegister.addCreditManager(DUMB_ADDRESS);
     await expect(
       contractsRegister.addCreditManager(DUMB_ADDRESS)

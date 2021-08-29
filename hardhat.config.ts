@@ -21,6 +21,7 @@ const KOVAN_PRIVATE_KEY =
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
+
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   solidity: {
@@ -29,10 +30,13 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: LOCAL_NETWORK,
+      initialBaseFeePerGas: 0,
     },
-    localhost: {},
+    localhost: {
+
+    },
     mainnet: {
-      url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
+      url: process.env.ETH_MAINNET_PROVIDER,
       accounts: [KOVAN_PRIVATE_KEY],
       chainId: MAINNET_NETWORK,
     },
@@ -40,6 +44,7 @@ const config: HardhatUserConfig = {
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
       accounts: [KOVAN_PRIVATE_KEY],
+      gasPrice: 2e9,
       minGasPrice: 1e9,
     },
   },

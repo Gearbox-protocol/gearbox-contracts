@@ -10,8 +10,6 @@ import { CoreDeployer } from "../deployer/coreDeployer";
 import { DUMB_ADDRESS, OWNABLE_REVERT_MSG } from "../core/constants";
 import { MAX_INT } from "@diesellabs/gearbox-sdk";
 
-
-
 describe("CreditAccount", function () {
   let deployer: SignerWithAddress;
   let user: SignerWithAddress;
@@ -24,20 +22,22 @@ describe("CreditAccount", function () {
     deployer = (await ethers.getSigners())[0] as SignerWithAddress;
     user = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
-      accountMinerType: "mock",
       treasury: "mock",
       weth: "mock",
     });
     testDeployer = new TestDeployer();
     creditAccount = await testDeployer.getCreditAccount();
+    await creditAccount.initialize();
 
     errors = await testDeployer.getErrors();
   });
 
   it("[CA-1]: initialize reverts if called by non-owner", async function () {
+    const revertMsg = await errors.CA_FACTORY_ONLY();
+
     await expect(
-      creditAccount.connect(user).initialize(DUMB_ADDRESS)
-    ).to.be.revertedWith(OWNABLE_REVERT_MSG);
+      creditAccount.connect(user).connectTo(DUMB_ADDRESS)
+    ).to.be.revertedWith(revertMsg);
   });
 
   it("[CA-2]: setGenericParameters, updateBorrowedAmount, approveTokenForContract, transfer reverts if call non credit Manager", async function () {
@@ -55,26 +55,26 @@ describe("CreditAccount", function () {
     ).to.be.revertedWith(revertMsg);
 
     await expect(
-      creditAccount.connect(user).transfer(DUMB_ADDRESS, DUMB_ADDRESS, 12)
+      creditAccount.connect(user).safeTransfer(DUMB_ADDRESS, DUMB_ADDRESS, 12)
     ).to.be.revertedWith(revertMsg);
   });
 
   it("[CA-3]: setGenericParameters set parameters correctly", async function () {
-    await creditAccount.initialize(deployer.address);
+    await creditAccount.connectTo(deployer.address);
     await creditAccount.setGenericParameters(100, 200);
     expect(await creditAccount.borrowedAmount()).to.be.eq(100);
     expect(await creditAccount.cumulativeIndexAtOpen()).to.be.eq(200);
   });
 
   it("[CA-4]: updateBorrowAmount updates correctly", async function () {
-    await creditAccount.initialize(deployer.address);
+    await creditAccount.connectTo(deployer.address);
     await creditAccount.setGenericParameters(100, 200);
     await creditAccount.updateBorrowedAmount(454);
     expect(await creditAccount.borrowedAmount()).to.be.eq(454);
   });
 
   it("[CA-5]: approveTokenForContract sets MAX allowance for provided token", async function () {
-    await creditAccount.initialize(deployer.address);
+    await creditAccount.connectTo(deployer.address);
     const tokenMock = await testDeployer.getTokenMock("TEST", "TEST");
 
     await creditAccount.approveToken(tokenMock.address, DUMB_ADDRESS);
@@ -84,7 +84,7 @@ describe("CreditAccount", function () {
   });
 
   it("[CA-6]: transfer transfers tokens correctly", async function () {
-    await creditAccount.initialize(deployer.address);
+    await creditAccount.connectTo(deployer.address);
 
     const amountTransfer = 1000;
     const tokenMock = await testDeployer.getTokenMock("TEST", "TEST");
@@ -95,7 +95,7 @@ describe("CreditAccount", function () {
     );
     const userBalanceBefore = await tokenMock.balanceOf(user.address);
 
-    await creditAccount.transfer(
+    await creditAccount.safeTransfer(
       tokenMock.address,
       user.address,
       amountTransfer
@@ -110,7 +110,7 @@ describe("CreditAccount", function () {
   });
 
   it("[CA-7]: initalize() sets creditManager & since parameters correctly", async function () {
-    const receipt = await creditAccount.initialize(user.address);
+    const receipt = await creditAccount.connectTo(user.address);
 
     expect(await creditAccount.since()).to.be.eq(receipt.blockNumber);
     expect(await creditAccount.creditManager()).to.be.eq(user.address);

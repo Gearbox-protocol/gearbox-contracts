@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
@@ -59,7 +59,7 @@ library Errors {
     string public constant CM_NO_OPEN_ACCOUNT = "V1";
     // "CM_: trader has no opened account";
 
-    string public constant CM_YOU_HAVE_ALREADY_OPEN_VIRTUAL_ACCOUNT = "V2";
+    string public constant CM_YOU_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT = "V2";
     // "CM_: You have already opened credit account";
 
     string public constant CM_INCORRECT_AMOUNT = "V3";
@@ -104,13 +104,20 @@ library Errors {
     string public constant CM_UNDERLYING_IS_NOT_IN_STABLE_POOL = "VU";
     // "CM_: underlying token is not in list of stable pool";
 
+    string public constant CM_TARGET_CONTRACT_iS_NOT_ALLOWED = "VDC";
+
+    string public constant CM_TRANSFER_FAILED = "VT";
+
     // Account Factory
 
     string public constant AF_CANT_CLOSE_CREDIT_ACCOUNT_IN_THE_SAME_BLOCK =
         "F1";
 
-    string public constant AF_CANT_TAKE_LAST_ACCOUNT = "F2";
+    string public constant AF_MINING_IS_FINISHED = "F2";
+
+    string public constant AF_CANT_TAKE_LAST_ACCOUNT = "F3";
     // "AccountFactory: cant take the last account";
+    string public constant AF_CREDIT_ACCOUNT_NOT_IN_STOCK = "F4";
 
     // Account Miner
     string public constant AM_ACCOUNT_FACTORY_ONLY = "F3";
@@ -142,13 +149,13 @@ library Errors {
     // CONTRACTS REGISTER
     //
 
-    string public constant CR_ALLOWED_FOR_VIRTUAL_ACCOUNT_MANAGERS_ONLY = "R1";
+    string public constant CR_CREDIT_ACCOUNT_MANAGERS_ONLY = "R1";
     // "ContractsRegister: allowed for credit Managers only";
 
     string public constant CR_POOL_ALREADY_ADDED = "R2";
     // "ContractsRegister: pool already added";
 
-    string public constant CR_VA_MANAGER_ALREADY_ADDED = "R3";
+    string public constant CR_CREDIT_MANAGER_ALREADY_ADDED = "R3";
     // "ContractsRegister: credit Manager is already set";
 
     //
@@ -181,13 +188,23 @@ library Errors {
     string public constant CF_INCORRECT_FAST_CHECK = "C8";
     // "CF: incorrect chi threshold:"
 
+    string public constant CF_NON_TOKEN_CONTRACT = "C9";
+    // "CF: token contract doesn't support balance method";
+
+    string public constant CF_CONTRACT_IS_NOT_IN_ALLOWED_LIST = "CA";
+    // "CF: target contract is not in allowed list"
+
+    string public constant CF_FAST_CHECK_NOT_COVERED_COLLATERAL_DROP = "CB";
+
+    string public constant CF_SOME_LIQUIDATION_THRESHOLD_MORE_THAN_NEW_ONE = "CC";
+
     //
     // CREDIT ACCOUNT
     //
 
     string public constant CA_CREDIT_MANAGER_ONLY = "A1";
-    // "VA: called by non-credit Manager";
-
+    // "CA: called by non-credit Manager";
+    string public constant CA_FACTORY_ONLY = "A2";
     //
     // PRICE ORACLE
     //

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
@@ -11,12 +11,12 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {IPriceOracle} from "../interfaces/IPriceOracle.sol";
 
-import {AddressProvider} from "../configuration/AddressProvider.sol";
+import {AddressProvider} from "../core/AddressProvider.sol";
 
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 import "hardhat/console.sol";
-import {ACLTrait} from "../configuration/ACLTrait.sol";
+import {ACLTrait} from "../core/ACLTrait.sol";
 
  /// @title Price Oracle based on Chainlink's price feeds
  /// @notice Works as router and provide cross rates using converting via ETH

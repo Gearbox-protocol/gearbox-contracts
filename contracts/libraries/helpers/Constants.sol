@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
@@ -30,7 +30,8 @@ library Constants {
     uint256 constant LIQUIDATION_DISCOUNTED_SUM = 9500;
 
     // 100% - LIQUIDATION_FEE - LIQUIDATION_PREMIUM
-    uint256 constant UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD = LIQUIDATION_DISCOUNTED_SUM - FEE_LIQUIDATION;
+    uint256 constant UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD =
+        LIQUIDATION_DISCOUNTED_SUM - FEE_LIQUIDATION;
 
     // Seconds in a year
     uint256 constant SECONDS_PER_YEAR = 365 days;
@@ -49,9 +50,6 @@ library Constants {
     // Maximum withdraw fee for pool in percentage math format. 100 = 1%
     uint8 constant MAX_WITHDRAW_FEE = 100;
 
-    uint256 constant CHI_THRESHOLD_MIN = 9500;
-
-    uint256 constant CHI_THRESHOLD = 9800;
-
-    uint256 constant FAST_CHECK_DELAY_MIN = 1;
+    uint256 constant CHI_THRESHOLD = 9950;
+    uint256 constant HF_CHECK_INTERVAL_DEFAULT = 4;
 }

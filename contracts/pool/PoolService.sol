@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ACLTrait} from "../configuration/ACLTrait.sol";
+import {ACLTrait} from "../core/ACLTrait.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -18,7 +18,7 @@ import {IPoolService} from "../interfaces/IPoolService.sol";
 
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 
-import {AddressProvider} from "../configuration/AddressProvider.sol";
+import {AddressProvider} from "../core/AddressProvider.sol";
 import {DieselToken} from "../tokens/DieselToken.sol";
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
@@ -29,7 +29,7 @@ import "hardhat/console.sol";
 /// @notice Encapsulates business logic for:
 ///  - Adding/removing pool liquidity
 ///  - Managing diesel tokens & diesel rates
-///  - Lend funds to credif manager
+///  - Lend funds to credit manager
 ///
 /// More: https://dev.gearbox.fi/developers/pools/pool-service
 contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {

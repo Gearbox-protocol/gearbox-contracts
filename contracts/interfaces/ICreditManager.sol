@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 pragma abicoder v2;
@@ -14,7 +14,6 @@ import {DataTypes} from "../libraries/data/Types.sol";
 /// More info: https://dev.gearbox.fi/developers/credit/credit_manager
 
 interface ICreditManager is IAppCreditManager {
-
     // Emits each time when the credit account is opened
     event OpenCreditAccount(
         address indexed sender,
@@ -60,6 +59,7 @@ interface ICreditManager is IAppCreditManager {
 
     // Emits each time when new fees are set
     event NewFees(
+        uint256 maxLeverage,
         uint256 feeSuccess,
         uint256 feeInterest,
         uint256 feeLiquidation,
@@ -109,7 +109,8 @@ interface ICreditManager is IAppCreditManager {
      * @param paths Exchange type data which provides paths + amountMinOut
      */
     function closeCreditAccount(address to, DataTypes.Exchange[] calldata paths)
-    external override;
+        external
+        override;
 
     /**
      * @dev Liquidates credit account
@@ -123,8 +124,13 @@ interface ICreditManager is IAppCreditManager {
      *
      * @param borrower Borrower address
      * @param to Address to transfer all assets from credit account
+     * @param force If true, use transfer function for transferring tokens instead of safeTransfer
      */
-    function liquidateCreditAccount(address borrower, address to) external;
+    function liquidateCreditAccount(
+        address borrower,
+        address to,
+        bool force
+    ) external;
 
     /// @dev Repays credit account
     /// More info: https://dev.gearbox.fi/developers/credit/credit_manager#repay-credit-account
@@ -212,6 +218,9 @@ interface ICreditManager is IAppCreditManager {
         bytes memory data
     ) external returns (bytes memory);
 
+    /// @dev Approves token for msg.sender's credit account
+    function approve(address targetContract, address token) external;
+
     /// @dev Approve tokens for credit accounts. Restricted for adapters only
     function provideCreditAccountAllowance(
         address creditAccount,
@@ -226,4 +235,12 @@ interface ICreditManager is IAppCreditManager {
         view
         override
         returns (address);
+
+    function feeSuccess() external view returns (uint256);
+
+    function feeInterest() external view returns (uint256);
+
+    function feeLiquidation() external view returns (uint256);
+
+    function liquidationDiscount() external view returns (uint256);
 }

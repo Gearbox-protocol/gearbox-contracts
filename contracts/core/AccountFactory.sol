@@ -1,19 +1,24 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+pragma abicoder v2;
+
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {IAccountFactory} from "../interfaces/IAccountFactory.sol";
 import {IAccountMiner} from "../interfaces/IAccountMiner.sol";
 import {ICreditAccount} from "../interfaces/ICreditAccount.sol";
+import {ICreditManager} from "../interfaces/ICreditManager.sol";
 
-import {AddressProvider} from "../configuration/AddressProvider.sol";
-import {ContractsRegister} from "../configuration/ContractsRegister.sol";
+import {AddressProvider} from "./AddressProvider.sol";
+import {ContractsRegister} from "./ContractsRegister.sol";
 import {CreditAccount} from "../credit/CreditAccount.sol";
-import {ACLTrait} from "../configuration/ACLTrait.sol";
+import {ACLTrait} from "./ACLTrait.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+import {DataTypes} from "../libraries/data/Types.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
 import "hardhat/console.sol";
@@ -40,17 +45,25 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     // Tail of connected list
     address public override tail;
 
+    // Address of master credit account for cloning
+    address public masterCreditAccount;
+
     // Credit accounts list
     address[] public override creditAccounts;
 
-    AddressProvider private _addressProvider;
-    IAccountMiner public accountMiner;
-    ContractsRegister private _contractsRegister;
+    // Credit accounts list
+    DataTypes.MiningApproval[] public miningApprovals;
+
+    // Contracts register
+    ContractsRegister public _contractsRegister;
+
+    // Flag that there is no mining yet
+    bool public isMiningFinished;
 
     modifier creditManagerOnly() {
         require(
             _contractsRegister.isCreditManager(msg.sender),
-            Errors.CR_ALLOWED_FOR_VIRTUAL_ACCOUNT_MANAGERS_ONLY
+            Errors.CR_CREDIT_ACCOUNT_MANAGERS_ONLY
         );
         _;
     }
@@ -70,25 +83,14 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
      * @param addressProvider Address of address repository
      */
     constructor(address addressProvider) ACLTrait(addressProvider) {
-        _addressProvider = AddressProvider(addressProvider);
         _contractsRegister = ContractsRegister(
-            _addressProvider.getContractsRegister()
-        );
+            AddressProvider(addressProvider).getContractsRegister()
+        ); // T:[AF-1]
 
-        addCreditAccount(); // T:[AAF-1]
-        head = tail; // T:[AAF-1]
-    }
+        masterCreditAccount = address(new CreditAccount());
 
-    /// @dev Connects miner to account manager. Account miner address is taken from address provider
-    /// Miner will be changed after initial account creation to simple one to use less gas
-    function connectMiner()
-        external
-        override
-        configuratorOnly // T:[TAF-1]
-    {
-        address newMiner = _addressProvider.getAccountMiner(); // T:[AAF-6]
-        accountMiner = IAccountMiner(newMiner); // T:[AAF-6]
-        emit AccountMinerChanged(newMiner); // T:[AAF-6]
+        addCreditAccount(); // T:[AF-1]
+        head = tail; // T:[AF-1]
     }
 
     /**
@@ -131,27 +133,26 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
      *     ⬆
      *    tail
      *
-     * @param borrower Borrower's address. Used for gas compensation in terms of borrower account creation
      * @return Address of credit account
      */
-    function takeCreditAccount(address payable borrower)
+    function takeCreditAccount()
         external
         override
-        creditManagerOnly // T:[TAF-2]
+        creditManagerOnly // T:[AF-12]
         returns (address)
     {
         // Create a new credit account if no one in stock
-        _checkStock(borrower); // T:[AAF-3]
+        _checkStock(); // T:[AF-3]
 
         address result = head;
-        head = _nextCreditAccount[head]; // T:[AAF-2]
-        _nextCreditAccount[result] = address(0); // T:[AAF-2]
+        head = _nextCreditAccount[head]; // T:[AF-2]
+        _nextCreditAccount[result] = address(0); // T:[AF-2]
 
-        // Initalize creditManager
-        ICreditAccount(result).initialize(msg.sender); // T:[AAF-11]
+        // Initialize creditManager
+        ICreditAccount(result).connectTo(msg.sender); // T:[AF-11]
 
-        emit InitializeCreditAccount(result, msg.sender); // T:[AAF-5]
-        return result;
+        emit InitializeCreditAccount(result, msg.sender); // T:[AF-5]
+        return result; // T:[AF-14]
     }
 
     /**
@@ -185,16 +186,16 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     function returnCreditAccount(address usedAccount)
         external
         override
-        creditManagerOnly // T:[TAF-2]
+        creditManagerOnly // T:[AF-12]
     {
         require(
             ICreditAccount(usedAccount).since() != block.number,
             Errors.AF_CANT_CLOSE_CREDIT_ACCOUNT_IN_THE_SAME_BLOCK
-        ); // ToDo: Check!
+        ); // T:[CM-20]
 
-        _nextCreditAccount[tail] = usedAccount; // T:[AAF-7]
-        tail = usedAccount; // T:[AAF-7]
-        emit ReturnCreditAccount(usedAccount); // T:[AAF-8]
+        _nextCreditAccount[tail] = usedAccount; // T:[AF-7]
+        tail = usedAccount; // T:[AF-7]
+        emit ReturnCreditAccount(usedAccount); // T:[AF-8]
     }
 
     /// @dev Gets next available credit account or address(0) if you are in tail
@@ -234,17 +235,84 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
      *
      *
      */
-    function addCreditAccount() public nonReentrant {
-        address newCreditAccountAddress = address(new CreditAccount()); // T:[AAF-2]
-        _nextCreditAccount[tail] = newCreditAccountAddress; // T:[AAF-2]
-        tail = newCreditAccountAddress; // T:[AAF-2]
-        creditAccounts.push(newCreditAccountAddress); // T:[AAF-10]
-        emit NewCreditAccount(newCreditAccountAddress);
+    function addCreditAccount() public {
+        address clonedAccount = Clones.clone(masterCreditAccount); // T:[AF-2]
+        ICreditAccount(clonedAccount).initialize();
+        _nextCreditAccount[tail] = clonedAccount; // T:[AF-2]
+        tail = clonedAccount; // T:[AF-2]
+        creditAccounts.push(clonedAccount); // T:[AF-10]
+        emit NewCreditAccount(clonedAccount);
+    }
+
+    /// @dev Takes unused credit account from list forever and connects it with "to" parameter
+    function takeOut(
+        address prev,
+        address creditAccount,
+        address to
+    )
+        external
+        configuratorOnly // T:[AF-13]
+    {
+        require(
+            _nextCreditAccount[prev] == creditAccount,
+            Errors.AF_CREDIT_ACCOUNT_NOT_IN_STOCK
+        ); // T:[AF-15]
+        _nextCreditAccount[prev] = _nextCreditAccount[creditAccount]; // T: [AF-16]
+        ICreditAccount(creditAccount).connectTo(to); // T: [AF-16]
+        emit TakeForever(creditAccount, to); // T: [AF-16]
+    }
+
+    ///
+    /// MINING
+    ///
+
+    /// @dev Adds credit account token to factory and provide approvals
+    /// for protocols & tokens which will be offered to accept by DAO
+    /// All protocols & tokens in the list should be non-upgradable contracts
+    /// Account mining will be finished before deployment any pools & credit managers
+    function mineCreditAccount() external nonReentrant {
+        require(!isMiningFinished, Errors.AF_MINING_IS_FINISHED); // T:[AF-17]
+        addCreditAccount(); // T:[AF-18]
+        ICreditAccount(tail).connectTo(address(this)); // T:[AF-18]
+        ICreditAccount(tail).setGenericParameters(1, 1); // T:[AF-18]
+        for (uint256 i = 0; i < miningApprovals.length; i++) {
+            ICreditAccount(tail).approveToken(
+                miningApprovals[i].token,
+                miningApprovals[i].swapContract
+            ); // T:[AF-18]
+        }
+    }
+
+    /// @dev Adds pair token-contract to initial mining approval list
+    /// These pairs will be used during accoutn mining which is designed
+    /// to reduce gas prices for the first N reusable credit accounts
+    function addMiningApprovals(
+        DataTypes.MiningApproval[] calldata _miningApprovals
+    )
+        external
+        configuratorOnly // T:[AF-13]
+    {
+        require(!isMiningFinished, Errors.AF_MINING_IS_FINISHED); // T:[AF-17]
+        for (uint256 i = 0; i < _miningApprovals.length; i++) {
+            DataTypes.MiningApproval memory item = DataTypes.MiningApproval(
+                _miningApprovals[i].token,
+                _miningApprovals[i].swapContract
+            ); // T:[AF-19]
+            miningApprovals.push(item); // T:[AF-19]
+        }
+    }
+
+    /// @dev Finishes mining activity. Account mining is desinged as one-time
+    /// activity and should be finished before deployment pools & credit managers.
+    function finishMining()
+        external
+        configuratorOnly // T:[AF-13]
+    {
+        isMiningFinished = true; // T:[AF-17]
     }
 
     /**
-     * @dev Deploys new credit account if no one available in stock and call miner contract
-     * for gas price compensation & mining reward
+     * @dev Checks available accounts in stock and deploys new one if there is the last one
      *
      *   If:
      *  ---------
@@ -268,15 +336,17 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
      *                       ⬆
      *                      tail
      *
-     * @param user Address of msg.sender who invokes transaction for paying gas compensation
      */
-    function _checkStock(address payable user) internal {
-        // T:[AAF-9]
+    function _checkStock() internal {
+        // T:[AF-9]
         if (_nextCreditAccount[head] == address(0)) {
-            accountMiner.mineAccount(user); // T:[AAF-4]
-            addCreditAccount(); // T:[AAF-3]
+            addCreditAccount(); // T:[AF-3]
         }
     }
+
+    //
+    // GETTERS
+    //
 
     /// @dev Counts how many credit accounts are in stock
     function countCreditAccountsInStock()
@@ -296,6 +366,6 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
 
     /// @dev Count of deployed credit accounts
     function countCreditAccounts() external view override returns (uint256) {
-        return creditAccounts.length; // T:[AAF-10]
+        return creditAccounts.length; // T:[AF-10]
     }
 }

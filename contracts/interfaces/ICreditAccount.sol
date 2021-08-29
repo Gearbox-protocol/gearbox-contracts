@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
@@ -15,9 +15,12 @@ pragma solidity ^0.7.4;
 ///  More: https://dev.gearbox.fi/developers/creditManager/vanillacreditAccount
 
 interface ICreditAccount {
-    /// @dev Initializes credit account and connect it to credit account address
+    /// @dev Initializes clone contract
+    function initialize() external;
+
+    /// @dev Connects credit account to credit manager
     /// @param _creditManager Credit manager address
-    function initialize(address _creditManager) external;
+    function connectTo(address _creditManager) external;
 
     /// @dev Set general credit account parameters. Restricted to credit managers only
     /// @param _borrowedAmount Amount which pool lent to credit account
@@ -36,11 +39,13 @@ interface ICreditAccount {
     /// @param swapContract Swap contract address
     function approveToken(address token, address swapContract) external;
 
+    function cancelAllowance(address token, address swapContract) external;
+
     /// Transfers tokens from credit account to provided address. Restricted for pool calls only
     /// @param token Token which should be tranferred from credit account
     /// @param to Address of recipient
     /// @param amount Amount to be transferred
-    function transfer(
+    function safeTransfer(
         address token,
         address to,
         uint256 amount
@@ -57,6 +62,9 @@ interface ICreditAccount {
 
     /// @dev Address of last connected credit manager
     function creditManager() external view returns (address);
+
+    /// @dev Address of last connected credit manager
+    function factory() external view returns (address);
 
     /// @dev Executed financial order on 3rd party service. Restricted for pool calls only
     /// @param destination Contract address which should be called

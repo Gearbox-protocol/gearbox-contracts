@@ -34,7 +34,7 @@ describe("WETHGateway", function () {
   let creditManager: CreditManager;
   let errors: Errors;
 
-  beforeEach(async function () {
+  beforeEach(async () => {
     testDeployer = new TestDeployer();
 
     wethToken = await testDeployer.getWethMock();
@@ -65,10 +65,8 @@ describe("WETHGateway", function () {
     const wethToken = await testDeployer.getTokenMock("WETH2", "WETH2");
     ts = new CreditManagerTestSuite({
       coreConfig: {
-        accountMinerType: "mock",
         treasury: "mock",
         weth: wethToken.address,
-        realNetwork: false,
       },
       poolConfig: {
         interestModel: STANDARD_INTEREST_MODEL_PARAMS,
@@ -90,7 +88,7 @@ describe("WETHGateway", function () {
     wethGateway = await coreDeployer.getWETHGateway();
   };
 
-  it("[WG-1]: addLiquidityETH, removeLiquidityETH reverts if called for non-pool addresses", async function () {
+  it("[WG-1]: addLiquidityETH, removeLiquidityETH reverts if called for non-pool addresses", async () => {
     const revertMsg = await errors.WG_DESTINATION_IS_NOT_POOL();
 
     await expect(
@@ -102,7 +100,7 @@ describe("WETHGateway", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[WG-2]: addLiquidityETH, removeLiquidityETH reverts if non-weth pools and creditManagers", async function () {
+  it("[WG-2]: addLiquidityETH, removeLiquidityETH reverts if non-weth pools and creditManagers", async () => {
     const revertMsg = await errors.WG_DESTINATION_IS_NOT_WETH_COMPATIBLE();
 
     await deployNonWethPoolAndWam();
@@ -116,11 +114,11 @@ describe("WETHGateway", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[WG-3]: openCreditAccount, repayCreditAccount reverts if call for non-creditManager addresses ", async function () {
+  it("[WG-3]: openCreditAccount, repayCreditAccount reverts if call for non-creditManager addresses ", async () => {
     const revertMsg = await errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER();
 
     await expect(
-      wethGateway.openCreditAccountETH(DUMB_ADDRESS, DUMB_ADDRESS, 5, 0)
+      wethGateway.openCreditAccountETH(DUMB_ADDRESS, DUMB_ADDRESS, 500, 0)
     ).to.be.revertedWith(revertMsg);
 
     await expect(
@@ -128,7 +126,7 @@ describe("WETHGateway", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[WG-4]: addLiquidityETH, removeLiquidityETH reverts if non-weth pools and creditManagers", async function () {
+  it("[WG-4]: addLiquidityETH, removeLiquidityETH reverts if non-weth pools and creditManagers", async () => {
     const revertMsg = await errors.WG_DESTINATION_IS_NOT_WETH_COMPATIBLE();
 
     await deployNonWethPoolAndWam();
@@ -147,7 +145,7 @@ describe("WETHGateway", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[WG-5]: unwrapWETH reverts if call from non-creditManager addresses ", async function () {
+  it("[WG-5]: unwrapWETH reverts if call from non-creditManager addresses ", async () => {
     const revertMsg = await errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER();
 
     await expect(wethGateway.unwrapWETH(DUMB_ADDRESS, 10)).to.be.revertedWith(
@@ -155,7 +153,7 @@ describe("WETHGateway", function () {
     );
   });
 
-  it("[WG-6]: WETHGateway reverts from direct eth transfer", async function () {
+  it("[WG-6]: WETHGateway reverts from direct eth transfer", async () => {
     const revertMsg = await errors.WG_RECEIVE_IS_NOT_ALLOWED();
 
     await expect(
@@ -163,7 +161,7 @@ describe("WETHGateway", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[WG-7]: unwrapWETH correctly send eth to selected account", async function () {
+  it("[WG-7]: unwrapWETH correctly send eth to selected account", async () => {
     // Provide 1 WETH to weth gateway
     await wethToken.mint(wethGateway.address, WAD);
 
@@ -183,7 +181,7 @@ describe("WETHGateway", function () {
     expect(await user.getBalance()).to.be.eq(userBalanceBefore.add(WAD));
   });
 
-  it("[WG-8]: addLiquidityETH adds liquidity to pool", async function () {
+  it("[WG-8]: addLiquidityETH adds liquidity to pool", async () => {
     const dieselToken = await ts.poolDeployer.getDieselToken();
 
     const tx = () =>
@@ -194,7 +192,7 @@ describe("WETHGateway", function () {
     await expect(tx).to.changeTokenBalance(dieselToken, user, amount);
   });
 
-  it("[WG-9]: removeLiquidityETH adds liquidity to pool", async function () {
+  it("[WG-9]: removeLiquidityETH adds liquidity to pool", async () => {
     const dieselToken = await ts.poolDeployer.getDieselToken();
 
     const txAdd = () =>
@@ -214,7 +212,7 @@ describe("WETHGateway", function () {
     await expect(txRemove).to.changeEtherBalance(user, amount);
   });
 
-  it("[WG-10]: openCreditAccountETH opens an account", async function () {
+  it("[WG-10]: openCreditAccountETH opens an account", async () => {
     const dieselToken = await ts.poolDeployer.getDieselToken();
 
     await wethGateway.addLiquidityETH(ts.poolService.address, user.address, 0, {
@@ -243,7 +241,7 @@ describe("WETHGateway", function () {
     );
   });
 
-  it("[WG-11]: repayCreditAccountETH repays charge correct amount", async function () {
+  it("[WG-11]: repayCreditAccountETH repays charge correct amount", async () => {
     await wethGateway.addLiquidityETH(ts.poolService.address, user.address, 0, {
       value: addLiquidity,
     });
@@ -272,7 +270,7 @@ describe("WETHGateway", function () {
     await expect(repayTx).to.changeEtherBalance(user, -repayAmount);
   });
 
-  it("[WG-12]: repayCreditAccountETH repays charge correct amount if more were sent", async function () {
+  it("[WG-12]: repayCreditAccountETH repays charge correct amount if more were sent", async () => {
     await wethGateway.addLiquidityETH(ts.poolService.address, user.address, 0, {
       value: addLiquidity,
     });
@@ -301,7 +299,7 @@ describe("WETHGateway", function () {
     await expect(repayTx).to.changeEtherBalance(user, -repayAmount);
   });
 
-  it("[WG-13]: repayCreditAccountETH transfer underlying asset in ETH", async function () {
+  it("[WG-13]: repayCreditAccountETH transfer underlying asset in ETH", async () => {
     await wethGateway.addLiquidityETH(ts.poolService.address, user.address, 0, {
       value: addLiquidity,
     });
@@ -330,6 +328,34 @@ describe("WETHGateway", function () {
     await expect(repayTx).to.changeEtherBalance(
       friend,
       amount.add(borrowedAmount).sub(1)
+    );
+  });
+
+  it("[WG-14]: addCollatralETH adds collateral in WETH to credit account", async () => {
+    await wethGateway.addLiquidityETH(ts.poolService.address, user.address, 0, {
+      value: addLiquidity,
+    });
+
+    await wethGateway
+      .connect(user)
+      .openCreditAccountETH(
+        ts.creditManager.address,
+        user.address,
+        leverageFactor,
+        0,
+        { value: amount }
+      );
+
+    const creditAccount = await creditManager.getCreditAccountOrRevert(
+      user.address
+    );
+    const wethBalance = await wethToken.balanceOf(creditAccount);
+
+    await wethGateway
+      .connect(user)
+      .addCollateralETH(creditManager.address, user.address, { value: amount });
+    expect(await wethToken.balanceOf(creditAccount)).to.be.eq(
+      wethBalance.add(amount)
     );
   });
 });

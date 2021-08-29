@@ -10,7 +10,7 @@
     "type": "git",
     "url": "https://github.com/Gearbox-protocol/gearbox-contracts"
   },
-  "license": "BSL-1.1",
+  "license": "BSL",
   "devDependencies": {
     "@chainlink/contracts": "^0.1.6",
     "@ethersproject/abi": "^5.4.0",
@@ -55,11 +55,14 @@
     "faucet": "npx hardhat run scripts/faucetGetData.ts --network mainnet",
     "faucet-mint": "npx hardhat run scripts/faucetMint.ts --network kovan",
     "charge": "npx hardhat run scripts/fulfillFuzzler.ts --network localhost",
+    "deploy-nft": "npx hardhat run scripts/deploy-nft.ts --network kovan",
+    "deploy-acc": "npx hardhat run scripts/deployAcc.ts --network localhost",
     "size": "yarn clean && yarn compile && node scripts/size.ts",
     "clean": "npx hardhat clean",
     "fork": "scripts/fork.sh",
     "abigen": "scripts/abigen.sh",
     "compile": "npx hardhat compile",
+    "set-lt": "npx hardhat run scripts/setLT.ts --network kovan",
     "test": "npx hardhat test",
     "update_abi": "scripts/abiCopy.sh",
     "coverage": "yarn build && npx hardhat coverage --temp artifacts"

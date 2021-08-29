@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+pragma abicoder v2;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import {PercentageMath} from "../libraries/math/PercentageMath.sol";
 
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
@@ -13,8 +15,8 @@ import {IPriceOracle} from "../interfaces/IPriceOracle.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {IPoolService} from "../interfaces/IPoolService.sol";
 
-import {AddressProvider} from "../configuration/AddressProvider.sol";
-import {ACLTrait} from "../configuration/ACLTrait.sol";
+import {AddressProvider} from "../core/AddressProvider.sol";
+import {ACLTrait} from "../core/ACLTrait.sol";
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
@@ -32,6 +34,7 @@ import "hardhat/console.sol";
 contract CreditFilter is ICreditFilter, ACLTrait {
     using PercentageMath for uint256;
     using SafeMath for uint256;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     // Address of credit Manager
     address public creditManager;
@@ -43,7 +46,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     address[] public override allowedTokens;
 
     // Allowed contracts list
-    mapping(address => uint256) public tokenLiquidationThresholds;
+    mapping(address => uint256) public override liquidationThresholds;
 
     // map token address to its mask
     mapping(address => uint256) public tokenMasksMap;
@@ -51,20 +54,24 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     // credit account token enables mask. each bit (in order as tokens stored in allowedTokens array) set 1 if token was enable
     mapping(address => uint256) public override enabledTokens;
 
+    // Token mask is allowed tokens. equals MAX_INT at start
+    uint256 public override allowedTokenMask;
+
     // keeps last block we use fast check. Fast check is not allowed to use more than one time in block
-    mapping(address => uint256) public fastCheckBlock;
+    mapping(address => uint256) public fastCheckCounter;
 
     // Allowed contracts array
-    address[] public override allowedContracts;
+    EnumerableSet.AddressSet private allowedContractsSet;
 
     // Allowed adapters list
     mapping(address => bool) public allowedAdapters;
 
-    // Mapping from protocols to adapters
+    // Mapping from allowed contract to allowed adapters
+    // If contract is not allowed, contractToAdapter[contract] == address(0)
     mapping(address => address) public override contractToAdapter;
 
     // Price oracle - uses in evaluation credit account
-    IPriceOracle public immutable _priceOracle;
+    address public override priceOracle;
 
     // Underlying token address
     address public override underlyingToken;
@@ -75,9 +82,11 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     // Address of WETH token
     address public wethAddress;
 
+    // Minimum chi threshold for fast check
     uint256 public chiThreshold;
 
-    uint256 public fastCheckDelay;
+    // Maxmimum allowed fast check operations between full health factor checks
+    uint256 public hfCheckInterval;
 
     /// Checks that sender is connected credit manager
     modifier creditManagerOnly {
@@ -103,20 +112,27 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     constructor(address _addressProvider, address _underlyingToken)
         ACLTrait(_addressProvider)
     {
-        _priceOracle = IPriceOracle(
-            AddressProvider(_addressProvider).getPriceOracle()
-        );
+        priceOracle = AddressProvider(_addressProvider).getPriceOracle(); // T:[CF-21]
 
         wethAddress = AddressProvider(_addressProvider).getWethToken(); // T:[CF-21]
 
         underlyingToken = _underlyingToken; // T:[CF-21]
 
+        liquidationThresholds[underlyingToken] = Constants
+        .UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD; // T:[CF-21]
+
         allowToken(
             underlyingToken,
             Constants.UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD
-        ); // T:[CF-8]
+        ); // T:[CF-8, 21]
 
-        chiThreshold = Constants.CHI_THRESHOLD; // ToDo: Check
+        setFastCheckParameters(
+            Constants.CHI_THRESHOLD,
+            Constants.HF_CHECK_INTERVAL_DEFAULT
+        ); // T:[CF-21]
+
+        // All tokens are allowed at start
+        allowedTokenMask = Constants.MAX_INT; // T:[CF-21]
     }
 
     //
@@ -135,12 +151,17 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
         require(
             liquidationThreshold > 0 &&
-                liquidationThreshold <=
-                Constants.UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
+                liquidationThreshold <= liquidationThresholds[underlyingToken],
             Errors.CF_INCORRECT_LIQUIDATION_THRESHOLD
         ); // T:[CF-3]
 
         require(allowedTokens.length < 256, Errors.CF_TOO_MUCH_ALLOWED_TOKENS); // T:[CF-5]
+
+        // Checks that contract has balanceOf method and it returns uint256
+        require(IERC20(token).balanceOf(address(this)) >= 0); // T:[CF-11]
+
+        // Checks that pair token - underlyingToken has priceFeed
+        IPriceOracle(priceOracle).getLastPrice(token, underlyingToken); // T:[CF-15]
 
         // we add allowed tokens to array if it wasn't added before
         // T:[CF-6] controls that
@@ -151,40 +172,62 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             allowedTokens.push(token); // T:[CF-4]
         }
 
-        tokenLiquidationThresholds[token] = liquidationThreshold; // T:[CF-4, 6]
+        liquidationThresholds[token] = liquidationThreshold; // T:[CF-4, 6]
 
         emit TokenAllowed(token, liquidationThreshold); // T:[CF-4]
     }
 
-    /// @dev Adds contract to the list of allowed contracts
-    /// @param allowedContract Address of allowed contract
+    /// @dev Adds contract and adapter to the list of allowed contracts
+    /// if contract exists it updates adapter only
+    /// @param targetContract Address of allowed contract
     /// @param adapter Adapter contract address
-    function allowContract(address allowedContract, address adapter)
-        public
+    function allowContract(address targetContract, address adapter)
+        external
         override
         configuratorOnly // T:[CF-1]
     {
         require(
-            allowedContract != address(0),
+            targetContract != address(0) && adapter != address(0),
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
         ); // T:[CF-2]
 
-        require(adapter != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
-
-        if (contractToAdapter[allowedContract] == address(0)) {
-            allowedContracts.push(allowedContract); // T:[CF-9]
-        } else {
-            // Remove previous adapter from allowed list
-            allowedAdapters[contractToAdapter[allowedContract]] = false; // T:[CF-10]
-        }
-
+        // Remove previous adapter from allowed list and set up new one
+        allowedAdapters[contractToAdapter[targetContract]] = false; // T:[CF-10]
         allowedAdapters[adapter] = true; // T:[CF-9, 10]
-        contractToAdapter[allowedContract] = adapter; // T:[CF-9, 10]
 
-        emit ContractAllowed(allowedContract, adapter); // T:[CF-12]
+        allowedContractsSet.add(targetContract);
+        contractToAdapter[targetContract] = adapter; // T:[CF-9, 10]
+
+        emit ContractAllowed(targetContract, adapter); // T:[CF-12]
     }
 
-    /// @dev Connects credit managaer, checks that all needed price feeds exists and finalize config
+    /// @dev Forbids contract to use with credit manager
+    /// @param targetContract Address of contract to be forbidden
+    function forbidContract(address targetContract)
+        external
+        override
+        configuratorOnly // T:[CF-1]
+    {
+        require(
+            targetContract != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        ); // T:[CF-2]
+
+        require(
+            allowedContractsSet.remove(targetContract),
+            Errors.CF_CONTRACT_IS_NOT_IN_ALLOWED_LIST
+        ); // T:[CF-31]
+
+        // Remove previous adapter from allowed list
+        allowedAdapters[contractToAdapter[targetContract]] = false; // T:[CF-32]
+
+        // Sets adapter to address(0), which means to forbid it usage
+        contractToAdapter[targetContract] = address(0); // T:[CF-32]
+
+        emit ContractForbidden(targetContract); // T:[CF-32]
+    }
+
+    /// @dev Connects credit manager and checks that it has the same underlying token as pool
     function connectCreditManager(address _poolService)
         external
         override
@@ -197,12 +240,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             IPoolService(poolService).underlyingToken() == underlyingToken,
             Errors.CF_UNDERLYING_TOKEN_FILTER_CONFLICT
         ); // T:[CF-16]
-
-        // Check that each token pair has _priceOracle entry
-        for (uint256 i = 0; i < allowedTokensCount(); i++) {
-            address token = allowedTokens[i];
-            _priceOracle.getLastPrice(token, underlyingToken); // T:[CF-15]
-        }
     }
 
     /// @dev Checks the financial order and reverts if tokens aren't in list or collateral protection alerts
@@ -225,34 +262,93 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         _checkAndEnableToken(creditAccount, tokenOut); // T:[CF-22]
 
         // Convert to WETH is more gas efficient and doesn't make difference for ratio
-        uint256 amountInCollateral = _priceOracle.convert(
+        uint256 amountInCollateral = IPriceOracle(priceOracle).convert(
             amountIn,
             tokenIn,
             wethAddress
         ); // T:[CF-24]
 
         // Convert to WETH is more gas efficient and doesn't make difference for ratio
-        uint256 amountOutCollateral = _priceOracle.convert(
+        uint256 amountOutCollateral = IPriceOracle(priceOracle).convert(
             amountOut,
             tokenOut,
             wethAddress
         ); // T:[CF-24]
 
+        _checkCollateral(
+            creditAccount,
+            amountInCollateral,
+            amountOutCollateral
+        );
+    }
+
+    /// @dev Checks collateral for operation which returns more than 1 token
+    /// @param creditAccount Address of credit account
+    /// @param tokenOut Addresses of returned tokens
+    function checkMultiTokenCollateral(
+        address creditAccount,
+        uint256[] memory amountIn,
+        uint256[] memory amountOut,
+        address[] memory tokenIn,
+        address[] memory tokenOut
+    )
+        external
+        override
+        adapterOnly // T:[CF-20]
+    {
+        // Convert to WETH is more gas efficient and doesn't make difference for ratio
+        uint256 amountInCollateral = 0;
+        uint256 amountOutCollateral = 0;
+
+        for (uint256 i = 0; i < amountIn.length; i++) {
+            amountInCollateral = amountInCollateral.add(
+                IPriceOracle(priceOracle).convert(
+                    amountIn[i],
+                    tokenIn[i],
+                    wethAddress
+                )
+            );
+        }
+
+        for (uint256 i = 0; i < amountOut.length; i++) {
+            _checkAndEnableToken(creditAccount, tokenOut[i]); // T: [CF-33]
+            amountOutCollateral = amountOutCollateral.add(
+                IPriceOracle(priceOracle).convert(
+                    amountOut[i],
+                    tokenOut[i],
+                    wethAddress
+                )
+            );
+        }
+
+        _checkCollateral(
+            creditAccount,
+            amountInCollateral,
+            amountOutCollateral
+        ); // T: [CF-33]
+    }
+
+    /// @dev Checks health factor after operations
+    /// @param creditAccount Address of credit account
+    function _checkCollateral(
+        address creditAccount,
+        uint256 collateralIn,
+        uint256 collateralOut
+    ) internal {
         if (
-            amountOutCollateral.mul(PercentageMath.PERCENTAGE_FACTOR).div(
-                amountInCollateral
-            ) >
-            chiThreshold &&
-            fastCheckBlock[creditAccount] < block.number
+            (collateralOut.mul(PercentageMath.PERCENTAGE_FACTOR) >
+                collateralIn.mul(chiThreshold)) &&
+            fastCheckCounter[creditAccount] <= hfCheckInterval
         ) {
-            fastCheckBlock[creditAccount] = block.number + fastCheckDelay; // T:[CF-24]
+            fastCheckCounter[creditAccount]++; // T:[CF-25, 33]
         } else {
             // Require Hf > 1
             require(
                 calcCreditAccountHealthFactor(creditAccount) >=
                     PercentageMath.PERCENTAGE_FACTOR,
                 Errors.CF_OPERATION_LOW_HEALTH_FACTOR
-            ); // ToDo: T:[CF-25]
+            ); // T:[CF-25, 33, 34]
+            fastCheckCounter[creditAccount] = 1; // T:[CF-34]
         }
     }
 
@@ -264,8 +360,13 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     {
         // at opening account underlying token is enabled only
         enabledTokens[creditAccount] = 1; // T:[CF-19]
+        fastCheckCounter[creditAccount] = 1; // T:[CF-19]
     }
 
+    /// @dev Checks that token is in allowed list and updates enabledTokenMask
+    /// for provided credit account if needed
+    /// @param creditAccount Address of credit account
+    /// @param token Address of token to be checked
     function checkAndEnableToken(address creditAccount, address token)
         external
         override
@@ -274,10 +375,19 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         _checkAndEnableToken(creditAccount, token); // T:[CF-22, 23]
     }
 
+    /// @dev Checks that token is in allowed list and updates enabledTokenMask
+    /// for provided credit account if needed
+    /// @param creditAccount Address of credit account
+    /// @param token Address of token to be checked
     function _checkAndEnableToken(address creditAccount, address token)
         internal
     {
         revertIfTokenNotAllowed(token); //T:[CF-22]
+
+        require(
+            allowedTokenMask & tokenMasksMap[token] != 0,
+            Errors.CF_TOKEN_IS_NOT_ALLOWED
+        ); // T:[CF-36]
 
         if (enabledTokens[creditAccount] & tokenMasksMap[token] == 0) {
             enabledTokens[creditAccount] =
@@ -286,26 +396,91 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         } // T:[CF-23]
     }
 
-    function setupFastCheckParameters(
-        uint256 _chiThreshold,
-        uint256 _fastCheckDelay
-    )
+    /// @dev Change allowedTokenMask bit for partical token to opposite
+    /// It disables enabled tokens and vice versa
+    function changeAllowedTokenMask(address token)
         external
         configuratorOnly // T:[CF-1]
     {
-        require(
-            _chiThreshold >= Constants.CHI_THRESHOLD_MIN,
-            Errors.CF_INCORRECT_CHI_THRESHOLD
-        ); // T:[CF-29]
+        uint256 tokenMask; // T:[CF-35]
+        for (uint256 i = 0; i < allowedTokensCount(); i++) {
+            tokenMask = 1 << i; // T:[CF-35]
+            if (allowedTokens[i] == token) {
+                allowedTokenMask = allowedTokenMask ^ tokenMask; // T:[CF-35]
+            }
+        }
+    }
 
-        require(
-            _fastCheckDelay >= Constants.FAST_CHECK_DELAY_MIN,
-            Errors.CF_INCORRECT_FAST_CHECK
-        ); // ToDo: add check
-
+    /// @dev Sets fast check parameters chi & hfCheckCollateral
+    /// It reverts if 1 - chi ** hfCheckCollateral > feeLiquidation
+    function setFastCheckParameters(
+        uint256 _chiThreshold,
+        uint256 _hfCheckInterval
+    )
+        public
+        configuratorOnly // T:[CF-1]
+    {
         chiThreshold = _chiThreshold; // T:[CF-30]
-        fastCheckDelay = _fastCheckDelay; // T:[CF-30]
-        emit NewFastCheckParameters(_chiThreshold, _fastCheckDelay); // T:[CF-30]
+        hfCheckInterval = _hfCheckInterval; // T:[CF-30]
+
+        revertIfIncorrectFastCheckParams();
+
+        emit NewFastCheckParameters(_chiThreshold, _hfCheckInterval); // T:[CF-30]
+    }
+
+    /// @dev It updates liquidation threshold for underlying token threshold
+    /// to have enough buffer for liquidation (liquidaion premium + fee liq.)
+    /// It reverts if that buffer is less with new paremters, or there is any
+    /// liquidaiton threshold > new LT
+    function updateUnderlyingTokenLiquidationThreshold()
+        external
+        override
+        creditManagerOnly // T:[CF-20]
+    {
+        liquidationThresholds[underlyingToken] = ICreditManager(creditManager)
+        .liquidationDiscount()
+        .sub(ICreditManager(creditManager).feeLiquidation()); // T:[CF-38]
+
+        for (uint256 i = 1; i < allowedTokens.length; i++) {
+            require(
+                liquidationThresholds[allowedTokens[i]] <=
+                    liquidationThresholds[underlyingToken],
+                Errors.CF_SOME_LIQUIDATION_THRESHOLD_MORE_THAN_NEW_ONE
+            ); // T:[CF-39]
+        }
+
+        revertIfIncorrectFastCheckParams(); // T:[CF-39]
+    }
+
+    /// @dev It checks that 1 - chi ** hfCheckInterval < feeLiquidation
+    function revertIfIncorrectFastCheckParams() internal view {
+        // if credit manager is set, we add additional check
+        if (creditManager != address(0)) {
+            // computes maximum possible collateral drop between two health factor checks
+            uint256 maxPossibleDrop = PercentageMath.PERCENTAGE_FACTOR.sub(
+                calcMaxPossibleDrop(chiThreshold, hfCheckInterval)
+            ); // T:[CF-39]
+
+            require(
+                maxPossibleDrop <
+                    ICreditManager(creditManager).feeLiquidation(),
+                Errors.CF_FAST_CHECK_NOT_COVERED_COLLATERAL_DROP
+            ); // T:[CF-39]
+        }
+    }
+
+    // @dev it computes percentage ** times
+    // @param percentage Percentage in PERCENTAGE FACTOR format
+    function calcMaxPossibleDrop(uint256 percentage, uint256 times)
+        public
+        pure
+        returns (uint256 value)
+    {
+        value = PercentageMath.PERCENTAGE_FACTOR.mul(percentage); // T:[CF-37]
+        for (uint256 i = 0; i < times.sub(1); i++) {
+            value = value.mul(percentage).div(PercentageMath.PERCENTAGE_FACTOR); // T:[CF-37]
+        }
+        value = value.div(PercentageMath.PERCENTAGE_FACTOR); // T:[CF-37]
     }
 
     //
@@ -325,9 +500,10 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         total = 0; // T:[CF-17]
 
         uint256 tokenMask;
+        uint256 eTokens = enabledTokens[creditAccount];
         for (uint256 i = 0; i < allowedTokensCount(); i++) {
             tokenMask = 1 << i; // T:[CF-17]
-            if (enabledTokens[creditAccount] & tokenMask > 0) {
+            if (eTokens & tokenMask > 0) {
                 (, , uint256 tv, ) = getCreditAccountTokenById(
                     creditAccount,
                     i
@@ -349,9 +525,10 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     {
         total = 0;
         uint256 tokenMask;
+        uint256 eTokens = enabledTokens[creditAccount];
         for (uint256 i = 0; i < allowedTokensCount(); i++) {
             tokenMask = 1 << i; // T:[CF-18]
-            if (enabledTokens[creditAccount] & tokenMask > 0) {
+            if (eTokens & tokenMask > 0) {
                 (, , , uint256 twv) = getCreditAccountTokenById(
                     creditAccount,
                     i
@@ -379,12 +556,17 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
     /// @dev Returns quantity of contracts in allowed list
     function allowedContractsCount() public view override returns (uint256) {
-        return allowedContracts.length; // T:[CF-9]
+        return allowedContractsSet.length(); // T:[CF-9]
     }
 
-    /// @dev Reverts if adapter isn't in allowed contract list
-    function revertIfAdapterNotAllowed(address adapter) public view override {
-        require(allowedAdapters[adapter], Errors.CF_ADAPTERS_ONLY); // T:[CF-11]
+    /// @dev Returns allowed contract by index
+    function allowedContracts(uint256 i)
+        public
+        view
+        override
+        returns (address)
+    {
+        return allowedContractsSet.at(i); // T:[CF-9]
     }
 
     /// @dev Returns address & balance of token by the id of allowed token in the list
@@ -410,8 +592,12 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
         // balance ==0 : T: [CF-28]
         if (balance > 1) {
-            tv = _priceOracle.convert(balance, token, underlyingToken); // T:[CF-28]
-            tvw = tv.mul(tokenLiquidationThresholds[token]); // T:[CF-28]
+            tv = IPriceOracle(priceOracle).convert(
+                balance,
+                token,
+                underlyingToken
+            ); // T:[CF-28]
+            tvw = tv.mul(liquidationThresholds[token]); // T:[CF-28]
         }
     }
 
@@ -425,10 +611,9 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         override
         returns (uint256)
     {
-        uint256 borrowedAmount = ICreditAccount(creditAccount).borrowedAmount(); // T: [CF-26]
-
         return
-            borrowedAmount
+            ICreditAccount(creditAccount)
+                .borrowedAmount()
                 .mul(IPoolService(poolService).calcLinearCumulative_RAY())
                 .div(ICreditAccount(creditAccount).cumulativeIndexAtOpen()); // T: [CF-26]
     }

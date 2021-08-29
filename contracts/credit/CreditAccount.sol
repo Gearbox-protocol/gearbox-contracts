@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+
+import {Initializable} from "@openzeppelin/contracts/proxy/Initializable.sol";
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -22,9 +24,11 @@ import "hardhat/console.sol";
 ///   - Execute financial orders
 ///
 ///  More: https://dev.gearbox.fi/developers/credit/credit_account
-contract CreditAccount is ICreditAccount, Ownable {
+contract CreditAccount is ICreditAccount, Initializable {
     using SafeERC20 for IERC20;
     using Address for address;
+
+    address public override factory;
 
     // Keeps address of current credit Manager
     address public override creditManager;
@@ -40,20 +44,19 @@ contract CreditAccount is ICreditAccount, Ownable {
 
     /// @dev Restricts operation for current credit manager only
     modifier creditManagerOnly {
-        require(
-            msg.sender == creditManager,
-            Errors.CA_CREDIT_MANAGER_ONLY
-        );
+        require(msg.sender == creditManager, Errors.CA_CREDIT_MANAGER_ONLY);
         _;
     }
 
-    /// @dev Initializes credit account and connect it to credit account address. Restricted to account factory (owner) only
+    /// @dev Initialise used instead of constructor cause we use contract cloning
+    function initialize() external override initializer {
+        factory = msg.sender;
+    }
+
+    /// @dev Connects credit account to credit account address. Restricted to account factory (owner) only
     /// @param _creditManager Credit manager address
-    function initialize(address _creditManager)
-        external
-        override
-        onlyOwner // T:[CA-1]
-    {
+    function connectTo(address _creditManager) external override {
+        require(msg.sender == factory, Errors.CA_FACTORY_ONLY);
         creditManager = _creditManager; // T:[CA-7]
         since = block.number; // T:[CA-7]
     }
@@ -95,11 +98,22 @@ contract CreditAccount is ICreditAccount, Ownable {
         IERC20(token).safeApprove(swapContract, Constants.MAX_INT); // T:[CA-5]
     }
 
+    /// @dev Removes allowance token for 3rd party contract. Restricted for factory only
+    /// @param token ERC20 token for allowance
+    /// @param swapContract Swap contract address
+    function cancelAllowance(address token, address swapContract)
+        external
+        override
+    {
+        require(msg.sender == factory, Errors.CA_FACTORY_ONLY);
+        IERC20(token).safeApprove(swapContract, 0);
+    }
+
     /// @dev Transfers tokens from credit account to provided address. Restricted for current credit manager only
     /// @param token Token which should be transferred from credit account
     /// @param to Address of recipient
     /// @param amount Amount to be transferred
-    function transfer(
+    function safeTransfer(
         address token,
         address to,
         uint256 amount
@@ -120,6 +134,6 @@ contract CreditAccount is ICreditAccount, Ownable {
         creditManagerOnly
         returns (bytes memory)
     {
-        return destination.functionCall(data); // ToDo: Check
+        return destination.functionCall(data); // T: [CM-48]
     }
 }

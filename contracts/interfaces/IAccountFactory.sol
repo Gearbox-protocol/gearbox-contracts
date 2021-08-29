@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+pragma abicoder v2;
+
+import {DataTypes} from "../libraries/data/Types.sol";
 
 interface IAccountFactory {
     // emits if new account miner was changed
@@ -19,15 +22,12 @@ interface IAccountFactory {
     // emits each time when pool returns credit account
     event ReturnCreditAccount(address indexed account);
 
-    ///  @dev Connects miner to account manager. Account miner address is taken from address repository
-    function connectMiner() external;
+    // emits each time when DAO takes account from account factory forever
+    event TakeForever(address indexed creditAccount, address indexed to);
 
     /// @dev Provide new creditAccount to pool. Creates a new one, if needed
-    /// @param trader Trader/farmer address. Used for gas compensation in terms of trader account creation
     /// @return Address of creditAccount
-    function takeCreditAccount(address payable trader)
-        external
-        returns (address);
+    function takeCreditAccount() external returns (address);
 
     /// @dev Takes credit account back and stay in tn the queue
     /// @param usedAccount Address of used credit account
@@ -50,4 +50,6 @@ interface IAccountFactory {
 
     /// @dev Quantity of credit accounts
     function countCreditAccounts() external view returns (uint256);
+
+    //    function miningApprovals(uint i) external returns(DataTypes.MiningApproval calldata);
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 pragma experimental ABIEncoderV2;
@@ -13,15 +13,17 @@ import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {CreditManager} from "../credit/CreditManager.sol";
 import {IPoolService} from "../interfaces/IPoolService.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
+import {IPriceOracle} from "../interfaces/IPriceOracle.sol";
 
-import {AddressProvider} from "../configuration/AddressProvider.sol";
-import {ContractsRegister} from "../configuration/ContractsRegister.sol";
+import {AddressProvider} from "./AddressProvider.sol";
+import {ContractsRegister} from "./ContractsRegister.sol";
 
 import {DataTypes} from "../libraries/data/Types.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
 /// @title Data compressor
-/// @notice Collect data to send it to Dapp
+/// @notice Collects data from different contracts to send it to dApp
+/// Do not use for data from data compressor for state-changing functions
 contract DataCompressor {
     using SafeMath for uint256;
     using PercentageMath for uint256;
@@ -123,18 +125,14 @@ contract DataCompressor {
         returns (DataTypes.CreditAccountData memory)
     {
         ICreditManager creditManager = ICreditManager(_creditManager);
-
-        // Check that borrower has opened account and throw otherwise
-        require(
-            creditManager.hasOpenedCreditAccount(borrower),
-            Errors.CM_NO_OPEN_ACCOUNT
+        address creditAccount = creditManager.getCreditAccountOrRevert(
+            borrower
         );
 
         DataTypes.CreditAccountData memory result;
+
         result.borrower = borrower;
         result.creditManager = _creditManager;
-
-        address creditAccount = creditManager.creditAccounts(borrower);
         result.addr = creditAccount;
 
         ICreditFilter creditFilter = ICreditFilter(
@@ -217,24 +215,6 @@ contract DataCompressor {
         result.canBeClosed = loss == 0;
 
         return result;
-    }
-
-    /// @dev Returns Credit account parameters
-    function getCreditAccountParameters(address creditAccount)
-        external
-        view
-        returns (
-            address _creditManager,
-            uint256 _borrowedAmount,
-            uint256 _cumulativeIndexAtOpen,
-            uint256 _since
-        )
-    {
-        ICreditAccount va = ICreditAccount(creditAccount);
-        _creditManager = va.creditManager();
-        _borrowedAmount = va.borrowedAmount();
-        _cumulativeIndexAtOpen = va.cumulativeIndexAtOpen();
-        _since = va.since();
     }
 
     /// @dev Returns all credit managers data + hasOpendAccount flag for bborrower
@@ -401,6 +381,55 @@ contract DataCompressor {
         return
             ICreditManager(_creditManager).creditFilter().contractToAdapter(
                 _allowedContract
+            );
+    }
+
+    function calcExpectedHf(
+        address _creditManager,
+        address borrower,
+        uint256[] memory balances
+    )
+        external
+        view
+        registeredCreditManagerOnly(_creditManager)
+        returns (uint256)
+    {
+        ICreditManager creditManager = ICreditManager(_creditManager);
+        address creditAccount = creditManager.getCreditAccountOrRevert(
+            borrower
+        );
+
+        ICreditFilter creditFilter = ICreditFilter(
+            creditManager.creditFilter()
+        );
+
+        IPriceOracle priceOracle = IPriceOracle(creditFilter.priceOracle());
+        uint256 tokenLength = creditFilter.allowedTokensCount();
+        require(balances.length == tokenLength, "Incorrect balances size");
+
+        uint256 total = 0;
+        address underlyingToken = creditManager.underlyingToken();
+
+        for (uint256 i = 0; i < tokenLength; i++) {
+            {
+                total = total.add(
+                    priceOracle
+                    .convert(
+                        balances[i],
+                        creditFilter.allowedTokens(i),
+                        underlyingToken
+                    ).mul(
+                        creditFilter.liquidationThresholds(
+                            creditFilter.allowedTokens(i)
+                        )
+                    )
+                );
+            }
+        }
+
+        return
+            total.div(
+                creditFilter.calcCreditAccountAccruedInterest(creditAccount)
             );
     }
 }

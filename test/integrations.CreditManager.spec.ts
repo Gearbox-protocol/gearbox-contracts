@@ -23,7 +23,7 @@ const {
   referral,
   ALLOWED_CONTRACT_1,
   ALLOWED_CONTRACT_2,
-  amountOutTolerance,
+  closeSlippage,
 } = CreditManagerTestSuite;
 
 describe("Integrational CreditManager", function () {

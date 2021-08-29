@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
 import {Errors} from "../libraries/helpers/Errors.sol";
-import {ACLTrait} from "../configuration/ACLTrait.sol";
+import {ACLTrait} from "./ACLTrait.sol";
 
 import "hardhat/console.sol";
 
@@ -63,7 +63,7 @@ contract ContractsRegister is ACLTrait {
     {
         require(
             !_creditManagersSet[newCreditManager],
-            Errors.CR_VA_MANAGER_ALREADY_ADDED
+            Errors.CR_CREDIT_MANAGER_ALREADY_ADDED
         ); // T:[CR-5]
         creditManagers.push(newCreditManager); // T:[CR-6]
         _creditManagersSet[newCreditManager] = true; // T:[CR-6]

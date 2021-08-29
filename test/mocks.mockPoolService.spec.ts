@@ -33,5 +33,13 @@ describe("MockPoolService", function () {
     await mocksMockPoolService.removeLiquidity(12, DUMB_ADDRESS);
     await mocksMockPoolService.forbidCreditManagerToBorrow(DUMB_ADDRESS);
     await mocksMockPoolService.newInterestRateModel(DUMB_ADDRESS);
+    console.log(await mocksMockPoolService.toDiesel(1));
+    console.log(await mocksMockPoolService.fromDiesel(1));
+
+    await mocksMockPoolService.pause();
+    await mocksMockPoolService.unpause();
+    await mocksMockPoolService.setExpectedLiquidityLimit(1);
+    await mocksMockPoolService.paused();
+    await mocksMockPoolService.setWithdrawFee(1);
   });
 });

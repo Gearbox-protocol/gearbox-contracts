@@ -25,7 +25,6 @@ describe("ACLTrait", function () {
     deployer = (await ethers.getSigners())[0];
     user = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
-      accountMinerType: "mock",
       treasury: "mock",
       weth: "mock",
     });

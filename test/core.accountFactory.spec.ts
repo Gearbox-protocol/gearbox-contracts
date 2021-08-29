@@ -8,13 +8,19 @@ import {
   ContractsRegister,
   CreditAccount__factory,
   Errors,
+  ICreditAccount__factory,
 } from "../types/ethers-v5";
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
-import { DEPLOYMENT_COST, DUMB_ADDRESS } from "../core/constants";
+import {
+  DEPLOYMENT_COST,
+  DUMB_ADDRESS,
+  DUMB_ADDRESS2,
+} from "../core/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { BigNumber } from "ethers";
+import { MAX_INT } from "@diesellabs/gearbox-sdk";
 
 /**
  * @title TraderAccountFactory test
@@ -32,42 +38,45 @@ describe("AccountFactory", function () {
   let contractsRegister: ContractsRegister;
   let errors: Errors;
 
-  beforeEach(async function () {
+  beforeEach(async () => {
     deployer = (await ethers.getSigners())[0];
     user = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
-      accountMinerType: "mock",
       treasury: "mock",
       weth: "mock",
     });
     integrationsDeployer = new IntegrationsDeployer();
     testDeployer = new TestDeployer();
     accountFactory = (await coreDeployer.getAccountFactory()) as AccountFactory;
-    const accountMiner = await coreDeployer.getAccountMiner("own");
-    await deployer.sendTransaction({
-      to: accountMiner.address,
-      value: DEPLOYMENT_COST.mul(5),
-    });
-
-    await accountFactory.connectMiner();
 
     contractsRegister = await coreDeployer.getContractsRegister();
     errors = await testDeployer.getErrors();
   });
 
-  it("[AAF-1]: constructor correctly creates a genesis credit account", async function () {
+  it("[AF-1]: constructor correctly creates a genesis credit account", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const creditAccount = await accountFactory.head();
     expect(await accountFactory.getNext(creditAccount)).to.be.eq(
       "0x0000000000000000000000000000000000000000"
     );
-    expect(await accountFactory.tail()).to.be.eq(creditAccount);
-    expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
+    expect(await accountFactory.tail(), "tail").to.be.eq(creditAccount);
+    expect(
+      await accountFactory.countCreditAccountsInStock(),
+      "accounts in stock"
+    ).to.be.eq(1);
+    expect(
+      await accountFactory.countCreditAccounts(),
+      "total credit accounts"
+    ).to.be.eq(1);
+    expect(
+      await accountFactory._contractsRegister(),
+      "contracts register"
+    ).to.be.eq((await coreDeployer.getContractsRegister()).address);
   });
 
-  it("[AAF-2]: takeCreditAccount correctly add credit account", async function () {
+  it("[AF-2]: takeCreditAccount correctly add credit account", async () => {
     await contractsRegister.addCreditManager(deployer.address);
-    await accountFactory.takeCreditAccount(DUMB_ADDRESS);
+    await accountFactory.takeCreditAccount();
     const initHead = await accountFactory.head();
     const next = await accountFactory.getNext(initHead);
     const next2 = await accountFactory.getNext(next);
@@ -75,46 +84,29 @@ describe("AccountFactory", function () {
     expect(next3).to.be.eq("0x0000000000000000000000000000000000000000");
   });
 
-  it("[AAF-3]: takeCreditAccount keeps at least 1 VA in stock", async function () {
+  it("[AF-3]: takeCreditAccount keeps at least 1 VA in stock", async () => {
     await contractsRegister.addCreditManager(deployer.address);
-    await accountFactory.takeCreditAccount(deployer.address);
+    await accountFactory.takeCreditAccount();
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
-    await accountFactory.takeCreditAccount(deployer.address);
+    await accountFactory.takeCreditAccount();
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
-    await accountFactory.takeCreditAccount(deployer.address);
+    await accountFactory.takeCreditAccount();
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
   });
 
-  it("[AAF-4]: takeCreditAccount pays compensation correctly", async function () {
-    await contractsRegister.addCreditManager(deployer.address);
-    await expect(() =>
-      accountFactory.takeCreditAccount(deployer.address)
-    ).to.be.changeEtherBalance(deployer, DEPLOYMENT_COST);
-  });
-
-  it("[AAF-5]: takeCreditAccount emits InitializeCreditAccount event", async function () {
+  it("[AF-5]: takeCreditAccount emits InitializeCreditAccount event", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
 
-    await expect(accountFactory.takeCreditAccount(DUMB_ADDRESS))
+    await expect(accountFactory.takeCreditAccount())
       .to.emit(accountFactory, "InitializeCreditAccount")
       .withArgs(head, deployer.address);
   });
 
-  it("[AAF-6]: connectMiner emits AccountMinerChanged event", async function () {
-    await contractsRegister.addCreditManager(deployer.address);
-    // Getting miner for comparison with event
-    const miner = await coreDeployer.getAccountMiner();
-
-    await expect(accountFactory.connectMiner())
-      .to.emit(accountFactory, "AccountMinerChanged")
-      .withArgs(miner.address);
-  });
-
-  it("[AAF-7]: returnCreditAccount set returned container to the end of list", async function () {
+  it("[AF-7]: returnCreditAccount set returned container to the end of list", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
-    await accountFactory.takeCreditAccount(deployer.address);
+    await accountFactory.takeCreditAccount();
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
 
     await accountFactory.returnCreditAccount(head);
@@ -128,10 +120,10 @@ describe("AccountFactory", function () {
     expect(await accountFactory.tail()).to.be.eq(head);
   });
 
-  it("[AAF-8]: returnCreditAccount emits ReturnCreditAccount", async function () {
+  it("[AF-8]: returnCreditAccount emits ReturnCreditAccount", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
-    await accountFactory.takeCreditAccount(deployer.address);
+    await accountFactory.takeCreditAccount();
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
 
     await expect(accountFactory.returnCreditAccount(head))
@@ -148,27 +140,27 @@ describe("AccountFactory", function () {
    *     }
    */
 
-  it("[AAF-9]: takeCreditAccount doesn't produce extra VA if not needed", async function () {
+  it("[AF-9]: takeCreditAccount doesn't produce extra VA if not needed", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
-    await accountFactory.takeCreditAccount(deployer.address);
+    await accountFactory.takeCreditAccount();
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
 
     await accountFactory.returnCreditAccount(head);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(2);
 
-    await accountFactory.takeCreditAccount(deployer.address);
+    await accountFactory.takeCreditAccount();
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
   });
 
-  it("[AAF-10]: _addCreditAccount() adds credit account to array", async function () {
+  it("[AF-10]: _addCreditAccount() adds credit account to array", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const accounts: Array<string> = [];
 
     for (let i = 0; i < 5; i++) {
       accounts.push(await accountFactory.head());
       expect(await accountFactory.countCreditAccounts()).to.be.eq(i + 1);
-      await accountFactory.takeCreditAccount(deployer.address);
+      await accountFactory.takeCreditAccount();
     }
 
     for (let i = 0; i < 5; i++) {
@@ -176,10 +168,10 @@ describe("AccountFactory", function () {
     }
   });
 
-  it("[AAF-11]: takeCreditAccount set correct address of new va", async function () {
+  it("[AF-11]: takeCreditAccount set correct address of new va", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const creditAccount = await accountFactory.head();
-    const receipt = await accountFactory.takeCreditAccount(DUMB_ADDRESS);
+    const receipt = await accountFactory.takeCreditAccount();
 
     const creditAccountArtifact = (await ethers.getContractFactory(
       "CreditAccount"
@@ -190,29 +182,38 @@ describe("AccountFactory", function () {
     expect(await va.since()).to.be.eq(receipt.blockNumber);
   });
 
-  it("[TAF-1]: connectMiner reverts if was called by non-configurator", async function () {
-    const revertMsg = await errors.ACL_CALLER_NOT_CONFIGURATOR();
-    await expect(
-      accountFactory.connect(user).connectMiner()
-    ).to.be.revertedWith(revertMsg);
-  });
-
-  it("[TAF-2]: takeCreditAccount, returns creditAccount reverts if was called by non creditManagers", async function () {
-    const revertMsg =
-      await errors.CR_ALLOWED_FOR_VIRTUAL_ACCOUNT_MANAGERS_ONLY();
-    await expect(
-      accountFactory.takeCreditAccount(DUMB_ADDRESS)
-    ).to.be.revertedWith(revertMsg);
+  it("[AF-12]: takeCreditAccount, returns creditAccount reverts if was called by non creditManagers", async () => {
+    const revertMsg = await errors.CR_CREDIT_ACCOUNT_MANAGERS_ONLY();
+    await expect(accountFactory.takeCreditAccount()).to.be.revertedWith(
+      revertMsg
+    );
     await expect(
       accountFactory.returnCreditAccount(DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[TAF-3]: takeCreditAccount return CreditAccount functional interface item", async function () {
+  it("[AF-13]: takeOut, addMiningApprovals, finishMining reverts if was called by non configurator", async () => {
+    const revertMsg = await errors.ACL_CALLER_NOT_CONFIGURATOR();
+    await expect(
+      accountFactory
+        .connect(user)
+        .takeOut(DUMB_ADDRESS, DUMB_ADDRESS, DUMB_ADDRESS)
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      accountFactory.connect(user).finishMining()
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      accountFactory.connect(user).addMiningApprovals([])
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[AF-14]: takeCreditAccount return CreditAccount functional interface item", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const firstCreditAccount = await accountFactory.head();
     // here we take the first creditAccount
-    const receipt = await accountFactory.takeCreditAccount(DUMB_ADDRESS);
+    const receipt = await accountFactory.takeCreditAccount();
 
     const contractName = "CreditAccount";
     const CreditAccountArtifact = (await ethers.getContractFactory(
@@ -230,5 +231,131 @@ describe("AccountFactory", function () {
 
     const since = await tva.since();
     expect(since).to.be.eq(receipt.blockNumber);
+  });
+
+  it("[AF-15]: takeOut reverts if incorrect link prev <> account provided", async () => {
+    const revertMsg = await errors.AF_CREDIT_ACCOUNT_NOT_IN_STOCK();
+    await expect(
+      accountFactory.takeOut(DUMB_ADDRESS, DUMB_ADDRESS, DUMB_ADDRESS)
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[AF-16]: takeOut corretly takes out a credit account ", async () => {
+    await accountFactory.addCreditAccount();
+    await accountFactory.addCreditAccount();
+    await accountFactory.addCreditAccount();
+    const head = await accountFactory.head();
+    const prev = await accountFactory.getNext(head);
+    const creditAccount = await accountFactory.getNext(prev);
+    const accountAfter = await accountFactory.getNext(creditAccount);
+
+    await expect(accountFactory.takeOut(prev, creditAccount, user.address))
+      .to.emit(accountFactory, "TakeForever")
+      .withArgs(creditAccount, user.address);
+    expect(
+      await accountFactory.getNext(prev),
+      "Incorrect list update"
+    ).to.be.eq(accountAfter);
+    const creditAccountContract = ICreditAccount__factory.connect(
+      creditAccount,
+      deployer
+    );
+    expect(
+      await creditAccountContract.creditManager(),
+      "Incorrect credit manager update at credit account"
+    ).to.be.eq(user.address);
+  });
+
+  it("[AF-17]: mineCreditAccount, finishMining reverts after finishMining call", async () => {
+    const revertMsg = await errors.AF_MINING_IS_FINISHED();
+    await accountFactory.finishMining();
+    await expect(accountFactory.mineCreditAccount()).to.be.revertedWith(
+      revertMsg
+    );
+
+    await expect(accountFactory.addMiningApprovals([])).to.be.revertedWith(
+      revertMsg
+    );
+  });
+
+  it("[AF-18]: mineCreditAccount adds new account and provide allowances", async () => {
+    const accountsQty = await accountFactory.countCreditAccounts();
+
+    const tokenA = await testDeployer.getTokenMock("tokenA", "TTA");
+    const tokenB = await testDeployer.getTokenMock("tokenB", "TTb");
+
+    const contractA = DUMB_ADDRESS;
+    const contractB = DUMB_ADDRESS2;
+
+    const miningApprovals = [
+      { token: tokenA.address, swapContract: contractA },
+      { token: tokenA.address, swapContract: contractB },
+      { token: tokenB.address, swapContract: contractA },
+    ];
+
+    await accountFactory.addMiningApprovals(miningApprovals);
+
+    const receipt = await accountFactory.mineCreditAccount();
+
+    expect(await accountFactory.countCreditAccounts()).to.be.eq(
+      accountsQty.add(1)
+    );
+    const newAcc = await accountFactory.tail();
+    const creditAccount = ICreditAccount__factory.connect(newAcc, deployer);
+    expect(await creditAccount.borrowedAmount()).to.be.eq(1);
+    expect(await creditAccount.cumulativeIndexAtOpen()).to.be.eq(1);
+    expect(await creditAccount.since()).to.be.eq(receipt.blockNumber);
+    expect(await creditAccount.creditManager()).to.be.eq(
+      accountFactory.address
+    );
+
+    expect(
+      await tokenA.allowance(creditAccount.address, contractA),
+      "Allowance tokenA, contractA"
+    ).to.be.eq(MAX_INT);
+
+    expect(
+      await tokenA.allowance(creditAccount.address, contractB),
+      "Allowance tokenA, contractB"
+    ).to.be.eq(MAX_INT);
+
+    expect(
+      await tokenB.allowance(creditAccount.address, contractA),
+      "Allowance tokenB, contractA"
+    ).to.be.eq(MAX_INT);
+
+    expect(
+      await tokenB.allowance(creditAccount.address, contractB),
+      "Allowance tokenB, contractB"
+    ).to.be.eq(0);
+  });
+
+  it("[AF-19]: mineApprovals adds approval pairs to array", async () => {
+    const tokenA = await testDeployer.getTokenMock("tokenA", "TTA");
+    const tokenB = await testDeployer.getTokenMock("tokenB", "TTb");
+
+    const contractA = DUMB_ADDRESS;
+    const contractB = DUMB_ADDRESS2;
+
+    const miningApprovals = [
+      { token: tokenA.address, swapContract: contractA },
+      { token: tokenA.address, swapContract: contractB },
+      { token: tokenB.address, swapContract: contractA },
+    ];
+
+    await accountFactory.addMiningApprovals(miningApprovals.slice(0, 2));
+    await accountFactory.addMiningApprovals(miningApprovals.slice(2, 3));
+
+    for (let i = 0; i < miningApprovals.length; i++) {
+      const appr = await accountFactory.miningApprovals(i);
+      expect(appr.token, `token at ${i}`).to.be.eq(miningApprovals[i].token);
+      expect(appr.swapContract, `swapContract at ${i}`).to.be.eq(
+        miningApprovals[i].swapContract
+      );
+    }
+
+    await expect(
+      accountFactory.miningApprovals(miningApprovals.length)
+    ).to.be.revertedWith("");
   });
 });

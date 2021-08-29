@@ -15,7 +15,7 @@ import {
   IPriceOracle,
   PriceOracle,
   TokenMock,
-  WETHMock,
+  WETHMock
 } from "../types/ethers-v5";
 
 import { DUMB_ADDRESS } from "../core/constants";
@@ -40,7 +40,6 @@ describe("PriceOracle", function () {
   beforeEach(async function () {
     trader = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
-      accountMinerType: "mock",
       treasury: "mock",
       weth: "mock",
     });

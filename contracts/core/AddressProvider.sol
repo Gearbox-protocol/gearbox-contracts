@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
@@ -9,8 +9,8 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 
 /// @title AddressRepository
 /// @notice Stores addresses of deployed contracts
-
 contract AddressProvider is Ownable, IAppAddressProvider {
+
     // Mapping which keeps all addresses
     mapping(bytes32 => address) public addresses;
 
@@ -23,7 +23,6 @@ contract AddressProvider is Ownable, IAppAddressProvider {
     bytes32 public constant PRICE_ORACLE = "PRICE_ORACLE";
     bytes32 public constant ACCOUNT_FACTORY = "ACCOUNT_FACTORY";
     bytes32 public constant DATA_COMPRESSOR = "DATA_COMPRESSOR";
-    bytes32 public constant ACCOUNT_MINER = "ACCOUNT_MINER";
     bytes32 public constant TREASURY_CONTRACT = "TREASURY_CONTRACT";
     bytes32 public constant GEAR_TOKEN = "GEAR_TOKEN";
     bytes32 public constant WETH_TOKEN = "WETH_TOKEN";
@@ -63,7 +62,7 @@ contract AddressProvider is Ownable, IAppAddressProvider {
     }
 
     /// @return Address of PriceOracle
-    function getPriceOracle() external override view returns (address) {
+    function getPriceOracle() external view override returns (address) {
         return _getAddress(PRICE_ORACLE); // T:[AP-5]
     }
 
@@ -102,20 +101,6 @@ contract AddressProvider is Ownable, IAppAddressProvider {
         onlyOwner // T:[AP-15]
     {
         _setAddress(DATA_COMPRESSOR, _address); // T:[AP-8]
-    }
-
-    /// @return Address of AccountMiner
-    function getAccountMiner() external view returns (address) {
-        return _getAddress(ACCOUNT_MINER); // T:[AP-10]
-    }
-
-    /// @dev Sets address of AccountMiner
-    /// @param _address Address of AccountMiner
-    function setAccountMiner(address _address)
-        external
-        onlyOwner // T:[AP-15]
-    {
-        _setAddress(ACCOUNT_MINER, _address); // T:[AP-10]
     }
 
     /// @return Address of Treasury contract

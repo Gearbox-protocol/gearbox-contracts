@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BSL-1.1
-// Gearbox. Generalized protocol that allows to get leverage and use it across various DeFi protocols
+// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
+
+import "./IPriceOracle.sol";
 
 interface ICreditFilter {
     // Emits each time token is allowed or liquidtion threshold changed
@@ -9,6 +11,9 @@ interface ICreditFilter {
 
     // Emits each time contract is allowed or adapter changed
     event ContractAllowed(address indexed protocol, address indexed adapter);
+
+    // Emits each time contract is forbidden
+    event ContractForbidden(address indexed protocol);
 
     // Emits each time when fast check parameters are updated
     event NewFastCheckParameters(uint256 chiThreshold, uint256 fastCheckDelay);
@@ -23,9 +28,13 @@ interface ICreditFilter {
     function allowToken(address token, uint256 liquidationThreshold) external;
 
     /// @dev Adds contract to the list of allowed contracts
-    /// @param allowedContract Address of allowed contract
+    /// @param targetContract Address of contract to be allowed
     /// @param adapter Adapter contract address
-    function allowContract(address allowedContract, address adapter) external;
+    function allowContract(address targetContract, address adapter) external;
+
+    /// @dev Forbids contract and removes it from the list of allowed contracts
+    /// @param targetContract Address of allowed contract
+    function forbidContract(address targetContract) external;
 
     /// @dev Checks financial order and reverts if tokens aren't in list or collateral protection alerts
     /// @param creditAccount Address of credit account
@@ -41,6 +50,14 @@ interface ICreditFilter {
         uint256 amountOut
     ) external;
 
+    function checkMultiTokenCollateral(
+        address creditAccount,
+        uint256[] memory amountIn,
+        uint256[] memory amountOut,
+        address[] memory tokenIn,
+        address[] memory tokenOut
+    ) external;
+
     /// @dev Connects credit managaer, hecks that all needed price feeds exists and finalize config
     function connectCreditManager(address poolService) external;
 
@@ -52,9 +69,6 @@ interface ICreditFilter {
     //
     // GETTERS
     //
-
-    /// @dev Reverts if adapter isn't in allowed contract list
-    function revertIfAdapterNotAllowed(address adapter) external view;
 
     /// @dev Returns quantity of contracts in allowed list
     function allowedContractsCount() external view returns (uint256);
@@ -73,6 +87,9 @@ interface ICreditFilter {
 
     /// @dev Returns of token address from allowed list by its id
     function allowedTokens(uint256 id) external view returns (address);
+
+    /// @dev Allowed token mask
+    function allowedTokenMask() external view returns (uint256);
 
     /// @dev Calculates total value for provided address
     /// More: https://dev.gearbox.fi/developers/credit/economy#total-value
@@ -147,4 +164,13 @@ interface ICreditFilter {
         external
         view
         returns (uint256);
+
+    function liquidationThresholds(address token)
+        external
+        view
+        returns (uint256);
+
+    function priceOracle() external view returns (address);
+
+    function updateUnderlyingTokenLiquidationThreshold() external;
 }
