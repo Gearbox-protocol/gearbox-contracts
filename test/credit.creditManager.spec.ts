@@ -23,9 +23,10 @@ import {
   FEE_INTEREST,
   FEE_LIQUIDATION,
   FEE_SUCCESS,
-  LEVERAGE_DECIMALS, LIQUIDATION_DISCOUNTED_SUM,
+  LEVERAGE_DECIMALS,
+  LIQUIDATION_DISCOUNTED_SUM,
   PAUSABLE_REVERT_MSG,
-  UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD
+  UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
 } from "../core/constants";
 import { BigNumber } from "ethers";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
@@ -34,7 +35,8 @@ import {
   MAX_INT,
   PERCENTAGE_FACTOR,
   percentMul,
-  RAY, WAD
+  RAY,
+  WAD,
 } from "@diesellabs/gearbox-sdk";
 import { UniswapModel } from "../model/uniswapModel";
 import { PoolServiceModel } from "../model/poolService";
@@ -1460,5 +1462,38 @@ describe("CreditManager", function () {
     expect(
       await creditFilter.liquidationThresholds(underlyingToken.address)
     ).to.be.eq(9000);
+  });
+
+  it("[CM-50]: liquidation with force works correctly", async () => {
+    const revertMsg = await errors.CM_TRANSFER_FAILED();
+    await ts.openDefaultCreditAccount();
+    const blockedToken = await testDeployer.getERC20BlockingMock(
+      "Block",
+      "BLK"
+    );
+
+    const chainlinkMock = await ts.testDeployer.getChainlinkPriceFeedMock(
+      BigNumber.from(1).mul(WAD)
+    );
+
+    await ts.priceOracle.addPriceFeed(
+      blockedToken.address,
+      chainlinkMock.address
+    );
+
+    await creditFilter.allowToken(blockedToken.address, 1);
+    await creditFilter.allowToken(underlyingToken.address, 1);
+
+    await blockedToken.mint(user.address, 100);
+    await blockedToken.connect(user).approve(creditManager.address, MAX_INT);
+    await creditManager.connect(user).addCollateral(user.address, blockedToken.address, 100);
+    await blockedToken.blockToken();
+
+    await underlyingToken.approve(creditManager.address, MAX_INT);
+    await expect(
+      creditManager.liquidateCreditAccount(user.address, deployer.address, false)
+    ).to.be.revertedWith(revertMsg);
+
+    await  creditManager.liquidateCreditAccount(user.address, deployer.address, true);
   });
 });

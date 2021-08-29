@@ -615,7 +615,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             try
                 ICreditAccount(creditAccount).safeTransfer(token, to, amount) // T:[CM-14, 17]
             {} catch {
-                require(!force, Errors.CM_TRANSFER_FAILED);
+                require(force, Errors.CM_TRANSFER_FAILED); // T:[CM-50]
             }
         } else {
             ICreditAccount(creditAccount).safeTransfer(
