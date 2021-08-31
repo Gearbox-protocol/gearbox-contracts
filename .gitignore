@@ -8,3 +8,4 @@ artifacts/
 coverage*
 .env
 .DS_Store
+
