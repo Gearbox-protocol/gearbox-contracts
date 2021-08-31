@@ -3,6 +3,8 @@ pragma solidity ^0.7.4;
 pragma experimental ABIEncoderV2;
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
+/// @dev Governance Gearbox token
+/// based on https://github.com/Uniswap/governance/blob/master/contracts/Uni.sol
 contract GearToken {
     /// @notice EIP-20 token name for this token
     string public constant name = "Gearbox";
