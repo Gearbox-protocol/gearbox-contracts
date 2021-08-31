@@ -11,13 +11,13 @@ import {DataTypes} from "../../libraries/data/Types.sol";
 interface IAppCreditManager {
     function openCreditAccount(
         uint256 amount,
-        address payable onBehalfOf,
+        address onBehalfOf,
         uint256 leverageFactor,
         uint256 referralCode
     ) external;
 
     function closeCreditAccount(address to, DataTypes.Exchange[] calldata paths)
-    external;
+        external;
 
     function repayCreditAccount(address to) external;
 
