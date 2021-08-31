@@ -54,17 +54,18 @@ interface ICreditManager is IAppCreditManager {
     // Emit each time when financial order is executed
     event ExecuteOrder(address indexed borrower, address indexed target);
 
-    // Emits each time when new limits are set
-    event NewLimits(uint256 minAmount, uint256 maxAmount);
-
     // Emits each time when new fees are set
-    event NewFees(
+    event NewParameters(
+        uint256 minAmount,
+        uint256 maxAmount,
         uint256 maxLeverage,
         uint256 feeSuccess,
         uint256 feeInterest,
         uint256 feeLiquidation,
         uint256 liquidationDiscount
     );
+
+    event TransferAccount(address oldOwner, address newOwner);
 
     //
     // CREDIT ACCOUNT MANAGEMENT
@@ -90,7 +91,7 @@ interface ICreditManager is IAppCreditManager {
      */
     function openCreditAccount(
         uint256 amount,
-        address payable onBehalfOf,
+        address onBehalfOf,
         uint256 leverageFactor,
         uint256 referralCode
     ) external override;
@@ -205,9 +206,6 @@ interface ICreditManager is IAppCreditManager {
     /// @dev Returns address of CreditFilter
     function creditAccounts(address borrower) external view returns (address);
 
-    /// @dev Sets min & max account.Restricted for configurator role only
-    function setLimits(uint256 _minAmount, uint256 _maxAmount) external;
-
     /// @dev Executes filtered order on credit account which is connected with particular borrowers
     /// @param borrower Borrower address
     /// @param target Target smart-contract
@@ -227,6 +225,8 @@ interface ICreditManager is IAppCreditManager {
         address toContract,
         address token
     ) external;
+
+    function transferAccountOwnership(address newOwner) external;
 
     /// @dev Returns address of borrower's credit account and reverts of borrower has no one.
     /// @param borrower Borrower address

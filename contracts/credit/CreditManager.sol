@@ -124,8 +124,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         defaultSwapContract = _defaultSwapContract; // T:[CM-1]
         _accountFactory = IAccountFactory(addressProvider.getAccountFactory()); // T:[CM-1]
 
-        setLimits(_minAmount, _maxAmount); // T:[CM-1]
-        setFees(
+        setParams(
+            _minAmount,
+            _maxAmount,
             _maxLeverage,
             Constants.FEE_SUCCESS,
             Constants.FEE_INTEREST,
@@ -160,7 +161,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
      */
     function openCreditAccount(
         uint256 amount,
-        address payable onBehalfOf,
+        address onBehalfOf,
         uint256 leverageFactor,
         uint256 referralCode
     )
@@ -686,28 +687,17 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         emit AddCollateral(onBehalfOf, token, amount); // T: [CM-48]
     }
 
-    /// @dev Sets min & max account. Restricted for configurator role only
-    function setLimits(uint256 _minAmount, uint256 _maxAmount)
-        public
-        override
-        nonReentrant
-        configuratorOnly // T:[CM-33]
-    {
-        require(_minAmount <= _maxAmount, Errors.CM_INCORRECT_LIMITS); // T:[CM-34]
-
-        minAmount = _minAmount; // T:[CM-32]
-        maxAmount = _maxAmount; // T:[CM-32]
-
-        emit NewLimits(minAmount, maxAmount); // T:[CM-32]
-    }
-
     /// @dev Sets fees. Restricted for configurator role only
+    /// @param _minAmount Minimum amount to open account
+    /// @param _maxAmount Maximum amount to open account
     /// @param _maxLeverageFactor Maximum leverage factor
     /// @param _feeSuccess Success fee multiplier (for (totalValue - borrowAmount))
     /// @param _feeInterest Interest fee multiplier
     /// @param _feeLiquidation Liquidation fee multiplier (for totalValue)
     /// @param _liquidationDiscount Liquidation premium multiplier (= PERCENTAGE_FACTOR - premium)
-    function setFees(
+    function setParams(
+        uint256 _minAmount,
+        uint256 _maxAmount,
         uint256 _maxLeverageFactor,
         uint256 _feeSuccess,
         uint256 _feeInterest,
@@ -715,9 +705,13 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         uint256 _liquidationDiscount
     )
         public
-        nonReentrant
         configuratorOnly // T:[CM-36]
     {
+        require(_minAmount <= _maxAmount, Errors.CM_INCORRECT_LIMITS); // T:[CM-34]
+
+        minAmount = _minAmount; // T:[CM-32]
+        maxAmount = _maxAmount; // T:[CM-32]
+
         maxLeverageFactor = _maxLeverageFactor;
         require(
             _feeSuccess < PercentageMath.PERCENTAGE_FACTOR &&
@@ -747,7 +741,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             creditFilter.updateUnderlyingTokenLiquidationThreshold(); // T:[CM-49]
         }
 
-        emit NewFees(
+        emit NewParameters(
+            minAmount,
+            maxAmount,
             maxLeverageFactor,
             feeSuccess,
             feeInterest,
@@ -755,7 +751,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             liquidationDiscount
         ); // T:[CM-37]
     }
-
 
     /// @dev Approves credit account for 3rd party contract
     /// @param targetContract Contract to check allowance
@@ -945,5 +940,19 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         borrowedAmount = ICreditAccount(creditAccount).borrowedAmount();
         cumulativeIndexAtOpen = ICreditAccount(creditAccount)
         .cumulativeIndexAtOpen();
+    }
+
+    /// @dev Transfers account ownership to another account
+    /// @param newOwner Address of new owner
+    function transferAccountOwnership(address newOwner)
+        external
+        override
+        whenNotPaused // ToDo: check
+    {
+        address creditAccount = getCreditAccountOrRevert(msg.sender);
+        require(newOwner != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+        delete creditAccounts[msg.sender];
+        creditAccounts[newOwner] = creditAccount;
+        emit TransferAccount(msg.sender, newOwner);
     }
 }

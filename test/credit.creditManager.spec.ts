@@ -966,34 +966,38 @@ describe("CreditManager", function () {
     );
   });
 
-  it("[CM-32]: setLimits sets correct values", async () => {
-    const minAmountNew = WAD.mul(77823);
-    const maxAmountNew = WAD.mul(1239203);
+  // it("[CM-32]: setLimits sets correct values", async () => {
+  //   const minAmountNew = WAD.mul(77823);
+  //   const maxAmountNew = WAD.mul(1239203);
+  //
+  //   await expect(
+  //     creditManager.setParams(minAmountNew, maxAmountNew, 1, 1, 1, 1, 1, 1)
+  //   )
+  //     .to.emit(creditManager, "NewParameters")
+  //     .withArgs(minAmountNew, maxAmountNew);
+  //   expect(await creditManager.minAmount()).to.be.eq(minAmountNew);
+  //   expect(await creditManager.maxAmount()).to.be.eq(maxAmountNew);
+  // });
+  //
+  // it("[CM-33]: setLimits reverts for non-configurator", async () => {
+  //   const revertMsg = await errors.ACL_CALLER_NOT_CONFIGURATOR();
+  //   const minAmountNew = WAD.mul(77823);
+  //   const maxAmountNew = WAD.mul(1239203);
+  //
+  //   await expect(
+  //     creditManager
+  //       .connect(user)
+  //       .setParams(minAmountNew, maxAmountNew, 1, 1, 1, 1, 1)
+  //   ).to.be.revertedWith(revertMsg);
+  // });
 
-    await expect(creditManager.setLimits(minAmountNew, maxAmountNew))
-      .to.emit(creditManager, "NewLimits")
-      .withArgs(minAmountNew, maxAmountNew);
-    expect(await creditManager.minAmount()).to.be.eq(minAmountNew);
-    expect(await creditManager.maxAmount()).to.be.eq(maxAmountNew);
-  });
-
-  it("[CM-33]: setLimits reverts for non-configurator", async () => {
-    const revertMsg = await errors.ACL_CALLER_NOT_CONFIGURATOR();
-    const minAmountNew = WAD.mul(77823);
-    const maxAmountNew = WAD.mul(1239203);
-
-    await expect(
-      creditManager.connect(user).setLimits(minAmountNew, maxAmountNew)
-    ).to.be.revertedWith(revertMsg);
-  });
-
-  it("[CM-34]: setLimits reverts if maxAmount > minAmount", async () => {
+  it("[CM-34]: setParams reverts if maxAmount > minAmount", async () => {
     const revertMsg = await errors.CM_INCORRECT_LIMITS();
     const minAmountNew = WAD.mul(1239203);
     const maxAmountNew = WAD.mul(77823);
 
     await expect(
-      creditManager.setLimits(minAmountNew, maxAmountNew)
+      creditManager.setParams(minAmountNew, maxAmountNew, 1, 1, 1, 1, 1)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -1046,34 +1050,72 @@ describe("CreditManager", function () {
     const maxLeverage = 400;
 
     await expect(
-      creditManager.connect(user).setFees(maxLeverage, 100, 100, 100, 100)
+      creditManager
+        .connect(user)
+        .setParams(0, 1000, maxLeverage, 100, 100, 100, 100)
     ).to.be.revertedWith(revertMsgNonConfig);
 
     await expect(
-      creditManager.setFees(maxLeverage, incorrectValue, 100, 100, 100)
+      creditManager.setParams(
+        0,
+        1000,
+        maxLeverage,
+        incorrectValue,
+        100,
+        100,
+        100
+      )
     ).to.be.revertedWith(revertMsgIncorrect);
 
     await expect(
-      creditManager.setFees(maxLeverage, 100, incorrectValue, 100, 100)
+      creditManager.setParams(
+        0,
+        1000,
+        maxLeverage,
+        100,
+        incorrectValue,
+        100,
+        100
+      )
     ).to.be.revertedWith(revertMsgIncorrect);
 
     await expect(
-      creditManager.setFees(maxLeverage, 100, 100, incorrectValue, 100)
+      creditManager.setParams(
+        0,
+        1000,
+        maxLeverage,
+        100,
+        100,
+        incorrectValue,
+        100
+      )
     ).to.be.revertedWith(revertMsgIncorrect);
 
     await expect(
-      creditManager.setFees(maxLeverage, 100, 100, 100, incorrectValue)
+      creditManager.setParams(
+        0,
+        1000,
+        maxLeverage,
+        100,
+        100,
+        100,
+        incorrectValue
+      )
     ).to.be.revertedWith(revertMsgIncorrect);
   });
 
   it("[CM-37]: setFees sets correct values & emits event", async () => {
+    const minAmount = 0;
+    const maxAmount = 1000;
     const feeSuccess = 1000;
     const feeInterest = 200;
     const feeLiquidation = 300;
     const liquidationDiscount = 9300;
 
     await expect(
-      creditManager.setFees(
+      creditManager.setParams(
+        minAmount,
+        maxAmount,
         maxLeverage,
         feeSuccess,
         feeInterest,
@@ -1081,8 +1123,10 @@ describe("CreditManager", function () {
         liquidationDiscount
       )
     )
-      .to.emit(creditManager, "NewFees")
+      .to.emit(creditManager, "NewParameters")
       .withArgs(
+        minAmount,
+        maxAmount,
         maxLeverage,
         feeSuccess,
         feeInterest,
@@ -1166,11 +1210,11 @@ describe("CreditManager", function () {
     ).to.revertedWith(PAUSABLE_REVERT_MSG);
   });
 
-  it("[CM-40]: setFees reverts if minHeathFactor is too high", async () => {
+  it("[CM-40]: setParams reverts if minHeathFactor is too high", async () => {
     const revertMsg = await errors.CM_MAX_LEVERAGE_IS_TOO_HIGH();
-    await expect(creditManager.setFees(1000, 0, 0, 0, 9500)).to.be.revertedWith(
-      revertMsg
-    );
+    await expect(
+      creditManager.setParams(0, 1000, 1000, 0, 0, 0, 9500)
+    ).to.be.revertedWith(revertMsg);
   });
 
   it("[CM-41]: minHealthFactor computed correctly", async () => {
@@ -1458,7 +1502,7 @@ describe("CreditManager", function () {
   });
 
   it("[CM-49]: setFees updates creditFilter parameters", async () => {
-    await creditManager.setFees(400, 0, 0, 500, 9500);
+    await creditManager.setParams(0, 1000, 400, 0, 0, 500, 9500);
     expect(
       await creditFilter.liquidationThresholds(underlyingToken.address)
     ).to.be.eq(9000);
@@ -1486,14 +1530,24 @@ describe("CreditManager", function () {
 
     await blockedToken.mint(user.address, 100);
     await blockedToken.connect(user).approve(creditManager.address, MAX_INT);
-    await creditManager.connect(user).addCollateral(user.address, blockedToken.address, 100);
+    await creditManager
+      .connect(user)
+      .addCollateral(user.address, blockedToken.address, 100);
     await blockedToken.blockToken();
 
     await underlyingToken.approve(creditManager.address, MAX_INT);
     await expect(
-      creditManager.liquidateCreditAccount(user.address, deployer.address, false)
+      creditManager.liquidateCreditAccount(
+        user.address,
+        deployer.address,
+        false
+      )
     ).to.be.revertedWith(revertMsg);
 
-    await  creditManager.liquidateCreditAccount(user.address, deployer.address, true);
+    await creditManager.liquidateCreditAccount(
+      user.address,
+      deployer.address,
+      true
+    );
   });
 });
