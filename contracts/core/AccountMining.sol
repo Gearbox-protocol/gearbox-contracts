@@ -66,7 +66,7 @@ contract AccountMining is IMerkleDistributor {
             "MerkleDistributor: Transfer failed."
         );
 
-        accountFactory.masterCreditAccount();
+        accountFactory.mineCreditAccount();
         emit Claimed(index, account);
     }
 }
