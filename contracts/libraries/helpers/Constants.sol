@@ -52,4 +52,12 @@ library Constants {
 
     uint256 constant CHI_THRESHOLD = 9950;
     uint256 constant HF_CHECK_INTERVAL_DEFAULT = 4;
+
+    uint16 constant SAFE_TRANSFER = 0;
+    uint16 constant UNISWAP_V2 = 1;
+    uint16 constant UNISWAP_V3 = 2;
+    uint16 constant CURVE_V1 = 3;
+
+    uint16 constant NO_LP = 0;
+    uint16 constant LP_YEARN = 1;
 }

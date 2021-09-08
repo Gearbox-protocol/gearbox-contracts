@@ -181,8 +181,8 @@ contract WETHGateway is IWETHGateway {
         uint256 amount = msg.value; // T: [WG-11]
 
         IWETH(wethAddress).deposit{value: amount}(); // T: [WG-11]
-        address pool = ICreditManager(creditManager).poolService(); // T: [WG-11]
-        _checkAllowance(pool, amount); // T: [WG-11]
+//        address pool = ICreditManager(creditManager).poolService(); // T: [WG-11]
+        _checkAllowance(creditManager, amount); // T: [WG-11]
 
         // This function is protected from reentrant attack
         uint256 repayAmount = ICreditManager(creditManager)

@@ -48,11 +48,15 @@ contract AccountMining is IMerkleDistributor {
 
     function claim(
         uint256 index,
-        address account,
         uint256 salt,
         bytes32[] calldata merkleProof
     ) external override {
-        require(!isClaimed(index), "MerkleDistributor: Drop already claimed.");
+        require(
+            !isClaimed(index),
+            "MerkleDistributor: Account is already mined."
+        );
+
+        address account = msg.sender;
 
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, salt));

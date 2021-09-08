@@ -10,6 +10,7 @@ import {
   CreditManager__factory,
   DieselToken,
   Errors,
+  ICreditAccount__factory,
   MockPoolService,
   TokenMock,
 } from "../types/ethers-v5";
@@ -19,6 +20,8 @@ import { PoolDeployer } from "../deployer/poolDeployer";
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import {
+  ADDRESS_0x0,
+  DEFAULT_CREDIT_MANAGER,
   DUMB_ADDRESS,
   FEE_INTEREST,
   FEE_LIQUIDATION,
@@ -40,7 +43,6 @@ import {
 } from "@diesellabs/gearbox-sdk";
 import { UniswapModel } from "../model/uniswapModel";
 import { PoolServiceModel } from "../model/poolService";
-import { DEFAULT_CREDIT_MANAGER } from "../core/credit";
 
 const { userInitBalance, addLiquidity } = PoolTestSuite;
 
@@ -142,8 +144,8 @@ describe("CreditManager", function () {
     const wgExpected = await coreDeployer.getWETHGateway();
     expect(wgContract, "WETHGateway").to.be.eq(wgExpected.address);
 
-    const dsExpected = await ts.integrationsDeployer.getUniswapAddress();
-    expect(dsContract, "DefaultSwap").to.be.eq(dsExpected);
+    const dsExpected = await ts.integrationsDeployer.getUniswapMock();
+    expect(dsContract, "DefaultSwap").to.be.eq(dsExpected.address);
 
     const [
       maxLeverageFactor,
@@ -548,6 +550,7 @@ describe("CreditManager", function () {
 
       expect(
         await creditManager.calcRepayAmount(user.address, true, {
+          // @ts-ignore
           blockTag: receipt.blockNumber - 1,
         })
       ).to.be.eq(expectedLiquidationAmount);
@@ -684,6 +687,7 @@ describe("CreditManager", function () {
 
     expect(
       await creditManager.calcRepayAmount(user.address, false, {
+        // @ts-ignore
         blockTag: receipt.blockNumber - 1,
       }),
       "Incorrect repay cost"
@@ -1042,7 +1046,7 @@ describe("CreditManager", function () {
     );
   });
 
-  it("[CM-36]: setFees reverts for non-configurator and for incorrect values", async () => {
+  it("[CM-36]: setParams reverts for non-configurator and for incorrect values", async () => {
     const revertMsgNonConfig = await errors.ACL_CALLER_NOT_CONFIGURATOR();
     const revertMsgIncorrect = await errors.CM_INCORRECT_FEES();
 
@@ -1087,7 +1091,7 @@ describe("CreditManager", function () {
         100,
         100,
         incorrectValue,
-        100
+        incorrectValue
       )
     ).to.be.revertedWith(revertMsgIncorrect);
 
@@ -1208,6 +1212,10 @@ describe("CreditManager", function () {
         .connect(deployer)
         .executeOrder(DUMB_ADDRESS, DUMB_ADDRESS, DUMB_ADDRESS)
     ).to.revertedWith(PAUSABLE_REVERT_MSG);
+
+    await expect(
+      creditManager.connect(deployer).transferAccountOwnership(DUMB_ADDRESS)
+    ).to.revertedWith(PAUSABLE_REVERT_MSG);
   });
 
   it("[CM-40]: setParams reverts if minHeathFactor is too high", async () => {
@@ -1262,16 +1270,20 @@ describe("CreditManager", function () {
       ts.tokenA.address
     );
 
+    const creditManager2 = await creditManagerArtifact.deploy(
+      addressProvider.address,
+      0,
+      1000,
+      100,
+      poolService.address,
+      creditFilter.address,
+      (
+        await integrationsDeployer.getUniswapMock()
+      ).address
+    );
+
     await expect(
-      creditManagerArtifact.deploy(
-        addressProvider.address,
-        0,
-        1000,
-        100,
-        poolService.address,
-        creditFilter.address,
-        await integrationsDeployer.getUniswapAddress()
-      )
+      creditFilter.connectCreditManager(creditManager2.address)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -1549,5 +1561,74 @@ describe("CreditManager", function () {
       deployer.address,
       true
     );
+  });
+
+  it("[CM-51]: increase borrow amount reverts if try to increase more than maxAmount * leverage", async () => {
+    const revertMsg = await errors.CM_INCORRECT_AMOUNT();
+
+    await creditManager.setParams(
+      0,
+      CreditManagerTestSuite.amount,
+      CreditManagerTestSuite.leverageFactor,
+      100,
+      100,
+      200,
+      9500
+    );
+    await ts.openDefaultCreditAccount();
+
+    const creditAccount = ICreditAccount__factory.connect(
+      await creditManager.getCreditAccountOrRevert(user.address),
+      deployer
+    );
+
+    await creditManager
+      .connect(user)
+      .addCollateral(user.address, underlyingToken.address, 1000);
+    await expect(
+      creditManager.connect(user).increaseBorrowedAmount(100)
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[CM-52]: transferAccountOwnership reverts for ZERO_ADDRESS", async () => {
+    const revertMsg = await errors.CM_INCORRECT_NEW_OWNER();
+    await ts.openDefaultCreditAccount();
+
+    await expect(
+      creditManager.connect(user).transferAccountOwnership(ADDRESS_0x0)
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[CM-53]: transferAccountOwnership reverts for owner who has already credit account", async () => {
+    const revertMsg = await errors.CM_INCORRECT_NEW_OWNER();
+    await ts.openDefaultCreditAccount();
+
+    await underlyingToken.approve(creditManager.address, MAX_INT);
+    await creditManager.openCreditAccount(
+      CreditManagerTestSuite.amount,
+      deployer.address,
+      CreditManagerTestSuite.leverageFactor,
+      2
+    );
+
+    await expect(
+      creditManager.connect(user).transferAccountOwnership(deployer.address)
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[CM-54]: transferAccountOwnership transfers ownership & emits event", async () => {
+    const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
+    await ts.openDefaultCreditAccount();
+
+    await expect(
+      creditManager.connect(user).transferAccountOwnership(deployer.address)
+    )
+      .to.emit(creditManager, "TransferAccount")
+      .withArgs(user.address, deployer.address);
+
+    await creditManager.getCreditAccountOrRevert(deployer.address);
+    await expect(
+      creditManager.getCreditAccountOrRevert(user.address)
+    ).to.be.revertedWith(revertMsg);
   });
 });

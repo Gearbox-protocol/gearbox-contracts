@@ -344,6 +344,21 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         }
     }
 
+    /// @dev Cancels allowance for particular contract
+    /// @param account Address of credit account to be cancelled allowance
+    /// @param token Address of token for allowance
+    /// @param targetContract Address of contract to cancel allowance
+    function cancelAllowance(
+        address account,
+        address token,
+        address targetContract
+    )
+        external
+        configuratorOnly // T:[AF-13]
+    {
+        ICreditAccount(account).cancelAllowance(token, targetContract); // T:[AF-20]
+    }
+
     //
     // GETTERS
     //

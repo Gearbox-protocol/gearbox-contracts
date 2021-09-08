@@ -21,6 +21,7 @@ import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
 import "hardhat/console.sol";
+import "../core/ContractsRegister.sol";
 
 /// @title CreditFilter
 /// @notice Implements filter logic for allowed tokens & contract-adapters
@@ -53,9 +54,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
     // credit account token enables mask. each bit (in order as tokens stored in allowedTokens array) set 1 if token was enable
     mapping(address => uint256) public override enabledTokens;
-
-    // Token mask is allowed tokens. equals MAX_INT at start
-    uint256 public override allowedTokenMask;
 
     // keeps last block we use fast check. Fast check is not allowed to use more than one time in block
     mapping(address => uint256) public fastCheckCounter;
@@ -130,9 +128,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             Constants.CHI_THRESHOLD,
             Constants.HF_CHECK_INTERVAL_DEFAULT
         ); // T:[CF-21]
-
-        // All tokens are allowed at start
-        allowedTokenMask = Constants.MAX_INT; // T:[CF-21]
     }
 
     //
@@ -228,13 +223,14 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     }
 
     /// @dev Connects credit manager and checks that it has the same underlying token as pool
-    function connectCreditManager(address _poolService)
+    function connectCreditManager(address _creditManager)
         external
         override
         duringConfigOnly // T:[CF-13]
+        configuratorOnly // T:[CF-1]
     {
-        creditManager = msg.sender; // T:[CF-14]
-        poolService = _poolService; //  T:[CF-14]
+        creditManager = _creditManager; // T:[CF-14]
+        poolService = ICreditManager(_creditManager).poolService(); //  T:[CF-14]
 
         require(
             IPoolService(poolService).underlyingToken() == underlyingToken,
@@ -343,6 +339,8 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             fastCheckCounter[creditAccount]++; // T:[CF-25, 33]
         } else {
             // Require Hf > 1
+
+            console.log(calcCreditAccountHealthFactor(creditAccount));
             require(
                 calcCreditAccountHealthFactor(creditAccount) >=
                     PercentageMath.PERCENTAGE_FACTOR,
@@ -382,12 +380,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     function _checkAndEnableToken(address creditAccount, address token)
         internal
     {
-        revertIfTokenNotAllowed(token); //T:[CF-22]
-
-        require(
-            allowedTokenMask & tokenMasksMap[token] != 0,
-            Errors.CF_TOKEN_IS_NOT_ALLOWED
-        ); // T:[CF-36]
+        revertIfTokenNotAllowed(token); //T:[CF-22, 36]
 
         if (enabledTokens[creditAccount] & tokenMasksMap[token] == 0) {
             enabledTokens[creditAccount] =
@@ -398,17 +391,11 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
     /// @dev Change allowedTokenMask bit for partical token to opposite
     /// It disables enabled tokens and vice versa
-    function changeAllowedTokenMask(address token)
+    function changeAllowedTokenState(address token, bool state)
         external
         configuratorOnly // T:[CF-1]
     {
-        uint256 tokenMask; // T:[CF-35]
-        for (uint256 i = 0; i < allowedTokensCount(); i++) {
-            tokenMask = 1 << i; // T:[CF-35]
-            if (allowedTokens[i] == token) {
-                allowedTokenMask = allowedTokenMask ^ tokenMask; // T:[CF-35]
-            }
-        }
+        _allowedTokensMap[token] = state; // T: [CF-35, 36]
     }
 
     /// @dev Sets fast check parameters chi & hfCheckCollateral
@@ -437,6 +424,25 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         override
         creditManagerOnly // T:[CF-20]
     {
+        require(
+            ICreditManager(creditManager).feeSuccess() <
+                PercentageMath.PERCENTAGE_FACTOR &&
+                ICreditManager(creditManager).feeInterest() <
+                PercentageMath.PERCENTAGE_FACTOR &&
+                ICreditManager(creditManager).feeLiquidation() <
+                PercentageMath.PERCENTAGE_FACTOR &&
+                ICreditManager(creditManager).liquidationDiscount() <
+                PercentageMath.PERCENTAGE_FACTOR,
+            Errors.CM_INCORRECT_FEES
+        ); // T:[CM-36]
+
+        // Otherwise, new credit account will be immediately liquidated
+        require(
+            ICreditManager(creditManager).minHealthFactor() >
+                PercentageMath.PERCENTAGE_FACTOR,
+            Errors.CM_MAX_LEVERAGE_IS_TOO_HIGH
+        ); // T:[CM-40]
+
         liquidationThresholds[underlyingToken] = ICreditManager(creditManager)
         .liquidationDiscount()
         .sub(ICreditManager(creditManager).feeLiquidation()); // T:[CF-38]
@@ -551,7 +557,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
     /// @dev Reverts if token isn't in token allowed list
     function revertIfTokenNotAllowed(address token) public view override {
-        require(isTokenAllowed(token), Errors.CF_TOKEN_IS_NOT_ALLOWED); // T:[CF-7]
+        require(isTokenAllowed(token), Errors.CF_TOKEN_IS_NOT_ALLOWED); // T:[CF-7, 36]
     }
 
     /// @dev Returns quantity of contracts in allowed list

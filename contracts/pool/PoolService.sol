@@ -15,7 +15,7 @@ import {PercentageMath} from "../libraries/math/PercentageMath.sol";
 
 import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
 import {IPoolService} from "../interfaces/IPoolService.sol";
-
+import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 
 import {AddressProvider} from "../core/AddressProvider.sol";
@@ -424,7 +424,8 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         ); // T:[PS-10]
 
         require(
-            !creditManagersCanRepay[_creditManager], Errors.POOL_CANT_ADD_CREDIT_MANAGER_TWICE
+            !creditManagersCanRepay[_creditManager],
+            Errors.POOL_CANT_ADD_CREDIT_MANAGER_TWICE
         ); // T:[PS-35]
 
         creditManagersCanBorrow[_creditManager] = true; // T:[PS-11]

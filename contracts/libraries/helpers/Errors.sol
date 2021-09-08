@@ -22,6 +22,7 @@ library Errors {
     // "0x0 address is not allowed";
 
     string public constant IMMUTABLE_CONFIG_CHANGES_FORBIDDEN = "I0"; //"Immutable config: changes forbidden";
+    string public constant NOT_IMPLEMENTED = "NN"; //"Not implemented";
 
     //
     // MATH
@@ -107,6 +108,8 @@ library Errors {
     string public constant CM_TARGET_CONTRACT_iS_NOT_ALLOWED = "VDC";
 
     string public constant CM_TRANSFER_FAILED = "VT";
+
+    string public constant CM_INCORRECT_NEW_OWNER = "VO";
 
     // Account Factory
 
@@ -196,7 +199,10 @@ library Errors {
 
     string public constant CF_FAST_CHECK_NOT_COVERED_COLLATERAL_DROP = "CB";
 
-    string public constant CF_SOME_LIQUIDATION_THRESHOLD_MORE_THAN_NEW_ONE = "CC";
+    string public constant CF_SOME_LIQUIDATION_THRESHOLD_MORE_THAN_NEW_ONE =
+        "CC";
+
+    string public constant CF_POOLS_ONLY = "CP";
 
     //
     // CREDIT ACCOUNT
@@ -243,4 +249,13 @@ library Errors {
 
     string public constant WG_FALLBACK_IS_NOT_ALLOWED = "W5";
     // "WETH Gateway: Fallback is not allowed";
+
+    string public constant LA_INCORRECT_VALUE = "I1";
+    // Leveraged Actions: "Incorrect value");
+    string public constant LA_INCORRECT_MSG = "I2";
+    // "Incorrect msg.value for token operation");
+
+    string public constant LA_UNKNOWN_SWAP_INTERFACE = "I3";
+
+    string public constant LA_UNKNOWN_LP_INTERFACE = "I3";
 }

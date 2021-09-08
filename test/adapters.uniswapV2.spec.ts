@@ -1,3 +1,9 @@
+/*
+ * SPDX-License-Identifier: BSL-1.1
+ * Gearbox. Generalized leverage protocol, which allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
+ * (c) Gearbox.fi, 2021
+ */
+
 import { expect } from "../utils/expect";
 
 import { CreditManager, Errors, TokenMock, UniswapV2Adapter } from "../types/ethers-v5";
@@ -63,14 +69,6 @@ describe("UniswapV2 Adapter", function () {
     const tMock = await ts.testDeployer.connectToken(token);
     return await tMock.balanceOf(va);
   };
-
-  // it("[UV2A-1]: defaultSwapContract & kind() return correct value", async function () {
-  //   const kind = formatBytes32String("trade");
-  //
-  //   expect(await creditManager.defaultSwapContract()).to.be.eq(uniswapMock.address);
-  //
-  //   expect(await creditManager.kind()).to.be.eq(kind);
-  // });
 
   it("[UV2A-2]: swapTokensForExactTokens, swapTokensForExactTokens reverts if user hasn't opened account", async function () {
     const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
@@ -209,106 +207,5 @@ describe("UniswapV2 Adapter", function () {
       await getCreditAccountTokenBalance(user.address, underlyingToken.address)
     ).to.be.eq(expectedBalanceUnderlying);
   });
-  //
 
-  //
-  // it("liquidateCreditAccount transfers tokens to address correctly", async function () {
-  //   await underlyingToken.mint(liquidator.address, userInitBalance);
-  //   await underlyingToken
-  //     .connect(liquidator)
-  //     .approve(creditManager.address, MAX_INT);
-  //
-  //   // Open default credit account
-  //   await ts.liquidationSetup();
-  //
-  //   await uniswapV2Adapter
-  //     .connect(user)
-  //     .swapExactTokensForTokens(
-  //       swapAmountB,
-  //       0,
-  //       [underlyingToken.address, tokenA.address],
-  //       await UniswapModel.getDeadline()
-  //     );
-  //
-  //   const expectedTrade = uniswapModel.swapExactTokensForTokens(
-  //     swapAmountB,
-  //     BigNumber.from(0),
-  //     [underlyingToken.address, tokenA.address]
-  //   );
-  //
-  //   if (expectedTrade.isReverted === true) {
-  //     throw new Error("Unexpected revert");
-  //   }
-  //
-  //   const expectedUnderlyingBalance = amount
-  //     .add(borrowedAmount)
-  //     .sub(swapAmountB);
-  //   const expectedBalanceA = BigNumber.from(expectedTrade.amounts[1]);
-  //
-  //   expect(
-  //     await getCreditAccountTokenBalance(
-  //       user.address,
-  //       underlyingToken.address
-  //     )
-  //   ).to.be.eq(expectedUnderlyingBalance);
-  //
-  //   expect(
-  //     await getCreditAccountTokenBalance(user.address, tokenA.address)
-  //   ).to.be.eq(expectedBalanceA);
-  //
-  //   await creditManager
-  //     .connect(liquidator)
-  //     .liquidateCreditAccount(user.address, friend.address);
-  //
-  //   const totalVA = expectedUnderlyingBalance.add(
-  //     rayDiv(expectedBalanceA, uniRateTokenA)
-  //   );
-  //
-  //   const expectedLiquidationCost = percentMul(
-  //     totalVA,
-  //     LIQUIDATION_DISCOUNTED_SUM
-  //   );
-  //
-  //   expect(
-  //     await underlyingToken.balanceOf(liquidator.address),
-  //     "Expected liquidation cost"
-  //   ).to.be.eq(userInitBalance.sub(expectedLiquidationCost));
-  //
-  //   expect(await underlyingToken.balanceOf(friend.address)).to.be.eq(
-  //     expectedUnderlyingBalance.sub(1)
-  //   );
-  //   expect(await tokenA.balanceOf(friend.address)).to.be.eq(
-  //     expectedBalanceA.sub(1)
-  //   );
-  // });
-
-  // it("[UV2A-9]: constructor reverts if defaultSwap is not allowed in CreditFilter", async function () {
-  //   // Open default credit account
-  //   const revertMsg = await errors.VF_CONTRACT_IS_NOT_ALLOWED();
-
-  //   const creditFilterArtifact = (await ethers.getContractFactory(
-  //       "CreditFilter"
-  //   )) as CreditFilter__factory;
-
-  //   const ap = await ts.coreDeployer.getAddressProvider();
-
-  //   const creditFilter = await creditFilterArtifact.deploy(ap.address, underlyingToken.address);
-
-  //   const creditManagerArtifact = (await ethers.getContractFactory(
-  //     "CreditManager"
-  //   )) as CreditManager__factory;
-
-  //   const addressProvider = await ts.coreDeployer.getAddressProvider();
-  //   await expect(
-  //     creditManagerArtifact.deploy(
-  //       addressProvider.address,
-  //       0,
-  //       1100,
-  //       500,
-  //       ts.poolService.address,
-  //       creditFilter.address,
-  //       DUMB_ADDRESS
-  //     )
-  //   ).to.be.revertedWith(revertMsg);
-  // });
 });

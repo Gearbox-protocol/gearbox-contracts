@@ -88,9 +88,6 @@ interface ICreditFilter {
     /// @dev Returns of token address from allowed list by its id
     function allowedTokens(uint256 id) external view returns (address);
 
-    /// @dev Allowed token mask
-    function allowedTokenMask() external view returns (uint256);
-
     /// @dev Calculates total value for provided address
     /// More: https://dev.gearbox.fi/developers/credit/economy#total-value
     ///

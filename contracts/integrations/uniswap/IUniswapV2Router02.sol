@@ -42,8 +42,8 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
         address to,
         uint deadline
     ) external;
-    function factory() external override pure returns (address);
-    function WETH() external override pure returns (address);
+    function factory() external override view returns (address);
+    function WETH() external override view returns (address);
 
     function addLiquidity(
         address tokenA,
@@ -128,9 +128,9 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
     payable
     returns (uint[] memory amounts);
 
-    function quote(uint amountA, uint reserveA, uint reserveB) external override pure returns (uint amountB);
-    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external override pure returns (uint amountOut);
-    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external override pure returns (uint amountIn);
+    function quote(uint amountA, uint reserveA, uint reserveB) external override view returns (uint amountB);
+    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external override view returns (uint amountOut);
+    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external override view returns (uint amountIn);
     function getAmountsOut(uint amountIn, address[] calldata path) external override view returns (uint[] memory amounts);
 
     function getAmountsIn(uint amountOut, address[] calldata path) external override view returns (uint[] memory amounts);

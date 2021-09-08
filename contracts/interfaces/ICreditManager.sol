@@ -243,4 +243,6 @@ interface ICreditManager is IAppCreditManager {
     function feeLiquidation() external view returns (uint256);
 
     function liquidationDiscount() external view returns (uint256);
+
+    function minHealthFactor() external view returns (uint256);
 }

@@ -4,10 +4,10 @@
 pragma solidity ^0.7.4;
 pragma abicoder v2;
 
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ISwapRouter} from "../integrations/uniswap/IUniswapV3.sol";
 import {BytesLib} from "../integrations/uniswap/BytesLib.sol";
-import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
-
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {CreditManager} from "../credit/CreditManager.sol";
@@ -15,8 +15,9 @@ import {CreditManager} from "../credit/CreditManager.sol";
 import "hardhat/console.sol";
 
 /// @title UniswapV3 Router adapter
-contract UniswapV3Adapter is ISwapRouter, Proxy {
+contract UniswapV3Adapter is ISwapRouter {
     using BytesLib for bytes;
+    using SafeMath for uint256;
 
     ICreditManager public creditManager;
     ICreditFilter public creditFilter;
@@ -32,10 +33,6 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
         swapContract = _swapContract;
-    }
-
-    function _implementation() internal view override returns (address) {
-        return swapContract;
     }
 
     /// @notice Swaps `amountIn` of one token for as much as possible of another token
@@ -66,6 +63,10 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             paramsUpdate
         );
 
+        uint256 balanceBefore = IERC20(paramsUpdate.tokenIn).balanceOf(
+            creditAccount
+        );
+
         // ToDo: Check for partial execution
         bytes memory result = creditManager.executeOrder(
             msg.sender,
@@ -78,7 +79,9 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             creditAccount,
             params.tokenIn,
             params.tokenOut,
-            params.amountIn,
+            balanceBefore.sub(
+                IERC20(paramsUpdate.tokenIn).balanceOf(creditAccount)
+            ),
             amountOut
         );
     }
@@ -96,7 +99,7 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             msg.sender
         );
 
-        (address tokenIn, address tokenOut) = extractTokens(params.path);
+        (address tokenIn, address tokenOut) = _extractTokens(params.path);
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
@@ -113,6 +116,8 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             paramsUpdate
         );
 
+        uint256 balanceBefore = IERC20(tokenIn).balanceOf(creditAccount);
+
         bytes memory result = creditManager.executeOrder(
             msg.sender,
             swapContract,
@@ -124,7 +129,7 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             creditAccount,
             tokenIn,
             tokenOut,
-            params.amountIn,
+            balanceBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
             amountOut
         );
     }
@@ -157,6 +162,10 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             paramsUpdate
         );
 
+        uint256 balanceBefore = IERC20(paramsUpdate.tokenOut).balanceOf(
+            creditAccount
+        );
+
         bytes memory result = creditManager.executeOrder(
             msg.sender,
             swapContract,
@@ -169,7 +178,9 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             params.tokenIn,
             params.tokenOut,
             amountIn,
-            params.amountOut
+            IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount).sub(
+                balanceBefore
+            )
         );
     }
 
@@ -186,7 +197,7 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
             msg.sender
         );
 
-        (address tokenIn, address tokenOut) = extractTokens(params.path);
+        (address tokenIn, address tokenOut) = _extractTokens(params.path);
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
@@ -197,29 +208,32 @@ contract UniswapV3Adapter is ISwapRouter, Proxy {
         ExactOutputParams memory paramsUpdate = params;
         paramsUpdate.recipient = creditAccount;
 
-        //                "swapTokensForExactTokens(uint256,uint256,address[],address,uint256)",
         bytes memory data = abi.encodeWithSelector(
             bytes4(0xf28c0498), //+
             paramsUpdate
         );
 
-        bytes memory result = creditManager.executeOrder(
-            msg.sender,
-            swapContract,
-            data
-        );
-        (amountIn) = abi.decode(result, (uint256));
+        uint256 balanceBefore = IERC20(tokenOut).balanceOf(creditAccount);
+
+        {
+            bytes memory result = creditManager.executeOrder(
+                msg.sender,
+                swapContract,
+                data
+            );
+            (amountIn) = abi.decode(result, (uint256));
+        }
 
         creditFilter.checkCollateralChange(
             creditAccount,
             tokenIn,
             tokenOut,
             amountIn,
-            params.amountOut
+            IERC20(tokenOut).balanceOf(creditAccount).sub(balanceBefore)
         );
     }
 
-    function extractTokens(bytes memory path)
+    function _extractTokens(bytes memory path)
         internal
         pure
         returns (address tokenA, address tokenB)

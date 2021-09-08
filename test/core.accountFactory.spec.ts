@@ -207,6 +207,12 @@ describe("AccountFactory", function () {
     await expect(
       accountFactory.connect(user).addMiningApprovals([])
     ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      accountFactory
+        .connect(user)
+        .cancelAllowance(DUMB_ADDRESS, DUMB_ADDRESS, DUMB_ADDRESS)
+    ).to.be.revertedWith(revertMsg);
   });
 
   it("[AF-14]: takeCreditAccount return CreditAccount functional interface item", async () => {
@@ -357,5 +363,49 @@ describe("AccountFactory", function () {
     await expect(
       accountFactory.miningApprovals(miningApprovals.length)
     ).to.be.revertedWith("");
+  });
+
+  it("[AF-20]: CancelAllowance set allowance to zero", async () => {
+    const accountsQty = await accountFactory.countCreditAccounts();
+
+    const tokenA = await testDeployer.getTokenMock("tokenA", "TTA");
+
+    const contractA = DUMB_ADDRESS;
+
+    const miningApprovals = [
+      { token: tokenA.address, swapContract: contractA },
+    ];
+
+    await accountFactory.addMiningApprovals(miningApprovals);
+
+    const receipt = await accountFactory.mineCreditAccount();
+
+    expect(await accountFactory.countCreditAccounts()).to.be.eq(
+      accountsQty.add(1)
+    );
+    const newAcc = await accountFactory.tail();
+    const creditAccount = ICreditAccount__factory.connect(newAcc, deployer);
+    expect(await creditAccount.borrowedAmount()).to.be.eq(1);
+    expect(await creditAccount.cumulativeIndexAtOpen()).to.be.eq(1);
+    expect(await creditAccount.since()).to.be.eq(receipt.blockNumber);
+    expect(await creditAccount.creditManager()).to.be.eq(
+      accountFactory.address
+    );
+
+    expect(
+      await tokenA.allowance(creditAccount.address, contractA),
+      "Allowance tokenA, contractA"
+    ).to.be.eq(MAX_INT);
+
+    await accountFactory.cancelAllowance(
+      creditAccount.address,
+      tokenA.address,
+      contractA
+    );
+
+    expect(
+      await tokenA.allowance(creditAccount.address, contractA),
+      "Allowance tokenA, contractA"
+    ).to.be.eq(0);
   });
 });

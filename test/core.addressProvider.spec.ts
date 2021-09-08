@@ -65,9 +65,15 @@ describe("Address Provider", function () {
     expect(getAddress).to.be.hexEqual(DUMB_ADDRESS);
   });
 
-  it("[AP-6]: setAccountFactory correctly sets VanillaAccountFactory", async function () {
+  it("[AP-6]: setAccountFactory correctly sets AccountFactory", async function () {
     await addressProvider.setAccountFactory(DUMB_ADDRESS);
     const getAddress = await addressProvider.getAccountFactory();
+    expect(getAddress).to.be.hexEqual(DUMB_ADDRESS);
+  });
+
+  it("[AP-7]: setLeveragedAction correctly sets LeveragedActions", async function () {
+    await addressProvider.setLeveragedActions(DUMB_ADDRESS);
+    const getAddress = await addressProvider.getLeveragedActions();
     expect(getAddress).to.be.hexEqual(DUMB_ADDRESS);
   });
 
@@ -136,6 +142,10 @@ describe("Address Provider", function () {
 
     await expect(
       addressProvider.connect(user).setWETHGateway(DUMB_ADDRESS)
+    ).to.be.revertedWith(OWNABLE_REVERT_MSG);
+
+    await expect(
+      addressProvider.connect(user).setLeveragedActions(DUMB_ADDRESS)
     ).to.be.revertedWith(OWNABLE_REVERT_MSG);
   });
 });

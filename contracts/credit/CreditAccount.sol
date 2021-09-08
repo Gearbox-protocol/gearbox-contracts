@@ -100,13 +100,13 @@ contract CreditAccount is ICreditAccount, Initializable {
 
     /// @dev Removes allowance token for 3rd party contract. Restricted for factory only
     /// @param token ERC20 token for allowance
-    /// @param swapContract Swap contract address
-    function cancelAllowance(address token, address swapContract)
+    /// @param targetContract Swap contract address
+    function cancelAllowance(address token, address targetContract)
         external
         override
     {
         require(msg.sender == factory, Errors.CA_FACTORY_ONLY);
-        IERC20(token).safeApprove(swapContract, 0);
+        IERC20(token).safeApprove(targetContract, 0);
     }
 
     /// @dev Transfers tokens from credit account to provided address. Restricted for current credit manager only

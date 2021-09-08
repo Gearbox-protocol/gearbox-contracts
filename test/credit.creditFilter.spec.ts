@@ -9,7 +9,7 @@ import {
   CreditManagerMockForFilter,
   Errors,
   IPriceOracle,
-  TokenMock
+  TokenMock,
 } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { PoolDeployer } from "../deployer/poolDeployer";
@@ -17,16 +17,16 @@ import { TestDeployer } from "../deployer/testDeployer";
 import {
   ADDRESS_0x0,
   CHI_THRESHOLD_DEFAULT,
+  DEFAULT_CREDIT_MANAGER,
   DUMB_ADDRESS,
   DUMB_ADDRESS2,
   HF_CHECK_INTERVAL_DEFAULT,
-  UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD
+  UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
 } from "../core/constants";
 import { CreditManagerDeployer } from "../deployer/creditManagerDeployer";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
 import { BigNumber } from "ethers";
 import { MAX_INT, PERCENTAGE_FACTOR, RAY, WAD } from "@diesellabs/gearbox-sdk";
-import { DEFAULT_CREDIT_MANAGER } from "../core/credit";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
 
 const { amount, borrowedAmount } = CreditManagerTestSuite;
@@ -56,11 +56,12 @@ describe("CreditFilter", function () {
       config: {
         ...DEFAULT_CREDIT_MANAGER,
         allowedTokens: [],
-        uniswapAddress: await ts.integrationsDeployer.getUniswapAddress(),
+        uniswapAddress: (await ts.integrationsDeployer.getUniswapMock())
+          .address,
       },
       coreDeployer: ts.coreDeployer,
       poolService: ts.poolService,
-      uniswapAddress: await ts.integrationsDeployer.getUniswapAddress(),
+      uniswapAddress: (await ts.integrationsDeployer.getUniswapMock()).address,
     });
 
     deployer = ts.deployer;
@@ -106,7 +107,7 @@ describe("CreditFilter", function () {
     return creditAccount;
   };
 
-  it("[CF-1]: allowToken, allowContract, setupFastCheckParameters reverts for all non configurator calls", async () => {
+  it("[CF-1]: allowToken, allowContract, setupFastCheckParameters, connectCreditManager reverts for all non configurator calls", async () => {
     const revertMsg = await errors.ACL_CALLER_NOT_CONFIGURATOR();
 
     await expect(
@@ -128,7 +129,11 @@ describe("CreditFilter", function () {
     ).to.be.revertedWith(revertMsg);
 
     await expect(
-      creditFilter.connect(user).changeAllowedTokenMask(DUMB_ADDRESS)
+      creditFilter.connect(user).changeAllowedTokenState(DUMB_ADDRESS, false)
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      creditFilter.connect(user).connectCreditManager(DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -313,15 +318,10 @@ describe("CreditFilter", function () {
   it("[CF-13]: connectCreditManager can be called only once", async () => {
     const revertMsg = await errors.IMMUTABLE_CONFIG_CHANGES_FORBIDDEN();
 
-    await creditManagerMockForFilter.connectFilter(
-      creditFilter.address,
-      underlyingToken.address
-    );
+    const creditManager = await creditManagerDeployer.getCreditManager();
+
     await expect(
-      creditManagerMockForFilter.connectFilter(
-        creditFilter.address,
-        underlyingToken.address
-      )
+      creditFilter.connectCreditManager(creditManager.address)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -347,16 +347,11 @@ describe("CreditFilter", function () {
       ).address
     );
 
-    await creditManagerMockForFilter.connectFilter(
-      creditFilter.address,
-      underlyingToken.address
-    );
-    expect(await creditFilter.creditManager()).to.be.eq(
-      creditManagerMockForFilter.address
-    );
+    const creditManager = await creditManagerDeployer.getCreditManager();
+    expect(await creditFilter.creditManager()).to.be.eq(creditManager.address);
 
     expect(await creditFilter.poolService()).to.be.eq(
-      await creditManagerMockForFilter.poolService()
+      await creditManager.poolService()
     );
   });
 
@@ -374,10 +369,7 @@ describe("CreditFilter", function () {
     const revertMsg = await errors.CF_UNDERLYING_TOKEN_FILTER_CONFLICT();
 
     await expect(
-      creditManagerMockForFilter.connectFilter(
-        creditFilter.address,
-        DUMB_ADDRESS
-      )
+      creditFilter.connectCreditManager(creditManagerMockForFilter.address)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -576,6 +568,8 @@ describe("CreditFilter", function () {
       underlyingToken.address
     );
 
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address)
+
     await creditFilter.setEnabledTokens(DUMB_ADDRESS, 100);
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(100);
     await creditManagerMockForFilter.initEnabledTokens(DUMB_ADDRESS);
@@ -649,10 +643,6 @@ describe("CreditFilter", function () {
       "Hf check intervals default"
     ).to.be.eq(HF_CHECK_INTERVAL_DEFAULT);
 
-    expect(await creditFilter.allowedTokenMask(), "allowedTokenMask").to.be.eq(
-      MAX_INT
-    );
-
     expect(
       await creditFilter.liquidationThresholds(underlyingToken.address),
       "Liquidation threshold for underlying token"
@@ -666,6 +656,8 @@ describe("CreditFilter", function () {
       creditFilter.address,
       underlyingToken.address
     );
+
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
 
     await creditFilter.allowContract(
       DUMB_ADDRESS,
@@ -715,6 +707,8 @@ describe("CreditFilter", function () {
 
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
 
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
+
     await creditManagerMockForFilter.checkAndEnableToken(
       DUMB_ADDRESS,
       underlyingToken.address
@@ -756,6 +750,8 @@ describe("CreditFilter", function () {
 
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
 
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
+
     await creditManagerMockForFilter.initEnabledTokens(DUMB_ADDRESS);
 
     await creditFilter.checkCollateralChange(
@@ -783,6 +779,7 @@ describe("CreditFilter", function () {
       creditFilter.address,
       underlyingToken.address
     );
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
 
     await creditManagerMockForFilter.setLinearCumulative(RAY);
 
@@ -810,6 +807,8 @@ describe("CreditFilter", function () {
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
 
     const creditAccount = await setupCreditAccount();
+
+
     await expect(
       creditFilter.checkCollateralChange(
         creditAccount.address,
@@ -829,6 +828,7 @@ describe("CreditFilter", function () {
       creditFilter.address,
       underlyingToken.address
     );
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
 
     await creditManagerMockForFilter.setLinearCumulative(ciAtClose);
 
@@ -850,6 +850,7 @@ describe("CreditFilter", function () {
       creditFilter.address,
       underlyingToken.address
     );
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
 
     await creditManagerMockForFilter.setLinearCumulative(ciAtClose);
 
@@ -1117,10 +1118,10 @@ describe("CreditFilter", function () {
     await creditFilter.allowToken(tokenA.address, 9000);
     await creditFilter.allowToken(tokenB.address, 9000);
 
-    await creditFilter.changeAllowedTokenMask(tokenB.address);
-    expect(await creditFilter.allowedTokenMask()).to.be.eq(MAX_INT.xor(4));
-    await creditFilter.changeAllowedTokenMask(tokenB.address);
-    expect(await creditFilter.allowedTokenMask()).to.be.eq(MAX_INT);
+    await creditFilter.changeAllowedTokenState(tokenB.address, false);
+    expect(await creditFilter.isTokenAllowed(tokenB.address)).to.be.false;
+    await creditFilter.changeAllowedTokenState(tokenB.address, true);
+    expect(await creditFilter.isTokenAllowed(tokenB.address)).to.be.true;
   });
 
   it("[CF-36]: checkAndEnableToken reverts if token forbidden", async () => {
@@ -1132,13 +1133,13 @@ describe("CreditFilter", function () {
     await priceOracle.addPriceFeed(tokenA.address, chainlinkMock.address);
     await creditFilter.allowToken(tokenA.address, 9000);
 
-    await creditFilter.changeAllowedTokenMask(tokenA.address);
+    await creditFilter.changeAllowedTokenState(tokenA.address, false);
 
     await creditManagerMockForFilter.connectFilter(
       creditFilter.address,
       underlyingToken.address
     );
-
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
     await expect(
       creditManagerMockForFilter.checkAndEnableToken(
         DUMB_ADDRESS,
@@ -1173,6 +1174,8 @@ describe("CreditFilter", function () {
       creditFilter.address,
       underlyingToken.address
     );
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
+
     const liquidationDiscount = 9500;
     const feeLiquidation = 500;
 
@@ -1195,6 +1198,8 @@ describe("CreditFilter", function () {
       creditFilter.address,
       underlyingToken.address
     );
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
+
     const chainlinkMock = await setupChainlinkMock();
     await priceOracle.addPriceFeed(tokenA.address, chainlinkMock.address);
     await creditFilter.allowToken(

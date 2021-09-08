@@ -48,7 +48,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     uint256 public override maxLeverageFactor;
 
     // Minimal allowed Hf after increasing borrow amount
-    uint256 public minHealthFactor;
+    uint256 public override minHealthFactor;
 
     // Mapping between borrowers'/farmers' address and credit account
     mapping(address => address) public override creditAccounts;
@@ -135,7 +135,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         ); // T:[CM-1]
 
         creditFilter = ICreditFilter(_creditFilterAddress); // T:[CM-1]
-        creditFilter.connectCreditManager(_poolService); // T:[CM-1]
     }
 
     //
@@ -646,6 +645,14 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             uint256 cumulativeIndexAtOpen
         ) = getCreditAccountParameters(creditAccount); // T:[CM-30]
 
+        require(
+            borrowedAmount.add(amount) <
+                maxAmount.mul(maxLeverageFactor).div(
+                    Constants.LEVERAGE_DECIMALS
+                ),
+            Errors.CM_INCORRECT_AMOUNT
+        ); // T:[CM-51]
+
         uint256 timeDiscountedAmount = amount.mul(cumulativeIndexAtOpen).div(
             IPoolService(poolService).calcLinearCumulative_RAY()
         ); // T:[CM-30]
@@ -713,13 +720,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         maxAmount = _maxAmount; // T:[CM-32]
 
         maxLeverageFactor = _maxLeverageFactor;
-        require(
-            _feeSuccess < PercentageMath.PERCENTAGE_FACTOR &&
-                _feeInterest < PercentageMath.PERCENTAGE_FACTOR &&
-                _feeLiquidation < PercentageMath.PERCENTAGE_FACTOR &&
-                _liquidationDiscount < PercentageMath.PERCENTAGE_FACTOR,
-            Errors.CM_INCORRECT_FEES
-        ); // T:[CM-36]
+
         feeSuccess = _feeSuccess; // T:[CM-37]
         feeInterest = _feeInterest; // T:[CM-37]
         feeLiquidation = _feeLiquidation; // T:[CM-37]
@@ -730,12 +731,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         .sub(feeLiquidation)
         .mul(maxLeverageFactor.add(Constants.LEVERAGE_DECIMALS))
         .div(maxLeverageFactor); // T:[CM-41]
-
-        // Otherwise, new credit account will be immediately liquidated
-        require(
-            minHealthFactor > PercentageMath.PERCENTAGE_FACTOR,
-            Errors.CM_MAX_LEVERAGE_IS_TOO_HIGH
-        ); // T:[CM-40]
 
         if (address(creditFilter) != address(0)) {
             creditFilter.updateUnderlyingTokenLiquidationThreshold(); // T:[CM-49]
@@ -947,12 +942,16 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     function transferAccountOwnership(address newOwner)
         external
         override
-        whenNotPaused // ToDo: check
+        whenNotPaused // T: [CM-39]
+        nonReentrant
     {
-        address creditAccount = getCreditAccountOrRevert(msg.sender);
-        require(newOwner != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
-        delete creditAccounts[msg.sender];
-        creditAccounts[newOwner] = creditAccount;
-        emit TransferAccount(msg.sender, newOwner);
+        address creditAccount = getCreditAccountOrRevert(msg.sender); // M:[LA-1,2,3,4,5,6,7,8] // T:[CM-52,53, 54]
+        require(
+            newOwner != address(0) && !hasOpenedCreditAccount(newOwner),
+            Errors.CM_INCORRECT_NEW_OWNER
+        ); // T:[CM-52,53]
+        delete creditAccounts[msg.sender]; // M:[LA-1,2,3,4,5,6,7,8]
+        creditAccounts[newOwner] = creditAccount; // M:[LA-1,2,3,4,5,6,7,8]
+        emit TransferAccount(msg.sender, newOwner); // T:[CM-54]
     }
 }

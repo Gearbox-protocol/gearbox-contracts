@@ -61,8 +61,11 @@ contract GearToken {
     /// @notice Flag which allows token transfers
     bool public transfersAllowed;
 
-    /// @notice An event that emitted when the minter address is changed
+    /// @notice Contract owner which can allow token transfers
     address public manager;
+
+    /// @notice Miner address which can send tokens during account mining
+    address public miner;
 
     /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(
@@ -88,6 +91,11 @@ contract GearToken {
         uint256 amount
     );
 
+    modifier managerOnly() {
+        require(msg.sender == manager, "Gear::caller is not the manager");
+        _;
+    }
+
     /**
      * @notice Construct a new Gear token
      * @param account The initial account to grant all the tokens
@@ -99,9 +107,26 @@ contract GearToken {
         transfersAllowed = false;
     }
 
-    function allowTransfers() external {
-        require(msg.sender == manager, "Gear::caller is not the manager");
-        transfersAllowed = true;
+    function transferOwnership(address newManager)
+        external
+        managerOnly // T:[GT-3]
+    {
+        require(newManager != address(0), "Zero address is not allowed"); // T:[GT-5]
+        manager = newManager; // T:[GT-6]
+    }
+
+    function setMiner(address _miner)
+        external
+        managerOnly // T:[GT-3]
+    {
+        miner = _miner; // T:[GT-4]
+    }
+
+    function allowTransfers()
+        external
+        managerOnly // T:[GT-3]
+    {
+        transfersAllowed = true; // T:[GT-1]
     }
 
     /**
@@ -388,7 +413,7 @@ contract GearToken {
         uint96 amount
     ) internal {
         require(
-            transfersAllowed || msg.sender == manager,
+            transfersAllowed || msg.sender == manager || msg.sender == miner,
             "Gear::transfers are forbidden"
         );
         require(

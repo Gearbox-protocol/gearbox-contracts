@@ -10,7 +10,6 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 /// @title AddressRepository
 /// @notice Stores addresses of deployed contracts
 contract AddressProvider is Ownable, IAppAddressProvider {
-
     // Mapping which keeps all addresses
     mapping(bytes32 => address) public addresses;
 
@@ -27,6 +26,7 @@ contract AddressProvider is Ownable, IAppAddressProvider {
     bytes32 public constant GEAR_TOKEN = "GEAR_TOKEN";
     bytes32 public constant WETH_TOKEN = "WETH_TOKEN";
     bytes32 public constant WETH_GATEWAY = "WETH_GATEWAY";
+    bytes32 public constant LEVERAGED_ACTIONS = "LEVERAGED_ACTIONS";
 
     constructor() {
         // @dev Emits first event for contract discovery
@@ -157,6 +157,20 @@ contract AddressProvider is Ownable, IAppAddressProvider {
         onlyOwner // T:[AP-15]
     {
         _setAddress(WETH_GATEWAY, _address); // T:[AP-14]
+    }
+
+    /// @return Address of WETH token
+    function getLeveragedActions() external view returns (address) {
+        return _getAddress(LEVERAGED_ACTIONS); // T:[AP-7]
+    }
+
+    /// @dev Sets address of WETH token
+    /// @param _address Address of WETH token
+    function setLeveragedActions(address _address)
+        external
+        onlyOwner // T:[AP-15]
+    {
+        _setAddress(LEVERAGED_ACTIONS, _address); // T:[AP-7]
     }
 
     /// @return Address of key, reverts if key doesn't exist

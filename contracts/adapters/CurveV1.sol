@@ -3,7 +3,6 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
-import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
@@ -19,52 +18,26 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 import "hardhat/console.sol";
 
 /// @title CurveV1 adapter
-contract CurveV1Adapter is Proxy {
+contract CurveV1Adapter is ICurvePool {
     using SafeMath for uint256;
 
     // Default swap contracts - uses for automatic close / liquidation process
-    address public curvePoolAddress; //
-
-    // Curve pool token indexes mapping
-//    mapping(address => int128) public tokenIndexes;
-
+    ICurvePool public curvePool; //
     ICreditManager public creditManager;
     ICreditFilter public creditFilter;
 
     /// @dev Constructor
     /// @param _creditManager Address Credit manager
     /// @param _curvePool Address of curve-compatible pool
-    /// @param _nCoins N_COINS constant in Curve pool
-    constructor(
-        address _creditManager,
-        address _curvePool,
-        uint256 _nCoins
-    ) {
+    constructor(address _creditManager, address _curvePool) {
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
 
-        curvePoolAddress = _curvePool;
-        bool hasUnderlying = false;
-
-        address underlyingToken = creditManager.underlyingToken();
-
-        for (uint256 i = 0; i < _nCoins; i++) {
-            address coinAddress = ICurvePool(curvePoolAddress).coins(i); // T:[CVA-4]
-
-            if (coinAddress == underlyingToken) {
-                hasUnderlying = true; // T:[CVA-4]
-            }
-
-        }
-
-        require(
-            hasUnderlying,
-            Errors.CM_UNDERLYING_IS_NOT_IN_STABLE_POOL
-        ); // T:[CVA-4]
+        curvePool = ICurvePool(_curvePool);
     }
 
-    function _implementation() internal view override returns (address) {
-        return curvePoolAddress;
+    function coins(uint256 i) external view override returns (address) {
+        return ICurvePool(curvePool).coins(i);
     }
 
     /// @dev Exchanges two assets on Curve-compatible pools. Restricted for pool calls only
@@ -77,30 +50,29 @@ contract CurveV1Adapter is Proxy {
         int128 j,
         uint256 dx,
         uint256 min_dy
-    )
-        external
-    {
-        address creditAccount = creditManager.getCreditAccountOrRevert(msg.sender);
+    ) external override {
+        address creditAccount = creditManager.getCreditAccountOrRevert(
+            msg.sender
+        );
 
-        address tokenIn = ICurvePool(curvePoolAddress).coins(uint256(i));
-        address tokenOut= ICurvePool(curvePoolAddress).coins(uint256(j));
+        address tokenIn = curvePool.coins(uint256(i));
+        address tokenOut = curvePool.coins(uint256(j));
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
-            curvePoolAddress,
+            address(curvePool),
             tokenIn
         ); // T:[CVA-3]
 
-        bytes memory data =
-            abi.encodeWithSignature(
-                "exchange(int128,int128,uint256,uint256)",
-                i,
-                j,
-                dx,
-                min_dy
-            ); // T:[CVA-3]
+        bytes memory data = abi.encodeWithSelector(
+            bytes4(0x3df02124), // "exchange(int128,int128,uint256,uint256)",
+            i,
+            j,
+            dx,
+            min_dy
+        ); // T:[CVA-3]
 
-        creditManager.executeOrder(msg.sender, curvePoolAddress, data); // T:[CVA-3]
+        creditManager.executeOrder(msg.sender, address(curvePool), data); // T:[CVA-3]
 
         creditFilter.checkCollateralChange(
             creditAccount,
@@ -109,5 +81,50 @@ contract CurveV1Adapter is Proxy {
             dx,
             min_dy
         ); // T:[CVA-2]
+    }
+
+    function exchange_underlying(
+        int128 i,
+        int128 j,
+        uint256 dx,
+        uint256 min_dy
+    ) external override {
+        revert(Errors.NOT_IMPLEMENTED);
+    }
+
+    function get_dx_underlying(
+        int128 i,
+        int128 j,
+        uint256 dy
+    ) external view override returns (uint256) {
+        return curvePool.get_dx_underlying(i, j, dy);
+    }
+
+    function get_dy_underlying(
+        int128 i,
+        int128 j,
+        uint256 dx
+    ) external view override returns (uint256) {
+        return curvePool.get_dy_underlying(i, j, dx);
+    }
+
+    function get_dx(
+        int128 i,
+        int128 j,
+        uint256 dy
+    ) external view override returns (uint256) {
+        return curvePool.get_dx(i, j, dy);
+    }
+
+    function get_dy(
+        int128 i,
+        int128 j,
+        uint256 dx
+    ) external view override returns (uint256) {
+        return curvePool.get_dy(i, j, dx);
+    }
+
+    function get_virtual_price() external view override returns (uint256) {
+        return curvePool.get_virtual_price();
     }
 }

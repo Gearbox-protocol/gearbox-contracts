@@ -39,7 +39,10 @@ interface ICreditAccount {
     /// @param swapContract Swap contract address
     function approveToken(address token, address swapContract) external;
 
-    function cancelAllowance(address token, address swapContract) external;
+    /// @dev Cancels allowance for particular contract
+    /// @param token Address of token for allowance
+    /// @param targetContract Address of contract to cancel allowance
+    function cancelAllowance(address token, address targetContract) external;
 
     /// Transfers tokens from credit account to provided address. Restricted for pool calls only
     /// @param token Token which should be tranferred from credit account
