@@ -10,6 +10,9 @@
     "type": "git",
     "url": "https://github.com/Gearbox-protocol/gearbox-contracts"
   },
+  "engines": {
+    "node": "^14.0"
+  },
   "license": "BSL",
   "devDependencies": {
     "@chainlink/contracts": "^0.1.6",
@@ -27,7 +30,7 @@
     "@types/moment": "^2.13.0",
     "@types/node": "^14.14.6",
     "chai": "^4.2.0",
-    "dotenv": "^8.2.0",
+    "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.4",
     "hardhat": "^2.6.0",
@@ -54,7 +57,7 @@
     "chainlink-test": "npx hardhat run scripts/chainlinkTest.ts --network mainnet",
     "faucet": "npx hardhat run scripts/faucetGetData.ts --network mainnet",
     "faucet-mint": "npx hardhat run scripts/faucetMint.ts --network kovan",
-    "charge": "npx hardhat run scripts/fulfillFuzzler.ts --network localhost",
+    "charge": "npx hardhat run scripts/charge.ts --network localhost",
     "deploy-nft": "npx hardhat run scripts/deploy-nft.ts --network kovan",
     "deploy-acc": "npx hardhat run scripts/deployAcc.ts --network localhost",
     "size": "yarn clean && yarn compile && node scripts/size.ts",
@@ -64,10 +67,12 @@
     "compile": "npx hardhat compile",
     "set-lt": "npx hardhat run scripts/setLT.ts --network kovan",
     "test": "npx hardhat test",
+    "mainnet-test": "yarn deploy-fork && yarn charge",
     "update_abi": "scripts/abiCopy.sh",
     "coverage": "yarn build && npx hardhat coverage --temp artifacts"
   },
   "dependencies": {
-    "@diesellabs/gearbox-sdk": "^0.0.119"
+    "@diesellabs/gearbox-sdk": "^0.0.134",
+    "ethereumjs-util": "^7.1.0"
   }
 }

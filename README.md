@@ -9,6 +9,19 @@ Telegram: https://t.me/GearboxProtocol
 
 Gearbox protocol is Marketmake ETHGlobal hackathon finalist.
 
+##  Running tests
+
+### Unit tests
+
+yarn test
+
+### Mainnet test
+
+1. Start mainnet fork with
+```yarn fork```
+2. In other terminal run ```yarn mainnet-test``` to deploy contracts and charge accounts.
+3. Then ```yarn test test/mainnet/*.spec.ts --network localhost``` to run tests.
+
 ## Disclaimer
 
 This application is provided "as is" and "with all faults." Me as developer makes no representations or
