@@ -100,9 +100,9 @@ describe("CurveV1 adapter", function () {
       user.address
     );
 
-    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.eq(
-      amountOnAccount
-    );
+    expect(
+      (await ts.daiToken.balanceOf(creditAccount)).sub(amountOnAccount).abs()
+    ).to.be.lte(2);
 
     const adapterContract = CurveV1Adapter__factory.connect(adapter, user);
     await adapterContract.exchange(

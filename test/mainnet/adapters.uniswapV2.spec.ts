@@ -164,8 +164,6 @@ describe("UniswapV2 adapter", function () {
       ethAmountExpected
     );
 
-    console.log(ethAmountExpected.toString(), amountToSwap.toString());
-
     const r2 = await adapter.swapTokensForExactTokens(
       ethAmountExpected,
       amountToSwap,

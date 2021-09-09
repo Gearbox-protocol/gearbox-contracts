@@ -9,23 +9,13 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "../../utils/expect";
 
-import {
-  Errors,
-  UniswapV2Adapter__factory,
-  UniswapV3Adapter__factory,
-} from "../../types/ethers-v5";
+import { Errors, UniswapV3Adapter__factory } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
-import {
-  MainnetSuite,
-  UNISWAP_V2_ADDRESS,
-  UNISWAP_V3_QUOTER,
-  UNISWAP_V3_ROUTER,
-} from "./helper";
+import { MainnetSuite, UNISWAP_V3_QUOTER, UNISWAP_V3_ROUTER } from "./helper";
 import { MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
 import { LEVERAGE_DECIMALS } from "../../core/constants";
 import { tokenDataByNetwork, WETHToken } from "../../core/token";
-import { UniV2helper } from "../../integrations/uniV2helper";
 import { UniV3helper } from "../../integrations/uniV3helper";
 
 describe("UniswapV3 adapter", function () {
@@ -107,7 +97,7 @@ describe("UniswapV3 adapter", function () {
     expect(
       (await ts.daiToken.balanceOf(creditAccount)).sub(amountOnAccount),
       "openUserAccount amountOnAccount"
-    ).to.be.lte(1);
+    ).to.be.lte(2);
 
     const adapterContract = UniswapV3Adapter__factory.connect(adapter, user);
 
@@ -149,7 +139,7 @@ describe("UniswapV3 adapter", function () {
     });
     await r2.wait();
 
-    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(1);
+    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(2);
     expect(await ts.wethToken.balanceOf(creditAccount)).to.be.gte(ethAmount);
 
     await repayUserAccount(amountOnAccount);
@@ -179,13 +169,13 @@ describe("UniswapV3 adapter", function () {
     });
     await r2.wait();
 
-    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(1);
+    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(2);
     expect(await ts.wethToken.balanceOf(creditAccount)).to.be.gte(ethAmount);
 
     await repayUserAccount(amountOnAccount);
   });
 
-  it("[UV2-3]: exactOutput works correctly", async () => {
+  it("[UV3-3]: exactOutput works correctly", async () => {
     const { amountOnAccount, creditAccount, uniV3Helper, adapter } =
       await openUserAccount();
 
@@ -197,30 +187,60 @@ describe("UniswapV3 adapter", function () {
       amountOnAccount
     );
 
-    const ethAmountExpected = ethAmount.mul(99).div(100);
-
-    const amountToSwap = await uniV3Helper.getExpectedAmount(
-      "TokensToExactTokens",
-      path,
-      ethAmountExpected
-    );
-
-    console.log(ethAmountExpected.toString(), amountToSwap.toString());
+    const ethAmountOut = ethAmount.mul(90).div(100);
 
     const r2 = await adapter.exactOutput({
-      amountOut: amountToSwap,
-      amountInMaximum: ethAmountExpected,
-      path: UniV3helper.pathToUniV3Path(path),
+      amountInMaximum: amountOnAccount,
+      amountOut: ethAmountOut,
+      path: UniV3helper.pathToUniV3Path(path.reverse()),
       recipient: friend.address,
       deadline: UniV3helper.getDeadline(),
     });
     await r2.wait();
 
+    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(
+      amountOnAccount.div(2)
+    );
+
     expect(
-      amountOnAccount.sub(await ts.daiToken.balanceOf(creditAccount))
-    ).to.be.lte(amountToSwap);
+      ethAmountOut.sub(await ts.wethToken.balanceOf(creditAccount)).abs()
+    ).to.be.lte(2);
+
+    await repayUserAccount(amountOnAccount);
+  });
+
+  it("[UV3-4]: exactOutputSingle works correctly", async () => {
+    const { amountOnAccount, creditAccount, uniV3Helper, adapter } =
+      await openUserAccount();
+
+    const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
+
+    const ethAmount = await uniV3Helper.getExpectedAmount(
+      "ExactTokensToTokens",
+      path,
+      amountOnAccount
+    );
+
+    const ethAmountOut = ethAmount.mul(90).div(100);
+
+    const r2 = await adapter.exactOutputSingle({
+      amountOut: ethAmountOut,
+      amountInMaximum: amountOnAccount,
+      tokenIn: path[0],
+      tokenOut: path[1],
+      fee: 3000,
+      recipient: friend.address,
+      deadline: UniV3helper.getDeadline(),
+      sqrtPriceLimitX96: 0,
+    });
+    await r2.wait();
+
+    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(
+      amountOnAccount.div(2)
+    );
+
     expect(
-      ethAmountExpected.sub(await ts.wethToken.balanceOf(creditAccount))
+      ethAmountOut.sub(await ts.wethToken.balanceOf(creditAccount)).abs()
     ).to.be.lte(2);
 
     await repayUserAccount(amountOnAccount);

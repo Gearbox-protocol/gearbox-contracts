@@ -197,7 +197,10 @@ contract UniswapV3Adapter is ISwapRouter {
             msg.sender
         );
 
-        (address tokenIn, address tokenOut) = _extractTokens(params.path);
+        (address tokenOut, address tokenIn) = _extractTokens(params.path);
+
+        console.log(tokenIn);
+        console.log(tokenOut);
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
@@ -209,7 +212,7 @@ contract UniswapV3Adapter is ISwapRouter {
         paramsUpdate.recipient = creditAccount;
 
         bytes memory data = abi.encodeWithSelector(
-            bytes4(0xf28c0498), //+
+            bytes4(0xf28c0498), // exactOutput((bytes,address,uint256,uint256,uint256))
             paramsUpdate
         );
 
@@ -223,6 +226,10 @@ contract UniswapV3Adapter is ISwapRouter {
             );
             (amountIn) = abi.decode(result, (uint256));
         }
+
+        console.log("balanceBefore");
+        console.log(balanceBefore);
+        console.log(IERC20(tokenOut).balanceOf(creditAccount));
 
         creditFilter.checkCollateralChange(
             creditAccount,

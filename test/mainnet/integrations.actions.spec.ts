@@ -9,7 +9,12 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "../../utils/expect";
 
-import { ERC20, Errors, IWETH__factory, IYVault__factory } from "../../types/ethers-v5";
+import {
+  ERC20,
+  Errors,
+  IWETH__factory,
+  IYVault__factory,
+} from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
 import {
   CURVE_3POOL_ADDRESS,
@@ -18,11 +23,15 @@ import {
   UNISWAP_V3_QUOTER,
   UNISWAP_V3_ROUTER,
   YEARN_DAI_ADDRESS,
-  YEARN_USDC_ADDRESS
+  YEARN_USDC_ADDRESS,
 } from "./helper";
-import { MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
+import { MAX_INT, PERCENTAGE_FACTOR, WAD } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import { ADDRESS_0x0, DUMB_ADDRESS, LEVERAGE_DECIMALS } from "../../core/constants";
+import {
+  ADDRESS_0x0,
+  DUMB_ADDRESS,
+  LEVERAGE_DECIMALS,
+} from "../../core/constants";
 import { tokenDataByNetwork, WETHToken } from "../../core/token";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
 import { LPInterface, SwapInterface } from "../../core/leveragedActions";
@@ -362,8 +371,8 @@ describe("Actions test", function () {
       deployer.address
     );
 
-    expect(await ts.daiToken.balanceOf(creditAccount), "dai balance").to.be.eq(
-      0
+    expect(await ts.daiToken.balanceOf(creditAccount), "dai balance").to.be.lte(
+      2
     );
 
     const linkToken = ERC20__factory.connect(
@@ -453,8 +462,8 @@ describe("Actions test", function () {
       deployer.address
     );
 
-    expect(await ts.daiToken.balanceOf(creditAccount), "dai balance").to.be.eq(
-      0
+    expect(await ts.daiToken.balanceOf(creditAccount), "dai balance").to.be.lte(
+      2
     );
 
     const usdcToken = ERC20__factory.connect(
@@ -564,7 +573,7 @@ describe("Actions test", function () {
     expect(
       await ts.wethToken.balanceOf(creditAccount),
       "weth balance"
-    ).to.be.eq(0);
+    ).to.be.lte(2);
 
     const daiToken = ERC20__factory.connect(
       tokenDataByNetwork.Mainnet.DAI.address,
@@ -685,7 +694,7 @@ describe("Actions test", function () {
     expect(
       await ts.wethToken.balanceOf(creditAccount),
       "weth balance"
-    ).to.be.eq(0);
+    ).to.be.lte(2);
 
     const daiToken = ERC20__factory.connect(
       tokenDataByNetwork.Mainnet.DAI.address,
@@ -794,14 +803,18 @@ describe("Actions test", function () {
         referralCode
       );
 
-    expect(
-      await ts.daiToken.balanceOf(ts.poolDAI.address),
-      "Pool balance"
-    ).to.be.eq(
-      poolBalance.sub(
-        expectedAmountBeforeOpenAcc.mul(leverageFactor).div(LEVERAGE_DECIMALS)
-      )
+    const expectedPoolBalance = poolBalance.sub(
+      expectedAmountBeforeOpenAcc.mul(leverageFactor).div(LEVERAGE_DECIMALS)
     );
+
+    expect(
+      (await ts.daiToken.balanceOf(ts.poolDAI.address))
+        .mul(PERCENTAGE_FACTOR)
+        .div(expectedPoolBalance)
+        .sub(PERCENTAGE_FACTOR)
+        .abs(),
+      "Pool balance"
+    ).to.be.lte(2);
 
     expect(
       await ts.creditManagerDAI.hasOpenedCreditAccount(deployer.address),

@@ -17,7 +17,7 @@ import { BigNumber } from "ethers";
 import { LEVERAGE_DECIMALS } from "../../core/constants";
 
 
-describe("Actions test", function () {
+describe("CreditManager test", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);
@@ -72,10 +72,12 @@ describe("Actions test", function () {
       deployer.address
     );
 
-    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.eq(
-      accountAmount
-        .mul(leverageFactor + LEVERAGE_DECIMALS)
-        .div(LEVERAGE_DECIMALS)
+    const balanceExpected = accountAmount
+      .mul(leverageFactor + LEVERAGE_DECIMALS)
+      .div(LEVERAGE_DECIMALS)
+
+    expect((await ts.daiToken.balanceOf(creditAccount)).sub(balanceExpected)).to.be.lte(2
+
     );
 
     await ts.creditManagerDAI.repayCreditAccount(deployer.address)

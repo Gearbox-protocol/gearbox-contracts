@@ -102,7 +102,7 @@ describe("YEARN adapter", function () {
     expect(
       (await ts.daiToken.balanceOf(creditAccount)).sub(amountOnAccount),
       "openUserAccount amountOnAccount"
-    ).to.be.lte(1);
+    ).to.be.lte(2);
 
     const adapterContract = YearnAdapter__factory.connect(adapter, user);
 
@@ -126,76 +126,76 @@ describe("YEARN adapter", function () {
     await ts.creditManagerDAI.connect(user).repayCreditAccount(friend.address);
   };
 
-  // it("[YA-1]: deposit() converts whole DAI amount to yDAI", async () => {
-  //   const { amountOnAccount, creditAccount, yearnHelper, adapter, yDAItoken } =
-  //     await openUserAccount();
-  //
-  //   const yDAIAmount = await yearnHelper.getExpectedAmount(
-  //     "ExactTokensToTokens",
-  //     [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
-  //     amountOnAccount
-  //   );
-  //
-  //   const r2 = await adapter["deposit()"]();
-  //   await r2.wait();
-  //
-  //   expect(await ts.daiToken.balanceOf(creditAccount)).to.be.eq(0);
-  //
-  //   expect(
-  //     (await yDAItoken.balanceOf(creditAccount))
-  //       .mul(PERCENTAGE_FACTOR)
-  //       .div(yDAIAmount)
-  //       .sub(PERCENTAGE_FACTOR)
-  //       .abs()
-  //   ).lte(1);
-  //
-  //   await repayUserAccount(amountOnAccount);
-  // });
-  //
-  // for (let func of ["deposit(uint256)", "deposit(uint256,address)"]) {
-  //   it(`[YA-2]: ${func} converts exact DAI amount to yDAI`, async () => {
-  //     const {
-  //       amountOnAccount,
-  //       creditAccount,
-  //       yearnHelper,
-  //       adapter,
-  //       yDAItoken,
-  //     } = await openUserAccount();
-  //
-  //     const amountToDeposit = amountOnAccount.div(2);
-  //
-  //     const yDAIAmount = await yearnHelper.getExpectedAmount(
-  //       "ExactTokensToTokens",
-  //       [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
-  //       amountToDeposit
-  //     );
-  //
-  //     const r2 =
-  //       func === "deposit(uint256)"
-  //         ? await adapter["deposit(uint256)"](amountToDeposit)
-  //         : await adapter["deposit(uint256,address)"](
-  //             amountToDeposit,
-  //             friend.address
-  //           );
-  //     await r2.wait();
-  //
-  //     expect(
-  //       (await ts.daiToken.balanceOf(creditAccount))
-  //         .sub(amountOnAccount.sub(amountToDeposit))
-  //         .abs()
-  //     ).to.be.lte(2);
-  //
-  //     expect(
-  //       (await yDAItoken.balanceOf(creditAccount))
-  //         .mul(PERCENTAGE_FACTOR)
-  //         .div(yDAIAmount)
-  //         .sub(PERCENTAGE_FACTOR)
-  //         .abs()
-  //     ).lte(1);
-  //
-  //     await repayUserAccount(amountOnAccount);
-  //   });
-  // }
+  it("[YA-1]: deposit() converts whole DAI amount to yDAI", async () => {
+    const { amountOnAccount, creditAccount, yearnHelper, adapter, yDAItoken } =
+      await openUserAccount();
+
+    const yDAIAmount = await yearnHelper.getExpectedAmount(
+      "ExactTokensToTokens",
+      [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
+      amountOnAccount
+    );
+
+    const r2 = await adapter["deposit()"]();
+    await r2.wait();
+
+    expect(await ts.daiToken.balanceOf(creditAccount)).to.be.eq(0);
+
+    expect(
+      (await yDAItoken.balanceOf(creditAccount))
+        .mul(PERCENTAGE_FACTOR)
+        .div(yDAIAmount)
+        .sub(PERCENTAGE_FACTOR)
+        .abs()
+    ).lte(2);
+
+    await repayUserAccount(amountOnAccount);
+  });
+
+  for (let func of ["deposit(uint256)", "deposit(uint256,address)"]) {
+    it(`[YA-2]: ${func} converts exact DAI amount to yDAI`, async () => {
+      const {
+        amountOnAccount,
+        creditAccount,
+        yearnHelper,
+        adapter,
+        yDAItoken,
+      } = await openUserAccount();
+
+      const amountToDeposit = amountOnAccount.div(2);
+
+      const yDAIAmount = await yearnHelper.getExpectedAmount(
+        "ExactTokensToTokens",
+        [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
+        amountToDeposit
+      );
+
+      const r2 =
+        func === "deposit(uint256)"
+          ? await adapter["deposit(uint256)"](amountToDeposit)
+          : await adapter["deposit(uint256,address)"](
+              amountToDeposit,
+              friend.address
+            );
+      await r2.wait();
+
+      expect(
+        (await ts.daiToken.balanceOf(creditAccount))
+          .sub(amountOnAccount.sub(amountToDeposit))
+          .abs()
+      ).to.be.lte(2);
+
+      expect(
+        (await yDAItoken.balanceOf(creditAccount))
+          .mul(PERCENTAGE_FACTOR)
+          .div(yDAIAmount)
+          .sub(PERCENTAGE_FACTOR)
+          .abs()
+      ).lte(2);
+
+      await repayUserAccount(amountOnAccount);
+    });
+  }
 
   it("[YA-3]: withdraw() converts whole yDAI amount to DAI", async () => {
     const { amountOnAccount, creditAccount, yearnHelper, adapter, yDAItoken } =
@@ -225,24 +225,23 @@ describe("YEARN adapter", function () {
         .mul(PERCENTAGE_FACTOR)
         .div(expected_yDAIAmount)
         .sub(PERCENTAGE_FACTOR)
-        .abs(),  "yDAI balance after deposit"
+        .abs(),
+      "yDAI balance after deposit"
     ).to.be.lte(2);
-
-    const DAIAmount2 = (
-      await yearnHelper.getExpectedAmount(
-        "ExactTokensToTokens",
-        [YEARN_DAI_ADDRESS, tokenDataByNetwork.Mainnet.DAI.address],
-        yDAIBalance
-      )
-    ).add(yDAIBalance);
 
     await adapter["withdraw()"]();
 
-    const daiBalance2 = await ts.daiToken.balanceOf(creditAccount);
-    const yDAIBalance2 = await adapter.balanceOf(creditAccount);
+    console.log((await adapter.balanceOf(creditAccount)).toString());
 
-    expect(daiBalance2.sub(amountOnAccount).abs(), "DAI balance after withdraw").to.be.lte(1);
-    expect(yDAIBalance2, "yDAI balance after withdraw").to.be.lte(1);
+    const daiBalance2 = await ts.daiToken.balanceOf(creditAccount);
+
+    expect(
+      daiBalance2
+        .mul(PERCENTAGE_FACTOR)
+        .div(amountOnAccount)
+        .sub(PERCENTAGE_FACTOR),
+      "DAI balance after withdraw"
+    ).to.be.lte(2);
 
     await repayUserAccount(amountOnAccount);
   });
