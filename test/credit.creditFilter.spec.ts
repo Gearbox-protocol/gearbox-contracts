@@ -15,7 +15,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-wit
 import { PoolDeployer } from "../deployer/poolDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import {
-  ADDRESS_0x0,
   CHI_THRESHOLD_DEFAULT,
   DEFAULT_CREDIT_MANAGER,
   DUMB_ADDRESS,
@@ -26,7 +25,7 @@ import {
 import { CreditManagerDeployer } from "../deployer/creditManagerDeployer";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
 import { BigNumber } from "ethers";
-import { MAX_INT, PERCENTAGE_FACTOR, RAY, WAD } from "@diesellabs/gearbox-sdk";
+import { ADDRESS_0x0, MAX_INT, PERCENTAGE_FACTOR, RAY, WAD } from "@diesellabs/gearbox-sdk";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
 
 const { amount, borrowedAmount } = CreditManagerTestSuite;
@@ -197,7 +196,7 @@ describe("CreditFilter", function () {
     expect(await creditFilter.tokenMasksMap(tokenA.address)).to.be.eq(1 << 1);
   });
 
-  it("[CF-5]: allowToken reverts to add more than 256 tokens", async () => {
+  it("[CF-5]: allowToken reverts to add more than 256 tokens, but could change liquidation threshold", async () => {
     const revertMsg = await errors.CF_TOO_MUCH_ALLOWED_TOKENS();
 
     const liquidationThreshold = UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD - 100;
@@ -231,6 +230,10 @@ describe("CreditFilter", function () {
     await expect(
       creditFilter.allowToken(throwToken.address, liquidationThreshold)
     ).to.be.revertedWith(revertMsg);
+
+    await creditFilter.allowToken(underlyingToken.address, 10);
+    expect(await creditFilter.liquidationThresholds(underlyingToken.address)).to.be.eq(10);
+
   });
 
   it("[CF-6]: allowToken just update liquidation threshold if called twice", async () => {
@@ -1219,4 +1222,6 @@ describe("CreditFilter", function () {
       creditManagerMockForFilter.updateUnderlyingTokenLiquidationThreshold()
     ).to.be.revertedWith(revertMsg);
   });
+
+
 });

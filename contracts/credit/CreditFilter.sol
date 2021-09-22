@@ -150,7 +150,10 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             Errors.CF_INCORRECT_LIQUIDATION_THRESHOLD
         ); // T:[CF-3]
 
-        require(allowedTokens.length < 256, Errors.CF_TOO_MUCH_ALLOWED_TOKENS); // T:[CF-5]
+        require(
+            tokenMasksMap[token] > 0 || allowedTokens.length < 256,
+            Errors.CF_TOO_MUCH_ALLOWED_TOKENS
+        ); // T:[CF-5]
 
         // Checks that contract has balanceOf method and it returns uint256
         require(IERC20(token).balanceOf(address(this)) >= 0); // T:[CF-11]
@@ -251,7 +254,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         uint256 amountIn,
         uint256 amountOut
     )
-        public
+        external
         override
         adapterOnly // T:[CF-20]
     {
@@ -561,13 +564,13 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     }
 
     /// @dev Returns quantity of contracts in allowed list
-    function allowedContractsCount() public view override returns (uint256) {
+    function allowedContractsCount() external view override returns (uint256) {
         return allowedContractsSet.length(); // T:[CF-9]
     }
 
     /// @dev Returns allowed contract by index
     function allowedContracts(uint256 i)
-        public
+        external
         view
         override
         returns (address)
