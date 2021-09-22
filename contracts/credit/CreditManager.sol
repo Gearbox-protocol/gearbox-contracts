@@ -75,7 +75,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     address public wethGateway;
 
     // Default swap contracts - uses for automatic close
-    address public defaultSwapContract;
+    address public override defaultSwapContract;
 
     uint256 public override feeSuccess;
 
@@ -407,7 +407,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             ); // T:[CM-11]
 
             // close operation with loss is not allowed
-            require(loss <= 1, Errors.CM_CANT_CLOSE_WITH_LOSS); // T:[CM-42]
+            require(profit >= feeLiquidation, Errors.CM_CANT_CLOSE_WITH_LOSS); // T:[CM-42]
 
             // transfer remaining funds to borrower
             _safeTokenTransfer(
