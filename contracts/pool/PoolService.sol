@@ -188,7 +188,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         IERC20(underlyingToken).safeTransfer(to, amountSent); // T:[PS-3, 34]
         IERC20(underlyingToken).safeTransfer(
             treasuryAddress,
-            underlyingTokensAmount.percentMul(withdrawFee)
+            underlyingTokensAmount.sub(amountSent)
         ); // T:[PS-3, 34]
         DieselToken(dieselToken).burn(msg.sender, amount); // T:[PS-3, 8]
 
@@ -212,8 +212,11 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         //  interestAccrued = totalBorrow *  ------------------------------------
         //                                             SECONDS_PER_YEAR
         //
-        uint256 interestAccrued = totalBorrowed.rayMul(
-            borrowAPY_RAY.mul(timeDifference).div(Constants.SECONDS_PER_YEAR)
+        uint256 interestAccrued = totalBorrowed.mul(
+            borrowAPY_RAY
+            .mul(timeDifference)
+            .div(Constants.SECONDS_PER_YEAR)
+            .div(Constants.RAY)
         ); // T:[GM-1]
 
         return _expectedLiquidityLU.add(interestAccrued); // T:[PS-29]
