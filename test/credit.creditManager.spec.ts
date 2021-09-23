@@ -20,13 +20,11 @@ import { PoolDeployer } from "../deployer/poolDeployer";
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
 import {
-  ADDRESS_0x0,
   DEFAULT_CREDIT_MANAGER,
   DUMB_ADDRESS,
   FEE_INTEREST,
   FEE_LIQUIDATION,
   FEE_SUCCESS,
-  LEVERAGE_DECIMALS,
   LIQUIDATION_DISCOUNTED_SUM,
   PAUSABLE_REVERT_MSG,
   UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
@@ -35,6 +33,8 @@ import { BigNumber } from "ethers";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
 import {
+  ADDRESS_0x0,
+  LEVERAGE_DECIMALS,
   MAX_INT,
   PERCENTAGE_FACTOR,
   percentMul,
@@ -1235,20 +1235,71 @@ describe("CreditManager", function () {
     ).to.be.eq(await creditManager.minHealthFactor());
   });
 
-  it("[CM-42]: closeCreditAccount reverts if loss accrued", async () => {
+  it("[CM-42]: closeCreditAccount reverts if user wants no to pay fees", async () => {
     const revertMsg = await errors.CM_CANT_CLOSE_WITH_LOSS();
     await ts.openDefaultCreditAccount();
 
-    await ts.getCreditAccountParameters(user.address);
+    const creditAccount = await creditManager.getCreditAccountOrRevert(
+      user.address
+    );
 
-    const ciAtClose = RAY.mul(2);
-    await poolService.setCumulative_RAY(ciAtClose);
+    const tv = await creditFilter.calcTotalValue(creditAccount);
+
+    const [borrowedAmount, ciAtOpen] = await ts.getCreditAccountParameters(
+      user.address
+    );
+
+    // We consider edge case where:
+    // tv = bai + (tv-bai)*feeS + iR * feeI
+    // or:
+    //
+    //        tv * (1-feeS) + ba * feeI
+    // bai = ---------------------------
+    //               1 + feeI - feeS
+    //
+    //                      bai
+    // ciClose = ciAtOpen ------
+    //                       ba
+    // With less than one it should be reverted.
+
+    const feeS = (await creditManager.feeSuccess()).toNumber();
+    const feeI = (await creditManager.feeInterest()).toNumber();
+
+    const ciAtCloseThrow = ciAtOpen
+      .mul(tv.mul(PERCENTAGE_FACTOR - feeS).add(borrowedAmount.mul(feeI)))
+      .div(PERCENTAGE_FACTOR + feeI - feeS)
+      .div(borrowedAmount);
 
     const closePath = await ts.getClosePath(user.address, closeSlippage);
+    //
+    await poolService.setCumulative_RAY(ciAtCloseThrow);
+
+    const params = await creditManager._calcClosePayments(
+      creditAccount,
+      tv,
+      false
+    );
+
+    expect(params.remainingFunds).to.be.eq(0);
 
     await expect(
       creditManager.connect(user).closeCreditAccount(friend.address, closePath)
     ).to.be.revertedWith(revertMsg);
+
+    const ciAtCloseNotThrow = ciAtCloseThrow.sub(1e9);
+    await poolService.setCumulative_RAY(ciAtCloseNotThrow);
+
+    const paramsNotThrow = await creditManager._calcClosePayments(
+      creditAccount,
+      tv,
+      false
+    );
+
+    expect(paramsNotThrow.remainingFunds).to.be.gt(0);
+
+    await creditManager
+      .connect(user)
+      .closeCreditAccount(friend.address, closePath);
   });
 
   it("[CM-43]: constructor reverts if underlying token is not consistent", async () => {

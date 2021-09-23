@@ -407,7 +407,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             ); // T:[CM-11]
 
             // close operation with loss is not allowed
-            require(profit >= feeLiquidation, Errors.CM_CANT_CLOSE_WITH_LOSS); // T:[CM-42]
+            require(remainingFunds > 0, Errors.CM_CANT_CLOSE_WITH_LOSS); // T:[CM-42]
 
             // transfer remaining funds to borrower
             _safeTokenTransfer(
@@ -548,13 +548,14 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
                     )
                 ); // T:[CM-45]
 
+            remainingFunds = totalFunds > amountToPool
+                ? totalFunds.sub(amountToPool).sub(1)
+                : 0; // T:[CM-45]
+
             amountToPool = totalFunds >= amountToPool
                 ? amountToPool
                 : totalFunds; // T:[CM-45]
             profit = amountToPool.sub(borrowedAmountWithInterest); // T:[CM-45]
-            remainingFunds = totalFunds > amountToPool
-                ? totalFunds.sub(amountToPool).sub(1)
-                : 0; // T:[CM-45]
         }
     }
 
