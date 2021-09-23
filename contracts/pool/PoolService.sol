@@ -212,12 +212,11 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         //  interestAccrued = totalBorrow *  ------------------------------------
         //                                             SECONDS_PER_YEAR
         //
-        uint256 interestAccrued = totalBorrowed.mul(
-            borrowAPY_RAY
-            .mul(timeDifference)
-            .div(Constants.SECONDS_PER_YEAR)
-            .div(Constants.RAY)
-        ); // T:[GM-1]
+        uint256 interestAccrued = totalBorrowed
+        .mul(borrowAPY_RAY)
+        .div(Constants.RAY)
+        .mul(timeDifference)
+        .div(Constants.SECONDS_PER_YEAR); // T:[PS-29]
 
         return _expectedLiquidityLU.add(interestAccrued); // T:[PS-29]
     }

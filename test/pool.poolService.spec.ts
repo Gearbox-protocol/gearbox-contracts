@@ -569,10 +569,11 @@ describe("PoolService", function () {
 
     const timeDifference = timestampRepay - initialTimestamp;
 
-    const interestAccrued = rayMul(
-      totalBorrowed,
-      borrowRate.mul(timeDifference).div(SECONDS_PER_YEAR)
-    );
+    const interestAccrued = totalBorrowed
+      .mul(borrowRate)
+      .div(RAY)
+      .mul(timeDifference)
+      .div(SECONDS_PER_YEAR);
 
     const dieselRate_RAY = RAY.mul(addLiquidity.add(interestAccrued)).div(
       addLiquidity
@@ -1053,11 +1054,11 @@ describe("PoolService", function () {
 
     const timeDifference = timestampNow - timestampLend;
 
-    const totalBorrowedinterestAccrued = rayMul(
-      borrowedAmount,
-      borrowRate.mul(timeDifference).div(SECONDS_PER_YEAR)
-    );
-
+    const totalBorrowedinterestAccrued = borrowedAmount
+      .mul(borrowRate)
+      .div(RAY)
+      .mul(timeDifference)
+      .div(SECONDS_PER_YEAR);
     expect(await poolService.expectedLiquidity()).to.be.eq(
       _expectLU.add(totalBorrowedinterestAccrued)
     );
