@@ -33,7 +33,7 @@
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.4",
-    "hardhat": "^2.6.0",
+    "hardhat": "^2.6.4",
     "hardhat-abi-exporter": "^2.2.0",
     "hardhat-contract-sizer": "^2.0.3",
     "hardhat-gas-reporter": "^1.0.4",
@@ -57,6 +57,7 @@
     "chainlink-test": "npx hardhat run scripts/chainlinkTest.ts --network mainnet",
     "faucet": "npx hardhat run scripts/faucetGetData.ts --network mainnet",
     "faucet-mint": "npx hardhat run scripts/faucetMint.ts --network kovan",
+    "merkle": "npx hardhat run scripts/merkle.ts --network kovan",
     "charge": "npx hardhat run scripts/charge.ts --network localhost",
     "deploy-nft": "npx hardhat run scripts/deploy-nft.ts --network kovan",
     "deploy-acc": "npx hardhat run scripts/deployAcc.ts --network localhost",
@@ -72,7 +73,9 @@
     "coverage": "yarn build && npx hardhat coverage --temp artifacts"
   },
   "dependencies": {
-    "@diesellabs/gearbox-sdk": "^0.0.134",
+    "@diesellabs/gearbox-leverage": "^0.0.48",
+    "@diesellabs/gearbox-sdk": "^0.0.165",
+    "deep-eql": "^4.0.0",
     "ethereumjs-util": "^7.1.0"
   }
 }

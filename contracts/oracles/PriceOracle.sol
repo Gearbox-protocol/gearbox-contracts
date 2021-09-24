@@ -59,9 +59,10 @@ contract PriceOracle is ACLTrait, IPriceOracle {
             Errors.PO_TOKENS_WITH_DECIMALS_MORE_18_ISNT_ALLOWED
         ); // T:[PO-3]
 
-        console.log(AggregatorV3Interface(priceFeed).decimals());
-
-        require(AggregatorV3Interface(priceFeed).decimals() == 18, "");
+        require(
+            AggregatorV3Interface(priceFeed).decimals() == 18,
+            Constants.PO_AGGREGATOR_DECIMALS_SHOULD_BE_18
+        );
 
         decimalsMultipliers[token] = 10**(18 - decimals);
         decimalsDividers[token] = 10**(36 - decimals);
@@ -121,12 +122,11 @@ contract PriceOracle is ACLTrait, IPriceOracle {
         (
             ,
             //uint80 roundID,
-            int256 price, //uint startedAt, //uint timeStamp,
+            int256 price, //uint startedAt, //uint timeStamp, //uint80 answeredInRound
             ,
             ,
 
-        ) = //uint80 answeredInRound
-        AggregatorV3Interface(priceFeeds[token]).latestRoundData(); // T:[PO-6]
+        ) = AggregatorV3Interface(priceFeeds[token]).latestRoundData(); // T:[PO-6]
         return uint256(price);
     }
 }

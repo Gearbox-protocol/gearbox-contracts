@@ -37,6 +37,7 @@ library Constants {
     uint256 constant SECONDS_PER_YEAR = 365 days;
 
     // 1e18
+    uint256 constant RAY = 1e27;
     uint256 constant WAD = 1e18;
 
     // OPERATIONS
@@ -53,11 +54,12 @@ library Constants {
     uint256 constant CHI_THRESHOLD = 9950;
     uint256 constant HF_CHECK_INTERVAL_DEFAULT = 4;
 
-    uint16 constant SAFE_TRANSFER = 0;
-    uint16 constant UNISWAP_V2 = 1;
-    uint16 constant UNISWAP_V3 = 2;
-    uint16 constant CURVE_V1 = 3;
+    uint256 constant NO_SWAP = 0;
+    uint256 constant UNISWAP_V2 = 1;
+    uint256 constant UNISWAP_V3 = 2;
+    uint256 constant CURVE_V1 = 3;
+    uint256 constant LP_YEARN = 4;
 
-    uint16 constant NO_LP = 0;
-    uint16 constant LP_YEARN = 1;
+    uint256 constant EXACT_INPUT = 1;
+    uint256 constant EXACT_OUTPUT = 2;
 }
