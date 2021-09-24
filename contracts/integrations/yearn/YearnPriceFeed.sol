@@ -3,8 +3,6 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
-import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
-
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -14,7 +12,7 @@ import {IYVault} from "./IYVault.sol";
 import "hardhat/console.sol";
 
 /// @title Yearn Chainlink pricefeed adapter
-contract YearnPriceFeed is Proxy {
+contract YearnPriceFeed is AggregatorV3Interface {
     using SafeMath for uint256;
     AggregatorV3Interface public priceFeed;
     IYVault public yVault;
@@ -26,13 +24,22 @@ contract YearnPriceFeed is Proxy {
         decimalsDivider = 10**yVault.decimals();
     }
 
-    function _implementation() internal view override returns (address) {
-        return address(yVault);
+    function decimals() external view override returns (uint8) {
+        return priceFeed.decimals();
+    }
+
+    function description() external view override returns (string memory) {
+        return priceFeed.description();
+    }
+
+    function version() external view override returns (uint256) {
+        return priceFeed.version();
     }
 
     function getRoundData(uint80 _roundId)
         external
         view
+        override
         returns (
             uint80 roundId,
             int256 answer,
@@ -51,6 +58,7 @@ contract YearnPriceFeed is Proxy {
     function latestRoundData()
         external
         view
+        override
         returns (
             uint80 roundId,
             int256 answer,

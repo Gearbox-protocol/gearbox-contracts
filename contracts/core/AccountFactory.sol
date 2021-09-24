@@ -4,6 +4,7 @@
 pragma solidity ^0.7.4;
 pragma abicoder v2;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
@@ -26,6 +27,8 @@ import "hardhat/console.sol";
 /// @title Abstract reusable credit accounts factory
 /// @notice Creates, holds & lend credit accounts to pool contract
 contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     //
     //     head
     //      ⬇
@@ -49,7 +52,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     address public masterCreditAccount;
 
     // Credit accounts list
-    address[] public override creditAccounts;
+    EnumerableSet.AddressSet private creditAccountsSet;
 
     // Credit accounts list
     DataTypes.MiningApproval[] public miningApprovals;
@@ -240,7 +243,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         ICreditAccount(clonedAccount).initialize();
         _nextCreditAccount[tail] = clonedAccount; // T:[AF-2]
         tail = clonedAccount; // T:[AF-2]
-        creditAccounts.push(clonedAccount); // T:[AF-10]
+        creditAccountsSet.add(clonedAccount); // T:[AF-10]
         emit NewCreditAccount(clonedAccount);
     }
 
@@ -253,13 +256,26 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         external
         configuratorOnly // T:[AF-13]
     {
-        require(
-            _nextCreditAccount[prev] == creditAccount,
-            Errors.AF_CREDIT_ACCOUNT_NOT_IN_STOCK
-        ); // T:[AF-15]
-        _nextCreditAccount[prev] = _nextCreditAccount[creditAccount]; // T: [AF-16]
-        ICreditAccount(creditAccount).connectTo(to); // T: [AF-16]
-        emit TakeForever(creditAccount, to); // T: [AF-16]
+        _checkStock();
+
+        if (head == creditAccount) {
+            head = _nextCreditAccount[head]; // T:[AF-21] it exists cause we called _checkStock();
+        } else {
+            require(
+                _nextCreditAccount[prev] == creditAccount,
+                Errors.AF_CREDIT_ACCOUNT_NOT_IN_STOCK
+            ); // T:[AF-15]
+
+            // updates tail if we take the last one
+            if (creditAccount == tail) {
+                tail = prev;
+            }
+
+            _nextCreditAccount[prev] = _nextCreditAccount[creditAccount]; // T: [AF-16]
+        }
+        ICreditAccount(creditAccount).connectTo(to); // T: [AF-16, 21]
+        creditAccountsSet.remove(creditAccount);
+        emit TakeForever(creditAccount, to); // T: [AF-16, 21]
     }
 
     ///
@@ -365,7 +381,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
 
     /// @dev Counts how many credit accounts are in stock
     function countCreditAccountsInStock()
-        public
+        external
         view
         override
         returns (uint256)
@@ -381,6 +397,10 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
 
     /// @dev Count of deployed credit accounts
     function countCreditAccounts() external view override returns (uint256) {
-        return creditAccounts.length; // T:[AF-10]
+        return creditAccountsSet.length(); // T:[AF-10]
+    }
+
+    function creditAccounts(uint256 id) external view override returns (address) {
+        return creditAccountsSet.at(id);
     }
 }

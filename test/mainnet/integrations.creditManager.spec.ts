@@ -12,9 +12,8 @@ import { expect } from "../../utils/expect";
 import { Errors, YearnAdapter } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
 import { MainnetSuite } from "./helper";
-import { MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
+import { LEVERAGE_DECIMALS, MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import { LEVERAGE_DECIMALS } from "../../core/constants";
 
 
 describe("CreditManager test", function () {

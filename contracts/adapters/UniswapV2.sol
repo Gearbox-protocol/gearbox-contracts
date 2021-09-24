@@ -384,6 +384,6 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         override
         returns (uint256[] memory amounts)
     {
-        return IUniswapV2Router02(swapContract).getAmountsOut(amountOut, path);
+        return IUniswapV2Router02(swapContract).getAmountsIn(amountOut, path);
     }
 }

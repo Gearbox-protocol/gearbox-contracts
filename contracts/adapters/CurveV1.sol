@@ -8,7 +8,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {ICurvePool} from "../integrations/curve/ICurvePool.sol";
-
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CreditAccount} from "../credit/CreditAccount.sol";
 import {CreditManager} from "../credit/CreditManager.sol";
 
@@ -72,14 +72,17 @@ contract CurveV1Adapter is ICurvePool {
             min_dy
         ); // T:[CVA-3]
 
+        uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
+        uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
+
         creditManager.executeOrder(msg.sender, address(curvePool), data); // T:[CVA-3]
 
         creditFilter.checkCollateralChange(
             creditAccount,
             tokenIn,
             tokenOut,
-            dx,
-            min_dy
+            balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
+            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
         ); // T:[CVA-2]
     }
 

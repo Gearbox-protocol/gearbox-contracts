@@ -9,7 +9,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {IYVault} from "../integrations/yearn/IYVault.sol";
-
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CreditAccount} from "../credit/CreditAccount.sol";
 import {CreditManager} from "../credit/CreditManager.sol";
 
@@ -80,19 +80,26 @@ contract YearnAdapter is IYVault {
             token
         );
 
-        uint256 balanceBefore = ERC20(token).balanceOf(creditAccount);
+        console.log("1");
+        uint256 balanceInBefore = IERC20(token).balanceOf(creditAccount);
 
-        shares = abi.decode(
-            creditManager.executeOrder(msg.sender, yVault, data),
-            (uint256)
-        );
+
+        console.log("2");
+        uint256 balanceOutBefore = IERC20(yVault).balanceOf(creditAccount);
+
+
+        console.log("3");
+
+        creditManager.executeOrder(msg.sender, yVault, data);
+
+        console.log("4");
 
         creditFilter.checkCollateralChange(
             creditAccount,
             token,
             yVault,
-            balanceBefore.sub(ERC20(token).balanceOf(creditAccount)),
-            shares
+            balanceInBefore.sub(IERC20(token).balanceOf(creditAccount)),
+            balanceOutBefore.add(IERC20(yVault).balanceOf(creditAccount))
         );
     }
 
@@ -140,19 +147,17 @@ contract YearnAdapter is IYVault {
             maxLoss
         );
 
-        uint256 balance = ERC20(token).balanceOf(creditAccount);
+        uint256 balanceInBefore = IERC20(yVault).balanceOf(creditAccount);
+        uint256 balanceOutBefore = IERC20(token).balanceOf(creditAccount);
 
-        shares = abi.decode(
-            creditManager.executeOrder(msg.sender, yVault, data),
-            (uint256)
-        );
+        creditManager.executeOrder(msg.sender, yVault, data);
 
         creditFilter.checkCollateralChange(
             creditAccount,
-            yVault,
             token,
-            shares,
-            ERC20(token).balanceOf(creditAccount).sub(balance)
+            yVault,
+            balanceInBefore.sub(IERC20(yVault).balanceOf(creditAccount)),
+            balanceOutBefore.add(IERC20(token).balanceOf(creditAccount))
         );
     }
 

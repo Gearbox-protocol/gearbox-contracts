@@ -9,20 +9,20 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "../../utils/expect";
 
-import {
-  CurveV1Adapter__factory,
-  Errors,
-  YearnAdapter__factory,
-} from "../../types/ethers-v5";
+import { Errors, YearnAdapter__factory } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
-import { CURVE_3POOL_ADDRESS, MainnetSuite, YEARN_DAI_ADDRESS } from "./helper";
-import { MAX_INT, PERCENTAGE_FACTOR, WAD } from "@diesellabs/gearbox-sdk";
+import { MainnetSuite } from "./helper";
+import {
+  LEVERAGE_DECIMALS,
+  MAX_INT,
+  PERCENTAGE_FACTOR,
+  SwapType, tokenDataByNetwork,
+  WAD,
+  YEARN_DAI_ADDRESS
+} from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import { LEVERAGE_DECIMALS } from "../../core/constants";
-import { tokenDataByNetwork } from "../../core/token";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
-import { CurveHelper } from "../../integrations/curveHelper";
-import { YearnHelper } from "../../integrations/yearnHelper";
+import { YearnHelper } from "@diesellabs/gearbox-leverage";
 
 describe("YEARN adapter", function () {
   this.timeout(0);
@@ -78,14 +78,18 @@ describe("YEARN adapter", function () {
       .mul(leverageFactor + LEVERAGE_DECIMALS)
       .div(LEVERAGE_DECIMALS);
 
+
+
     const adapter = await ts.creditFilterDAI.contractToAdapter(
       YEARN_DAI_ADDRESS
     );
 
     const yearnHelper = await YearnHelper.getHelper(
-      YEARN_DAI_ADDRESS,
+      "Yearn DAI",
+      adapter,
       deployer
     );
+
 
     const r1 = await ts.creditManagerDAI.openCreditAccount(
       accountAmount,
@@ -127,11 +131,17 @@ describe("YEARN adapter", function () {
   };
 
   it("[YA-1]: deposit() converts whole DAI amount to yDAI", async () => {
+
+
+
     const { amountOnAccount, creditAccount, yearnHelper, adapter, yDAItoken } =
       await openUserAccount();
 
+
+
+
     const yDAIAmount = await yearnHelper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
       amountOnAccount
     );
@@ -165,7 +175,7 @@ describe("YEARN adapter", function () {
       const amountToDeposit = amountOnAccount.div(2);
 
       const yDAIAmount = await yearnHelper.getExpectedAmount(
-        "ExactTokensToTokens",
+        SwapType.ExactInput,
         [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
         amountToDeposit
       );
@@ -204,7 +214,7 @@ describe("YEARN adapter", function () {
     const amountToDeposit = amountOnAccount.div(2);
 
     const expected_yDAIAmount = await yearnHelper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
       amountToDeposit
     );

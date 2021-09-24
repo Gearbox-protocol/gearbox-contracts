@@ -11,13 +11,18 @@ import { expect } from "../../utils/expect";
 
 import { CurveV1Adapter__factory, Errors } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
-import { CURVE_3POOL_ADDRESS, MainnetSuite } from "./helper";
-import { MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
+import { MainnetSuite } from "./helper";
+import {
+  CURVE_3POOL_ADDRESS,
+  LEVERAGE_DECIMALS,
+  MAX_INT,
+  SwapType,
+  tokenDataByNetwork,
+  WAD,
+} from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import { LEVERAGE_DECIMALS } from "../../core/constants";
-import { tokenDataByNetwork } from "../../core/token";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
-import { CurveHelper } from "../../integrations/curveHelper";
+import { CurveHelper } from "@diesellabs/gearbox-leverage";
 
 describe("CurveV1 adapter", function () {
   this.timeout(0);
@@ -85,10 +90,16 @@ describe("CurveV1 adapter", function () {
       CURVE_3POOL_ADDRESS
     );
 
-    const curveHelper = await CurveHelper.getHelper(adapter, deployer);
+    const curveHelper = await CurveHelper.getHelper(
+      "CurveAdapter",
+      CURVE_3POOL_ADDRESS,
+      adapter,
+      3,
+      deployer
+    );
 
     const minUSDCAmount = await curveHelper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       [
         tokenDataByNetwork.Mainnet.DAI.address,
         tokenDataByNetwork.Mainnet.USDC.address,

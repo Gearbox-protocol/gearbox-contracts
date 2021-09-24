@@ -102,14 +102,7 @@ contract LeveragedActions is ReentrancyGuard {
             block.timestamp
         ); // M:[LA-5]
 
-        _openShort(
-            router,
-            path[0],
-            amountIn,
-            data,
-            longParams,
-            referralCode
-        ); // M:[LA-5]
+        _openShort(router, path[0], amountIn, data, longParams, referralCode); // M:[LA-5]
     }
 
     /// @dev Opens short position (for example, swap USDC to ETH, open credit account in ETH, then swap all ETH to USDC)
@@ -123,9 +116,7 @@ contract LeveragedActions is ReentrancyGuard {
         uint256 referralCode
     ) external payable nonReentrant {
         // Getting initial token from short paremeters
-        (address tokenIn, ) = _extractTokensUniV3(
-            paramsV3.path
-        ); // M:[LA-6]
+        (address tokenIn, ) = _extractTokensUniV3(paramsV3.path); // M:[LA-6]
 
         // Changes recipient to this contract
         paramsV3.recipient = address(this); // M:[LA-6]
@@ -349,6 +340,11 @@ contract LeveragedActions is ReentrancyGuard {
             uint256 amountOutMinLeveraged = amountOutMin
             .mul(leveragedAmount)
             .div(amountIn); // M:[LA-1]
+
+            console.log(leveragedAmount);
+            console.log(amountIn);
+            console.log(amountOutMin);
+            console.log(amountOutMinLeveraged);
 
             IUniswapV2Router02(adapter).swapExactTokensForTokens(
                 leveragedAmount,

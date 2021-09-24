@@ -63,26 +63,30 @@ contract UniswapV3Adapter is ISwapRouter {
             paramsUpdate
         );
 
-        uint256 balanceBefore = IERC20(paramsUpdate.tokenIn).balanceOf(
+        uint256 balanceInBefore = IERC20(paramsUpdate.tokenIn).balanceOf(
             creditAccount
         );
 
-        // ToDo: Check for partial execution
+        uint256 balanceOutBefore = IERC20(paramsUpdate.tokenOut).balanceOf(
+            creditAccount
+        );
+
         bytes memory result = creditManager.executeOrder(
             msg.sender,
             swapContract,
             data
         );
-        (amountOut) = abi.decode(result, (uint256));
 
         creditFilter.checkCollateralChange(
             creditAccount,
             params.tokenIn,
             params.tokenOut,
-            balanceBefore.sub(
+            balanceInBefore.sub(
                 IERC20(paramsUpdate.tokenIn).balanceOf(creditAccount)
             ),
-            amountOut
+            balanceOutBefore.add(
+                IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount)
+            )
         );
     }
 
@@ -116,21 +120,17 @@ contract UniswapV3Adapter is ISwapRouter {
             paramsUpdate
         );
 
-        uint256 balanceBefore = IERC20(tokenIn).balanceOf(creditAccount);
+        uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
+        uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
 
-        bytes memory result = creditManager.executeOrder(
-            msg.sender,
-            swapContract,
-            data
-        );
-        (amountOut) = abi.decode(result, (uint256));
+        creditManager.executeOrder(msg.sender, swapContract, data);
 
         creditFilter.checkCollateralChange(
             creditAccount,
             tokenIn,
             tokenOut,
-            balanceBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
-            amountOut
+            balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
+            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
         );
     }
 
@@ -162,24 +162,25 @@ contract UniswapV3Adapter is ISwapRouter {
             paramsUpdate
         );
 
-        uint256 balanceBefore = IERC20(paramsUpdate.tokenOut).balanceOf(
+        uint256 balanceInBefore = IERC20(paramsUpdate.tokenIn).balanceOf(
             creditAccount
         );
 
-        bytes memory result = creditManager.executeOrder(
-            msg.sender,
-            swapContract,
-            data
+        uint256 balanceOutBefore = IERC20(paramsUpdate.tokenOut).balanceOf(
+            creditAccount
         );
-        (amountIn) = abi.decode(result, (uint256));
+
+        creditManager.executeOrder(msg.sender, swapContract, data);
 
         creditFilter.checkCollateralChange(
             creditAccount,
             params.tokenIn,
             params.tokenOut,
-            amountIn,
-            IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount).sub(
-                balanceBefore
+            balanceInBefore.sub(
+                IERC20(paramsUpdate.tokenIn).balanceOf(creditAccount)
+            ),
+            balanceOutBefore.add(
+                IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount)
             )
         );
     }
@@ -199,9 +200,6 @@ contract UniswapV3Adapter is ISwapRouter {
 
         (address tokenOut, address tokenIn) = _extractTokens(params.path);
 
-        console.log(tokenIn);
-        console.log(tokenOut);
-
         creditManager.provideCreditAccountAllowance(
             creditAccount,
             swapContract,
@@ -216,27 +214,17 @@ contract UniswapV3Adapter is ISwapRouter {
             paramsUpdate
         );
 
-        uint256 balanceBefore = IERC20(tokenOut).balanceOf(creditAccount);
+        uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
+        uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
 
-        {
-            bytes memory result = creditManager.executeOrder(
-                msg.sender,
-                swapContract,
-                data
-            );
-            (amountIn) = abi.decode(result, (uint256));
-        }
-
-        console.log("balanceBefore");
-        console.log(balanceBefore);
-        console.log(IERC20(tokenOut).balanceOf(creditAccount));
+        creditManager.executeOrder(msg.sender, swapContract, data);
 
         creditFilter.checkCollateralChange(
             creditAccount,
             tokenIn,
             tokenOut,
-            amountIn,
-            IERC20(tokenOut).balanceOf(creditAccount).sub(balanceBefore)
+            balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
+            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
         );
     }
 

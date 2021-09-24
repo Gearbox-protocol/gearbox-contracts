@@ -11,12 +11,18 @@ import { expect } from "../../utils/expect";
 
 import { Errors, UniswapV3Adapter__factory } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
-import { MainnetSuite, UNISWAP_V3_QUOTER, UNISWAP_V3_ROUTER } from "./helper";
-import { MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
+import { MainnetSuite } from "./helper";
+import {
+  ADDRESS_0x0,
+  LEVERAGE_DECIMALS,
+  MAX_INT,
+  SwapType, tokenDataByNetwork,
+  UNISWAP_V3_QUOTER,
+  UNISWAP_V3_ROUTER,
+  WAD, WETHToken
+} from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import { LEVERAGE_DECIMALS } from "../../core/constants";
-import { tokenDataByNetwork, WETHToken } from "../../core/token";
-import { UniV3helper } from "../../integrations/uniV3helper";
+import { UniV3helper } from "@diesellabs/gearbox-leverage";
 
 describe("UniswapV3 adapter", function () {
   this.timeout(0);
@@ -77,8 +83,11 @@ describe("UniswapV3 adapter", function () {
     );
 
     const uniV3Helper = await UniV3helper.getHelper(
+      "UniswapV3",
       UNISWAP_V3_ROUTER,
+      adapter,
       UNISWAP_V3_QUOTER,
+      ADDRESS_0x0,
       deployer
     );
 
@@ -125,7 +134,7 @@ describe("UniswapV3 adapter", function () {
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
 
     const ethAmount = await uniV3Helper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       amountOnAccount
     );
@@ -152,7 +161,7 @@ describe("UniswapV3 adapter", function () {
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
 
     const ethAmount = await uniV3Helper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       amountOnAccount
     );
@@ -182,7 +191,7 @@ describe("UniswapV3 adapter", function () {
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
 
     const ethAmount = await uniV3Helper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       amountOnAccount
     );
@@ -216,7 +225,7 @@ describe("UniswapV3 adapter", function () {
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
 
     const ethAmount = await uniV3Helper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       amountOnAccount
     );

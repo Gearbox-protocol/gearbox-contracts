@@ -11,12 +11,19 @@ import { expect } from "../../utils/expect";
 
 import { Errors, UniswapV2Adapter__factory } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
-import { MainnetSuite, UNISWAP_V2_ADDRESS } from "./helper";
-import { MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
+import { MainnetSuite } from "./helper";
+import {
+  ADDRESS_0x0,
+  LEVERAGE_DECIMALS,
+  MAX_INT,
+  SwapType,
+  tokenDataByNetwork,
+  UNISWAP_V2_ROUTER,
+  WAD,
+  WETHToken,
+} from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import { LEVERAGE_DECIMALS } from "../../core/constants";
-import { tokenDataByNetwork, WETHToken } from "../../core/token";
-import { UniV2helper } from "../../integrations/uniV2helper";
+import { UniV2helper } from "@diesellabs/gearbox-leverage";
 
 describe("UniswapV2 adapter", function () {
   this.timeout(0);
@@ -73,11 +80,14 @@ describe("UniswapV2 adapter", function () {
       .div(LEVERAGE_DECIMALS);
 
     const adapter = await ts.creditFilterDAI.contractToAdapter(
-      UNISWAP_V2_ADDRESS
+      UNISWAP_V2_ROUTER
     );
 
     const uniV2Helper = await UniV2helper.getHelper(
-      UNISWAP_V2_ADDRESS,
+      "UniswapV2",
+      UNISWAP_V2_ROUTER,
+      adapter,
+      ADDRESS_0x0,
       deployer
     );
 
@@ -124,7 +134,7 @@ describe("UniswapV2 adapter", function () {
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
 
     const ethAmount = await uniV2Helper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       amountOnAccount
     );
@@ -151,7 +161,7 @@ describe("UniswapV2 adapter", function () {
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
 
     const ethAmount = await uniV2Helper.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       amountOnAccount
     );
@@ -159,7 +169,7 @@ describe("UniswapV2 adapter", function () {
     const ethAmountExpected = ethAmount.mul(99).div(100);
 
     const amountToSwap = await uniV2Helper.getExpectedAmount(
-      "TokensToExactTokens",
+      SwapType.ExactOutput,
       path,
       ethAmountExpected
     );

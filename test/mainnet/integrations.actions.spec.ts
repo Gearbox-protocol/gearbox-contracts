@@ -16,29 +16,33 @@ import {
   IYVault__factory,
 } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
+import { MainnetSuite } from "./helper";
 import {
+  AdapterInterface,
+  ADDRESS_0x0,
   CURVE_3POOL_ADDRESS,
-  MainnetSuite,
-  UNISWAP_V2_ADDRESS,
+  LEVERAGE_DECIMALS,
+  MAX_INT,
+  PERCENTAGE_FACTOR,
+  SwapType,
+  tokenDataByNetwork,
+  UNISWAP_V2_ROUTER,
   UNISWAP_V3_QUOTER,
   UNISWAP_V3_ROUTER,
+  WAD,
+  WETHToken,
   YEARN_DAI_ADDRESS,
   YEARN_USDC_ADDRESS,
-} from "./helper";
-import { MAX_INT, PERCENTAGE_FACTOR, WAD } from "@diesellabs/gearbox-sdk";
+} from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import {
-  ADDRESS_0x0,
-  DUMB_ADDRESS,
-  LEVERAGE_DECIMALS,
-} from "../../core/constants";
-import { tokenDataByNetwork, WETHToken } from "../../core/token";
+import { DUMB_ADDRESS } from "../../core/constants";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
-import { LPInterface, SwapInterface } from "../../core/leveragedActions";
-import { UniV2helper } from "../../integrations/uniV2helper";
-import { UniV3helper } from "../../integrations/uniV3helper";
-import { CurveHelper } from "../../integrations/curveHelper";
 import { CreditManagerTestSuite } from "../../deployer/creditManagerTestSuite";
+import {
+  CurveHelper,
+  UniV2helper,
+  UniV3helper,
+} from "@diesellabs/gearbox-leverage";
 
 describe("Actions test", function () {
   this.timeout(0);
@@ -104,21 +108,23 @@ describe("Actions test", function () {
     ];
 
     const uniV2adapter = await UniV2helper.getHelper(
-      UNISWAP_V2_ADDRESS,
+      "UniswapV2",
+      UNISWAP_V2_ROUTER,
+      await ts.creditFilterDAI.contractToAdapter(UNISWAP_V2_ROUTER),
+      ADDRESS_0x0,
       deployer
     );
 
-    const calldata = await uniV2adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      path,
+    const tradePath = await uniV2adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      path
     );
 
+    const calldata = await uniV2adapter.getCalldata(tradePath, 0, deployer);
+
     const expectedLinkAmount = await uniV2adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       expectedAmountOnCreditAccount
     );
@@ -129,10 +135,10 @@ describe("Actions test", function () {
         {
           creditManager: ts.creditManagerDAI.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV2,
-          swapContract: UNISWAP_V2_ADDRESS,
+          swapInterface: AdapterInterface.UniswapV2,
+          swapContract: UNISWAP_V2_ROUTER,
           swapCalldata: calldata,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -145,7 +151,7 @@ describe("Actions test", function () {
         tokenDataByNetwork.Mainnet.LINK.address,
         accountAmount,
         ADDRESS_0x0,
-        UNISWAP_V2_ADDRESS,
+        UNISWAP_V2_ROUTER,
         ADDRESS_0x0,
         referralCode
       );
@@ -191,21 +197,23 @@ describe("Actions test", function () {
     const path = [WETHToken.Mainnet, tokenDataByNetwork.Mainnet.USDC.address];
 
     const uniV2adapter = await UniV2helper.getHelper(
-      UNISWAP_V2_ADDRESS,
+      "UniswapV2",
+      UNISWAP_V2_ROUTER,
+      await ts.creditFilterETH.contractToAdapter(UNISWAP_V2_ROUTER),
+      ADDRESS_0x0,
       deployer
     );
 
-    const calldata = await uniV2adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      path,
+    const tradePath = await uniV2adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      path
     );
 
+    const calldata = await uniV2adapter.getCalldata(tradePath, 0, deployer);
+
     const expectedUSDCAmount = await uniV2adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       expectedAmountOnCreditAccount
     );
@@ -237,10 +245,10 @@ describe("Actions test", function () {
         {
           creditManager: ts.creditManagerETH.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV2,
-          swapContract: UNISWAP_V2_ADDRESS,
+          swapInterface: AdapterInterface.UniswapV2,
+          swapContract: UNISWAP_V2_ROUTER,
           swapCalldata: calldata,
-          lpInterface: LPInterface.Yearn,
+          lpInterface: AdapterInterface.YearnV2,
           lpContract: YEARN_USDC_ADDRESS,
         },
         referralCode,
@@ -254,7 +262,7 @@ describe("Actions test", function () {
         YEARN_USDC_ADDRESS,
         accountAmountETH,
         ADDRESS_0x0,
-        UNISWAP_V2_ADDRESS,
+        UNISWAP_V2_ROUTER,
         YEARN_USDC_ADDRESS,
         referralCode
       );
@@ -308,22 +316,23 @@ describe("Actions test", function () {
     ];
 
     const uniV3adapter = await UniV3helper.getHelper(
+      "UniswapV3",
       UNISWAP_V3_ROUTER,
+      await ts.creditFilterDAI.contractToAdapter(UNISWAP_V3_ROUTER),
       UNISWAP_V3_QUOTER,
+      ADDRESS_0x0,
       deployer
     );
 
-    const calldata = await uniV3adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      path,
+    const tradePath = await uniV3adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      path
     );
+    const calldata = await uniV3adapter.getCalldata(tradePath, 0, deployer);
 
     const expectedLinkAmount = await uniV3adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       expectedAmountOnCreditAccount
     );
@@ -334,10 +343,10 @@ describe("Actions test", function () {
         {
           creditManager: ts.creditManagerDAI.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV3,
+          swapInterface: AdapterInterface.UniswapV3,
           swapContract: UNISWAP_V3_ROUTER,
           swapCalldata: calldata,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -400,21 +409,23 @@ describe("Actions test", function () {
     ];
 
     const curveAdapter = await CurveHelper.getHelper(
+      "CurveV1",
       CURVE_3POOL_ADDRESS,
+      await ts.creditFilterDAI.contractToAdapter(CURVE_3POOL_ADDRESS),
+      3,
       deployer
     );
 
-    const calldata = await curveAdapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      path,
+    const tradePath = await curveAdapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      path
     );
 
+    const calldata = await curveAdapter.getCalldata(tradePath, 0, deployer);
+
     const expectedUSDCAmount = await curveAdapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       path,
       expectedAmountOnCreditAccount
     );
@@ -425,10 +436,10 @@ describe("Actions test", function () {
         {
           creditManager: ts.creditManagerDAI.address,
           leverageFactor,
-          swapInterface: SwapInterface.Curve,
+          swapInterface: AdapterInterface.CurveV1,
           swapContract: CURVE_3POOL_ADDRESS,
           swapCalldata: calldata,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -483,7 +494,10 @@ describe("Actions test", function () {
     const poolBalance = await ts.wethToken.balanceOf(ts.poolETH.address);
 
     const uniV2adapter = await UniV2helper.getHelper(
-      UNISWAP_V2_ADDRESS,
+      "UniswapV2",
+      UNISWAP_V2_ROUTER,
+      await ts.creditFilterETH.contractToAdapter(UNISWAP_V2_ROUTER),
+      ADDRESS_0x0,
       deployer
     );
 
@@ -498,7 +512,7 @@ describe("Actions test", function () {
     ];
 
     const expectedAmountBeforeOpenAcc = await uniV2adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       shortPath,
       accountAmount
     );
@@ -507,34 +521,33 @@ describe("Actions test", function () {
       .mul(leverageFactor + LEVERAGE_DECIMALS)
       .div(LEVERAGE_DECIMALS);
 
-    const calldata = await uniV2adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      longPath,
+    const tradePath = await uniV2adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      longPath
     );
 
+    const calldata = await uniV2adapter.getCalldata(tradePath, 0, deployer);
+
     const expectedDAIAmount = await uniV2adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       longPath,
       expectedAmountOnCreditAccount
     );
 
     await expect(
       ts.leveragedActions.openShortUniV2(
-        UNISWAP_V2_ADDRESS,
+        UNISWAP_V2_ROUTER,
         accountAmount,
         expectedAmountBeforeOpenAcc,
         shortPath,
         {
           creditManager: ts.creditManagerETH.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV2,
-          swapContract: UNISWAP_V2_ADDRESS,
+          swapInterface: AdapterInterface.UniswapV2,
+          swapContract: UNISWAP_V2_ROUTER,
           swapCalldata: calldata,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -546,8 +559,8 @@ describe("Actions test", function () {
         WETHToken.Mainnet,
         tokenDataByNetwork.Mainnet.DAI.address,
         accountAmount,
-        UNISWAP_V2_ADDRESS,
-        UNISWAP_V2_ADDRESS,
+        UNISWAP_V2_ROUTER,
+        UNISWAP_V2_ROUTER,
         ADDRESS_0x0,
         referralCode
       );
@@ -594,8 +607,11 @@ describe("Actions test", function () {
     const poolBalance = await ts.wethToken.balanceOf(ts.poolETH.address);
 
     const uniV3adapter = await UniV3helper.getHelper(
+      "UniswapV3",
       UNISWAP_V3_ROUTER,
+      await ts.creditFilterETH.contractToAdapter(UNISWAP_V3_ROUTER),
       UNISWAP_V3_QUOTER,
+      ADDRESS_0x0,
       deployer
     );
 
@@ -610,7 +626,7 @@ describe("Actions test", function () {
     ];
 
     const expectedAmountBeforeOpenAcc = await uniV3adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       shortPath,
       accountAmount
     );
@@ -620,21 +636,23 @@ describe("Actions test", function () {
       .div(LEVERAGE_DECIMALS);
 
     const uniV2adapter = await UniV2helper.getHelper(
-      UNISWAP_V2_ADDRESS,
+      "UniswapV2",
+      UNISWAP_V2_ROUTER,
+      await ts.creditFilterETH.contractToAdapter(UNISWAP_V2_ROUTER),
+      ADDRESS_0x0,
       deployer
     );
 
-    const calldata = await uniV2adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      longPath,
+    const tradePath = await uniV2adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      longPath
     );
 
+    const calldata = await uniV2adapter.getCalldata(tradePath, 0, deployer);
+
     const expectedDAIAmount = await uniV2adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       longPath,
       expectedAmountOnCreditAccount
     );
@@ -652,10 +670,10 @@ describe("Actions test", function () {
         {
           creditManager: ts.creditManagerETH.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV2,
-          swapContract: UNISWAP_V2_ADDRESS,
+          swapInterface: AdapterInterface.UniswapV2,
+          swapContract: UNISWAP_V2_ROUTER,
           swapCalldata: calldata,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -668,7 +686,7 @@ describe("Actions test", function () {
         tokenDataByNetwork.Mainnet.DAI.address,
         accountAmount,
         UNISWAP_V3_ROUTER,
-        UNISWAP_V2_ADDRESS,
+        UNISWAP_V2_ROUTER,
         ADDRESS_0x0,
         referralCode
       );
@@ -725,7 +743,10 @@ describe("Actions test", function () {
     const poolBalance = await ts.daiToken.balanceOf(ts.poolDAI.address);
 
     const curveAdapter = await CurveHelper.getHelper(
+      "CurevAdapter",
       CURVE_3POOL_ADDRESS,
+      await ts.creditFilterETH.contractToAdapter(CURVE_3POOL_ADDRESS),
+      3,
       deployer
     );
 
@@ -741,7 +762,7 @@ describe("Actions test", function () {
     ];
 
     const expectedAmountBeforeOpenAcc = await curveAdapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       shortPath,
       accountAmountUSDC
     );
@@ -751,22 +772,24 @@ describe("Actions test", function () {
       .div(LEVERAGE_DECIMALS);
 
     const uniV3adapter = await UniV3helper.getHelper(
+      "UniswapV3",
       UNISWAP_V3_ROUTER,
+      await ts.creditFilterDAI.contractToAdapter(UNISWAP_V3_ROUTER),
       UNISWAP_V3_QUOTER,
+      ADDRESS_0x0,
       deployer
     );
 
-    const calldata = await uniV3adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      longPath,
+    const tradePath = await uniV3adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV3helper.getDeadline(),
-      0
+      longPath
     );
 
+    const calldata = await uniV3adapter.getCalldata(tradePath, 0, deployer);
+
     const expectedUSDCAmount = await uniV3adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       longPath,
       expectedAmountOnCreditAccount
     );
@@ -782,10 +805,10 @@ describe("Actions test", function () {
         {
           creditManager: ts.creditManagerDAI.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV3,
+          swapInterface: AdapterInterface.UniswapV3,
           swapContract: UNISWAP_V3_ROUTER,
           swapCalldata: calldata,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -849,7 +872,7 @@ describe("Actions test", function () {
         ts.creditManagerDAI.address,
         leverageFactor,
         accountAmount,
-        LPInterface.Yearn,
+        AdapterInterface.YearnV2,
         YEARN_DAI_ADDRESS,
         referralCode
       )
@@ -903,10 +926,10 @@ describe("Actions test", function () {
         {
           creditManager: ts2.creditManager.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV3,
+          swapInterface: AdapterInterface.UniswapV3,
           swapContract: UNISWAP_V3_ROUTER,
           swapCalldata: ADDRESS_0x0,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -927,7 +950,10 @@ describe("Actions test", function () {
     const accountAmountUSDC = accountAmount.mul(1000000).div(WAD);
 
     const curveAdapter = await CurveHelper.getHelper(
+      "CurveAdapter",
       CURVE_3POOL_ADDRESS,
+      await ts.creditFilterDAI.contractToAdapter(CURVE_3POOL_ADDRESS),
+      3,
       deployer
     );
 
@@ -937,7 +963,7 @@ describe("Actions test", function () {
     ];
 
     const expectedAmountBeforeOpenAcc = await curveAdapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       shortPath,
       accountAmountUSDC
     );
@@ -953,10 +979,10 @@ describe("Actions test", function () {
         {
           creditManager: ts.creditManagerDAI.address,
           leverageFactor,
-          swapInterface: SwapInterface.UniswapV3,
+          swapInterface: AdapterInterface.UniswapV3,
           swapContract: DUMB_ADDRESS,
           swapCalldata: ADDRESS_0x0,
-          lpInterface: LPInterface.NoLP,
+          lpInterface: AdapterInterface.NoSwap,
           lpContract: ADDRESS_0x0,
         },
         referralCode
@@ -971,7 +997,7 @@ describe("Actions test", function () {
         ts.creditManagerDAI.address,
         leverageFactor,
         accountAmount,
-        LPInterface.Yearn,
+        AdapterInterface.YearnV2,
         YEARN_DAI_ADDRESS,
         referralCode,
         { value: WAD }
@@ -986,7 +1012,7 @@ describe("Actions test", function () {
         ts.creditManagerETH.address,
         leverageFactor,
         accountAmount,
-        LPInterface.Yearn,
+        AdapterInterface.YearnV2,
         YEARN_DAI_ADDRESS,
         referralCode,
         { value: WAD }
@@ -998,8 +1024,11 @@ describe("Actions test", function () {
     const surplus = WAD.mul(50000);
 
     const uniV3adapter = await UniV3helper.getHelper(
+      "UniswapV3",
       UNISWAP_V3_ROUTER,
+      await ts.creditFilterDAI.contractToAdapter(UNISWAP_V3_ROUTER),
       UNISWAP_V3_QUOTER,
+      ADDRESS_0x0,
       deployer
     );
 
@@ -1014,7 +1043,7 @@ describe("Actions test", function () {
     ];
 
     const expectedAmountBeforeOpenAcc = await uniV3adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       shortPath,
       accountAmount
     );
@@ -1024,18 +1053,20 @@ describe("Actions test", function () {
       .div(LEVERAGE_DECIMALS);
 
     const uniV2adapter = await UniV2helper.getHelper(
-      UNISWAP_V2_ADDRESS,
+      "UniswapV2",
+      UNISWAP_V2_ROUTER,
+      await ts.creditFilterDAI.contractToAdapter(UNISWAP_V2_ROUTER),
+      ADDRESS_0x0,
       deployer
     );
 
-    const calldata = await uniV2adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      longPath,
+    const tradePath = await uniV2adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      longPath
     );
+
+    const calldata = await uniV2adapter.getCalldata(tradePath, 0, deployer);
 
     const balanceBefore = await ts.daiToken.balanceOf(user.address);
 
@@ -1058,10 +1089,10 @@ describe("Actions test", function () {
       {
         creditManager: ts.creditManagerETH.address,
         leverageFactor,
-        swapInterface: SwapInterface.UniswapV2,
-        swapContract: UNISWAP_V2_ADDRESS,
+        swapInterface: AdapterInterface.UniswapV2,
+        swapContract: UNISWAP_V2_ROUTER,
         swapCalldata: calldata,
-        lpInterface: LPInterface.NoLP,
+        lpInterface: AdapterInterface.NoSwap,
         lpContract: ADDRESS_0x0,
       },
       referralCode
@@ -1090,18 +1121,21 @@ describe("Actions test", function () {
     ];
 
     const uniV2adapter = await UniV2helper.getHelper(
-      UNISWAP_V2_ADDRESS,
+      "UnswapV2",
+      UNISWAP_V2_ROUTER,
+      await ts.creditFilterDAI.contractToAdapter(UNISWAP_V2_ROUTER),
+      ADDRESS_0x0,
       deployer
     );
 
     const accAmount = await uniV2adapter.getExpectedAmount(
-      "TokensToExactTokens",
+      SwapType.ExactOutput,
       shortPath,
       accountAmount
     );
 
     const expectedAmountBeforeOpenAcc = await uniV2adapter.getExpectedAmount(
-      "ExactTokensToTokens",
+      SwapType.ExactInput,
       shortPath,
       accAmount
     );
@@ -1110,14 +1144,13 @@ describe("Actions test", function () {
       .mul(leverageFactor + LEVERAGE_DECIMALS)
       .div(LEVERAGE_DECIMALS);
 
-    const calldata = await uniV2adapter.getSwapCalldata(
-      "ExactTokensToTokens",
-      longPath,
+    const tradePath = await uniV2adapter.getTradePath(
+      SwapType.ExactInput,
       expectedAmountOnCreditAccount,
-      deployer.address,
-      UniV2helper.getDeadline(),
-      0
+      longPath
     );
+
+    const calldata = await uniV2adapter.getCalldata(tradePath, 0, deployer);
 
     const iWETH = IWETH__factory.connect(ts.wethToken.address, deployer);
 
@@ -1133,17 +1166,17 @@ describe("Actions test", function () {
     const ethBalanceBefore = await user.getBalance();
 
     const r1 = await ts.leveragedActions.connect(user).openShortUniV2(
-      UNISWAP_V2_ADDRESS,
+      UNISWAP_V2_ROUTER,
       accAmount,
       expectedAmountBeforeOpenAcc,
       shortPath,
       {
         creditManager: ts.creditManagerDAI.address,
         leverageFactor,
-        swapInterface: SwapInterface.UniswapV2,
-        swapContract: UNISWAP_V2_ADDRESS,
+        swapInterface: AdapterInterface.UniswapV2,
+        swapContract: UNISWAP_V2_ROUTER,
         swapCalldata: calldata,
-        lpInterface: LPInterface.NoLP,
+        lpInterface: AdapterInterface.NoSwap,
         lpContract: ADDRESS_0x0,
       },
       referralCode,

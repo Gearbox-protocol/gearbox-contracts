@@ -19,6 +19,7 @@ import {
   DataCompressor,
   DataCompressor__factory,
   ERC20,
+  ERC20__factory,
   ICurvePool,
   ICurvePool__factory,
   ISwapRouter,
@@ -30,27 +31,25 @@ import {
   LeveragedActions,
   LeveragedActions__factory,
   PoolService,
+  PoolService__factory,
   PriceOracle,
   PriceOracle__factory,
   WETHGateway,
-  WETHGateway__factory,
+  WETHGateway__factory
 } from "../../types/ethers-v5";
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { tokenDataByNetwork, WETHToken } from "../../core/token";
-import {
-  ERC20__factory,
-  IPoolService__factory,
-} from "@diesellabs/gearbox-sdk/lib/types";
 import { DUMB_ADDRESS } from "../../core/constants";
-
-export const SUSHISWAP_ADDRESS = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
-export const UNISWAP_V2_ADDRESS = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-export const UNISWAP_V3_ROUTER = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
-export const UNISWAP_V3_QUOTER = "0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6";
-export const CURVE_3POOL_ADDRESS = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7";
-export const YEARN_DAI_ADDRESS = "0xdA816459F1AB5631232FE5e97a05BBBb94970c95";
-export const YEARN_USDC_ADDRESS = "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9";
+import {
+  CURVE_3POOL_ADDRESS,
+  SUSHISWAP_MAINNET,
+  tokenDataByNetwork,
+  UNISWAP_V2_ROUTER,
+  UNISWAP_V3_ROUTER,
+  WETHToken,
+  YEARN_DAI_ADDRESS,
+  YEARN_USDC_ADDRESS
+} from "@diesellabs/gearbox-sdk";
 
 export class MainnetSuite {
   static async getSuite(): Promise<MainnetSuite> {
@@ -97,12 +96,12 @@ export class MainnetSuite {
         pool.underlyingToken.toLowerCase() ===
         tokenDataByNetwork.Mainnet.DAI.address.toLowerCase()
       ) {
-        poolDAI = IPoolService__factory.connect(pool.addr, deployer);
+        poolDAI = PoolService__factory.connect(pool.addr, deployer);
       }
       if (
         pool.underlyingToken.toLowerCase() === WETHToken.Mainnet.toLowerCase()
       ) {
-        poolETH = IPoolService__factory.connect(pool.addr, deployer);
+        poolETH = PoolService__factory.connect(pool.addr, deployer);
       }
     }
 
@@ -139,15 +138,12 @@ export class MainnetSuite {
     );
 
     const uniswapV2 = IUniswapV2Router02__factory.connect(
-      UNISWAP_V2_ADDRESS,
+      UNISWAP_V2_ROUTER,
       deployer
     );
-    const uniswapV3 = ISwapRouter__factory.connect(
-      UNISWAP_V3_ROUTER,
-      deployer
-    );
+    const uniswapV3 = ISwapRouter__factory.connect(UNISWAP_V3_ROUTER, deployer);
     const sushiswap = IUniswapV2Router02__factory.connect(
-      SUSHISWAP_ADDRESS,
+      SUSHISWAP_MAINNET,
       deployer
     );
     const curve3pool = ICurvePool__factory.connect(

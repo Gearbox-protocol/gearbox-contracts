@@ -160,7 +160,7 @@ contract AddressProvider is Ownable, IAppAddressProvider {
     }
 
     /// @return Address of WETH token
-    function getLeveragedActions() external view returns (address) {
+    function getLeveragedActions() external view override returns (address) {
         return _getAddress(LEVERAGED_ACTIONS); // T:[AP-7]
     }
 

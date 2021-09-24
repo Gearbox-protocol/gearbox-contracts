@@ -3,9 +3,7 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
-import {
-    AggregatorV3Interface
-} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -18,10 +16,10 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 import "hardhat/console.sol";
 import {ACLTrait} from "../core/ACLTrait.sol";
 
- /// @title Price Oracle based on Chainlink's price feeds
- /// @notice Works as router and provide cross rates using converting via ETH
- ///
- /// More: https://dev.gearbox.fi/developers/priceoracle
+/// @title Price Oracle based on Chainlink's price feeds
+/// @notice Works as router and provide cross rates using converting via ETH
+///
+/// More: https://dev.gearbox.fi/developers/priceoracle
 contract PriceOracle is ACLTrait, IPriceOracle {
     using SafeMath for uint256;
 
@@ -53,19 +51,21 @@ contract PriceOracle is ACLTrait, IPriceOracle {
         configuratorOnly
     {
         // T:[PO-5]
-        if (priceFeeds[token] == address(0)) {
-            priceFeeds[token] = priceFeed;
-            uint256 decimals = ERC20(token).decimals();
+        priceFeeds[token] = priceFeed;
+        uint256 decimals = ERC20(token).decimals();
 
-            require(
-                decimals <= 18,
-                Errors.PO_TOKENS_WITH_DECIMALS_MORE_18_ISNT_ALLOWED
-            ); // T:[PO-3]
+        require(
+            decimals <= 18,
+            Errors.PO_TOKENS_WITH_DECIMALS_MORE_18_ISNT_ALLOWED
+        ); // T:[PO-3]
 
-            decimalsMultipliers[token] = 10**(18 - decimals);
-            decimalsDividers[token] = 10**(36 - decimals);
-            emit NewPriceFeed(token, priceFeed); // T:[PO-4]
-        }
+        console.log(AggregatorV3Interface(priceFeed).decimals());
+
+        require(AggregatorV3Interface(priceFeed).decimals() == 18, "");
+
+        decimalsMultipliers[token] = 10**(18 - decimals);
+        decimalsDividers[token] = 10**(36 - decimals);
+        emit NewPriceFeed(token, priceFeed); // T:[PO-4]
     }
 
     /// @dev Converts one asset into another using price feed rate. Reverts if price feed doesn't exist
@@ -125,9 +125,8 @@ contract PriceOracle is ACLTrait, IPriceOracle {
             ,
             ,
 
-        ) =
-            //uint80 answeredInRound
-            AggregatorV3Interface(priceFeeds[token]).latestRoundData(); // T:[PO-6]
+        ) = //uint80 answeredInRound
+        AggregatorV3Interface(priceFeeds[token]).latestRoundData(); // T:[PO-6]
         return uint256(price);
     }
 }
