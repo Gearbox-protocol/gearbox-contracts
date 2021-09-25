@@ -50,14 +50,14 @@ contract YearnAdapter is IYVault {
         returns (uint256)
     {
         // bytes4(0xb6b55f25) = deposit
-        return _deposit(abi.encodeWithSelector(bytes4(0xb6b55f25), amount));
+        return _deposit(abi.encodeWithSelector(bytes4(0xb6b55f25), amount)); // M:[YA-2]
     }
 
     /// @dev Deposit credit account tokens to Yearn
     /// @param amount in tokens
     function deposit(uint256 amount) external override returns (uint256) {
         // bytes4(0xb6b55f25) = deposit
-        return _deposit(abi.encodeWithSelector(bytes4(0xb6b55f25), amount));
+        return _deposit(abi.encodeWithSelector(bytes4(0xb6b55f25), amount)); // M:[YA-2]
     }
 
     /// @dev Deposit credit account tokens to Yearn
@@ -66,33 +66,27 @@ contract YearnAdapter is IYVault {
         return
             _deposit(
                 abi.encodeWithSelector(bytes4(0xb6b55f25), Constants.MAX_INT)
-            );
+            ); // M:[YA-1]
     }
 
     function _deposit(bytes memory data) internal returns (uint256 shares) {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
-        );
+        ); // M:[YA-1,2]
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
             yVault,
             token
-        );
+        ); // M:[YA-1,2]
 
-        console.log("1");
-        uint256 balanceInBefore = IERC20(token).balanceOf(creditAccount);
+        uint256 balanceInBefore = IERC20(token).balanceOf(creditAccount); // M:[YA-1,2]
+        uint256 balanceOutBefore = IERC20(yVault).balanceOf(creditAccount); // M:[YA-1,2]
 
-
-        console.log("2");
-        uint256 balanceOutBefore = IERC20(yVault).balanceOf(creditAccount);
-
-
-        console.log("3");
-
-        creditManager.executeOrder(msg.sender, yVault, data);
-
-        console.log("4");
+        shares = abi.decode(
+            creditManager.executeOrder(msg.sender, yVault, data),
+            (uint256)
+        ); // M:[YA-1,2]
 
         creditFilter.checkCollateralChange(
             creditAccount,
@@ -100,7 +94,7 @@ contract YearnAdapter is IYVault {
             yVault,
             balanceInBefore.sub(IERC20(token).balanceOf(creditAccount)),
             balanceOutBefore.add(IERC20(yVault).balanceOf(creditAccount))
-        );
+        ); // M:[YA-1,2]
     }
 
     function withdraw() external override returns (uint256) {
@@ -150,7 +144,10 @@ contract YearnAdapter is IYVault {
         uint256 balanceInBefore = IERC20(yVault).balanceOf(creditAccount);
         uint256 balanceOutBefore = IERC20(token).balanceOf(creditAccount);
 
-        creditManager.executeOrder(msg.sender, yVault, data);
+        shares = abi.decode(
+            creditManager.executeOrder(msg.sender, yVault, data),
+            (uint256)
+        );
 
         creditFilter.checkCollateralChange(
             creditAccount,

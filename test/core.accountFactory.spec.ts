@@ -1,7 +1,6 @@
 // @ts-ignore
 import { ethers } from "hardhat";
 import { expect } from "../utils/expect";
-import * as chai from "chai";
 
 import {
   AccountFactory,
@@ -12,15 +11,11 @@ import {
 } from "../types/ethers-v5";
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
-import {
-  DEPLOYMENT_COST,
-  DUMB_ADDRESS,
-  DUMB_ADDRESS2,
-} from "../core/constants";
+import { DUMB_ADDRESS, DUMB_ADDRESS2 } from "../core/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
 import { BigNumber } from "ethers";
-import { MAX_INT } from "@diesellabs/gearbox-sdk";
+import { ADDRESS_0x0, MAX_INT } from "@diesellabs/gearbox-sdk";
 
 /**
  * @title TraderAccountFactory test
@@ -246,7 +241,7 @@ describe("AccountFactory", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[AF-16]: takeOut corretly takes out a credit account ", async () => {
+  it("[AF-16]: takeOut correctly takes out a credit account ", async () => {
     await accountFactory.addCreditAccount();
     await accountFactory.addCreditAccount();
     await accountFactory.addCreditAccount();
@@ -365,7 +360,7 @@ describe("AccountFactory", function () {
     ).to.be.revertedWith("");
   });
 
-  it("[AF-20]: CancelAllowance set allowance to zero", async () => {
+  it("[AF-20]: cancelAllowance set allowance to zero", async () => {
     const accountsQty = await accountFactory.countCreditAccounts();
 
     const tokenA = await testDeployer.getTokenMock("tokenA", "TTA");
@@ -407,5 +402,52 @@ describe("AccountFactory", function () {
       await tokenA.allowance(creditAccount.address, contractA),
       "Allowance tokenA, contractA"
     ).to.be.eq(0);
+  });
+
+  it("[AF-21]: takeOut correctly takes head item ", async () => {
+    await accountFactory.addCreditAccount();
+    await accountFactory.addCreditAccount();
+    await accountFactory.addCreditAccount();
+    const head = await accountFactory.head();
+    const accountAfter = await accountFactory.getNext(head);
+
+    await expect(accountFactory.takeOut(ADDRESS_0x0, head, user.address))
+      .to.emit(accountFactory, "TakeForever")
+      .withArgs(head, user.address);
+    expect(await accountFactory.head(), "Incorrect list update").to.be.eq(
+      accountAfter
+    );
+    const creditAccountContract = ICreditAccount__factory.connect(
+      head,
+      deployer
+    );
+    expect(
+      await creditAccountContract.creditManager(),
+      "Incorrect credit manager update at credit account"
+    ).to.be.eq(user.address);
+  });
+
+  it("[AF-22]: takeOut correctly updates list if tail was taken ", async () => {
+    await accountFactory.addCreditAccount();
+    await accountFactory.addCreditAccount();
+    const head = await accountFactory.head();
+    const prev = await accountFactory.getNext(head);
+    const creditAccount = await accountFactory.getNext(prev);
+
+    expect(await accountFactory.tail()).to.be.eq(creditAccount);
+    await accountFactory.takeOut(prev, creditAccount, user.address);
+    expect(await accountFactory.tail()).to.be.eq(prev);
+  });
+
+  it("[AF-23]: takeOut takes correctly first created account", async () => {
+    expect(await accountFactory.countCreditAccounts()).to.be.eq(1);
+
+    const head = await accountFactory.head();
+    expect(await accountFactory.tail()).to.be.eq(head);
+    await accountFactory.takeOut(ADDRESS_0x0, head, user.address);
+
+    expect(await accountFactory.countCreditAccounts()).to.be.eq(1);
+    expect(await accountFactory.tail()).to.be.eq(await accountFactory.head());
+    expect(await accountFactory.tail()).to.be.not.eq(ADDRESS_0x0);
   });
 });
