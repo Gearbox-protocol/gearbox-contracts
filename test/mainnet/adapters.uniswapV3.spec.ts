@@ -16,10 +16,12 @@ import {
   ADDRESS_0x0,
   LEVERAGE_DECIMALS,
   MAX_INT,
-  SwapType, tokenDataByNetwork,
+  SwapType,
+  tokenDataByNetwork,
   UNISWAP_V3_QUOTER,
   UNISWAP_V3_ROUTER,
-  WAD, WETHToken
+  WAD,
+  WETHToken,
 } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
 import { UniV3helper } from "@diesellabs/gearbox-leverage";
@@ -71,6 +73,10 @@ describe("UniswapV3 adapter", function () {
       );
       await r5.wait();
     }
+    const r6 = await ts.daiToken
+      .connect(user)
+      .approve(UNISWAP_V3_ROUTER, MAX_INT);
+    await r6.wait();
   });
 
   const openUserAccount = async () => {
@@ -109,12 +115,14 @@ describe("UniswapV3 adapter", function () {
     ).to.be.lte(2);
 
     const adapterContract = UniswapV3Adapter__factory.connect(adapter, user);
+    const router = UniswapV3Adapter__factory.connect(UNISWAP_V3_ROUTER, user);
 
     return {
       amountOnAccount,
       creditAccount,
       uniV3Helper,
       adapter: adapterContract,
+      router,
     };
   };
 
@@ -128,7 +136,7 @@ describe("UniswapV3 adapter", function () {
   };
 
   it("[UV3-1]: exactInput works correctly", async () => {
-    const { amountOnAccount, creditAccount, uniV3Helper, adapter } =
+    const { amountOnAccount, creditAccount, uniV3Helper, adapter, router } =
       await openUserAccount();
 
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
@@ -139,13 +147,22 @@ describe("UniswapV3 adapter", function () {
       amountOnAccount
     );
 
-    const r2 = await adapter.exactInput({
+    const params = {
       amountIn: amountOnAccount,
       amountOutMinimum: ethAmount,
       path: UniV3helper.pathToUniV3Path(path),
       recipient: friend.address,
       deadline: UniV3helper.getDeadline(),
-    });
+    };
+
+    // Check correct return result
+    const expectedAmountAdapter = await adapter.callStatic.exactInput(params);
+    const expectedAmountRouter = await router
+      .connect(user)
+      .callStatic.exactInput(params);
+    expect(expectedAmountAdapter).to.be.eq(expectedAmountRouter);
+
+    const r2 = await adapter.exactInput(params);
     await r2.wait();
 
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(2);
@@ -155,7 +172,7 @@ describe("UniswapV3 adapter", function () {
   });
 
   it("[UV3-2]: exactInputSingle works correctly", async () => {
-    const { amountOnAccount, creditAccount, uniV3Helper, adapter } =
+    const { amountOnAccount, creditAccount, uniV3Helper, adapter, router } =
       await openUserAccount();
 
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
@@ -166,7 +183,7 @@ describe("UniswapV3 adapter", function () {
       amountOnAccount
     );
 
-    const r2 = await adapter.exactInputSingle({
+    const params = {
       tokenIn: path[0],
       tokenOut: path[1],
       amountIn: amountOnAccount,
@@ -175,7 +192,19 @@ describe("UniswapV3 adapter", function () {
       recipient: friend.address,
       deadline: UniV3helper.getDeadline(),
       sqrtPriceLimitX96: 0,
-    });
+    };
+
+    const expectedAmountAdapter = await adapter.callStatic.exactInputSingle(
+      params
+    );
+
+    const expectedAmountRouter = await router
+      .connect(user)
+      .callStatic.exactInputSingle(params);
+
+    expect(expectedAmountAdapter).to.be.eq(expectedAmountRouter);
+
+    const r2 = await adapter.exactInputSingle(params);
     await r2.wait();
 
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(2);
@@ -185,7 +214,7 @@ describe("UniswapV3 adapter", function () {
   });
 
   it("[UV3-3]: exactOutput works correctly", async () => {
-    const { amountOnAccount, creditAccount, uniV3Helper, adapter } =
+    const { amountOnAccount, creditAccount, uniV3Helper, adapter, router } =
       await openUserAccount();
 
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
@@ -198,13 +227,22 @@ describe("UniswapV3 adapter", function () {
 
     const ethAmountOut = ethAmount.mul(90).div(100);
 
-    const r2 = await adapter.exactOutput({
+    const params = {
       amountInMaximum: amountOnAccount,
       amountOut: ethAmountOut,
       path: UniV3helper.pathToUniV3Path(path.reverse()),
       recipient: friend.address,
       deadline: UniV3helper.getDeadline(),
-    });
+    };
+
+    // Check correct return result
+    const expectedAmountAdapter = await adapter.callStatic.exactOutput(params);
+    const expectedAmountRouter = await router
+      .connect(user)
+      .callStatic.exactOutput(params);
+    expect(expectedAmountAdapter).to.be.eq(expectedAmountRouter);
+
+    const r2 = await adapter.exactOutput(params);
     await r2.wait();
 
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(
@@ -219,7 +257,7 @@ describe("UniswapV3 adapter", function () {
   });
 
   it("[UV3-4]: exactOutputSingle works correctly", async () => {
-    const { amountOnAccount, creditAccount, uniV3Helper, adapter } =
+    const { amountOnAccount, creditAccount, uniV3Helper, adapter, router } =
       await openUserAccount();
 
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
@@ -232,7 +270,7 @@ describe("UniswapV3 adapter", function () {
 
     const ethAmountOut = ethAmount.mul(90).div(100);
 
-    const r2 = await adapter.exactOutputSingle({
+    const params = {
       amountOut: ethAmountOut,
       amountInMaximum: amountOnAccount,
       tokenIn: path[0],
@@ -241,7 +279,18 @@ describe("UniswapV3 adapter", function () {
       recipient: friend.address,
       deadline: UniV3helper.getDeadline(),
       sqrtPriceLimitX96: 0,
-    });
+    };
+
+    // Check correct return result
+    const expectedAmountAdapter = await adapter.callStatic.exactOutputSingle(
+      params
+    );
+    const expectedAmountRouter = await router
+      .connect(user)
+      .callStatic.exactOutputSingle(params);
+    expect(expectedAmountAdapter).to.be.eq(expectedAmountRouter);
+
+    const r2 = await adapter.exactOutputSingle(params);
     await r2.wait();
 
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(

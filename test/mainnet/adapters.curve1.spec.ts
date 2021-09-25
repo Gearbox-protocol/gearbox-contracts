@@ -17,8 +17,8 @@ import {
   LEVERAGE_DECIMALS,
   MAX_INT,
   SwapType,
-  tokenDataByNetwork,
-  WAD,
+  tokenDataByNetwork, UNISWAP_V3_ROUTER,
+  WAD
 } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
@@ -71,6 +71,8 @@ describe("CurveV1 adapter", function () {
       );
       await r5.wait();
     }
+
+
   });
 
   it("[CVA-1]: exchange works", async () => {
@@ -116,6 +118,8 @@ describe("CurveV1 adapter", function () {
     ).to.be.lte(2);
 
     const adapterContract = CurveV1Adapter__factory.connect(adapter, user);
+
+
     await adapterContract.exchange(
       curveHelper.getIndex(tokenDataByNetwork.Mainnet.DAI.address),
       curveHelper.getIndex(tokenDataByNetwork.Mainnet.USDC.address),

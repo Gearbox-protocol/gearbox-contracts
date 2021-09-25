@@ -21,8 +21,8 @@ import "hardhat/console.sol";
 contract CurveV1Adapter is ICurvePool {
     using SafeMath for uint256;
 
-    // Default swap contracts - uses for automatic close / liquidation process
-    ICurvePool public curvePool; //
+    // Original pool contract
+    ICurvePool public curvePool;
     ICreditManager public creditManager;
     ICreditFilter public creditFilter;
 
@@ -32,7 +32,6 @@ contract CurveV1Adapter is ICurvePool {
     constructor(address _creditManager, address _curvePool) {
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
-
         curvePool = ICurvePool(_curvePool);
     }
 
@@ -53,16 +52,19 @@ contract CurveV1Adapter is ICurvePool {
     ) external override {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
-        );
+        ); // M:[CVA-1]
 
-        address tokenIn = curvePool.coins(uint256(i));
-        address tokenOut = curvePool.coins(uint256(j));
+        address tokenIn = curvePool.coins(uint256(i)); // M:[CVA-1]
+        address tokenOut = curvePool.coins(uint256(j)); // M:[CVA-1]
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
             address(curvePool),
             tokenIn
-        ); // T:[CVA-3]
+        ); // M:[CVA-1]
+
+        uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount); // M:[CVA-1]
+        uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount); // M:[CVA-1]
 
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x3df02124), // "exchange(int128,int128,uint256,uint256)",
@@ -70,12 +72,9 @@ contract CurveV1Adapter is ICurvePool {
             j,
             dx,
             min_dy
-        ); // T:[CVA-3]
+        ); // M:[CVA-1]
 
-        uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
-        uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
-
-        creditManager.executeOrder(msg.sender, address(curvePool), data); // T:[CVA-3]
+        creditManager.executeOrder(msg.sender, address(curvePool), data); // M:[CVA-1]
 
         creditFilter.checkCollateralChange(
             creditAccount,
@@ -83,7 +82,7 @@ contract CurveV1Adapter is ICurvePool {
             tokenOut,
             balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
             balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
-        ); // T:[CVA-2]
+        ); // M:[CVA-1]
     }
 
     function exchange_underlying(

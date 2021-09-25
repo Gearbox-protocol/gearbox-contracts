@@ -98,7 +98,7 @@ contract YearnAdapter is IYVault {
     }
 
     function withdraw() external override returns (uint256) {
-        return withdraw(Constants.MAX_INT, address(0), 1);
+        return withdraw(Constants.MAX_INT, address(0), 1); // M:[YA-3]
     }
 
     function withdraw(uint256 maxShares) external override returns (uint256) {
@@ -126,28 +126,28 @@ contract YearnAdapter is IYVault {
     ) public override returns (uint256 shares) {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
-        );
+        ); // M:[YA-3]
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
             yVault,
             token
-        );
+        ); // M:[YA-3]
 
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x2e1a7d4d), //"withdraw(uint256,address,uint256)",
             maxShares,
             creditAccount,
             maxLoss
-        );
+        ); // M:[YA-3]
 
-        uint256 balanceInBefore = IERC20(yVault).balanceOf(creditAccount);
-        uint256 balanceOutBefore = IERC20(token).balanceOf(creditAccount);
+        uint256 balanceInBefore = IERC20(yVault).balanceOf(creditAccount); // M:[YA-3]
+        uint256 balanceOutBefore = IERC20(token).balanceOf(creditAccount); // M:[YA-3]
 
         shares = abi.decode(
             creditManager.executeOrder(msg.sender, yVault, data),
             (uint256)
-        );
+        ); // M:[YA-3]
 
         creditFilter.checkCollateralChange(
             creditAccount,
@@ -155,7 +155,7 @@ contract YearnAdapter is IYVault {
             yVault,
             balanceInBefore.sub(IERC20(yVault).balanceOf(creditAccount)),
             balanceOutBefore.add(IERC20(token).balanceOf(creditAccount))
-        );
+        ); // M:[YA-3]
     }
 
     function pricePerShare() external view override returns (uint256) {

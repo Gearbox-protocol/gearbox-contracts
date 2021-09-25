@@ -3,6 +3,7 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
+import {IUniswapV2Router02} from "../integrations/uniswap/IUniswapV2Router02.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {CreditManager} from "../credit/CreditManager.sol";
@@ -12,22 +13,22 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "hardhat/console.sol";
-import "../integrations/uniswap/IUniswapV2Router02.sol";
 
 /// @title UniswapV2 Router adapter
 contract UniswapV2Adapter is IUniswapV2Router02 {
+    using SafeMath for uint256;
+
     ICreditManager public creditManager;
     ICreditFilter public creditFilter;
-    using SafeMath for uint256;
-    address public swapContract;
+    address public router;
 
     /// @dev Constructor
     /// @param _creditManager Address Credit manager
-    /// @param _swapContract Address of swap contract
-    constructor(address _creditManager, address _swapContract) {
+    /// @param _router Address of IUniswapV2Router02
+    constructor(address _creditManager, address _router) {
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
-        swapContract = _swapContract;
+        router = _router;
     }
 
     /**
@@ -54,11 +55,17 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
             msg.sender
         );
 
+        address tokenIn = path[0];
+        address tokenOut = path[path.length - 1];
+
         creditManager.provideCreditAccountAllowance(
             creditAccount,
-            swapContract,
-            path[0]
+            router,
+            tokenIn
         );
+
+        uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount); // M:[CVA-1]
+        uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount); // M:[CVA-1]
 
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x8803dbee), // "swapTokensForExactTokens(uint256,uint256,address[],address,uint256)",
@@ -70,18 +77,17 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         );
 
         amounts = abi.decode(
-            creditManager.executeOrder(msg.sender, swapContract, data),
+            creditManager.executeOrder(msg.sender, router, data),
             (uint256[])
         );
 
-
         creditFilter.checkCollateralChange(
             creditAccount,
-            path[0],
-            path[path.length - 1],
-            amounts[0],
-            amounts[amounts.length - 1]
-        );
+            tokenIn,
+            tokenOut,
+            balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
+            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
+        ); // ToDo: CHECK(!)
     }
 
     /**
@@ -109,11 +115,17 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
             msg.sender
         );
 
+        address tokenIn = path[0];
+        address tokenOut = path[path.length - 1];
+
         creditManager.provideCreditAccountAllowance(
             creditAccount,
-            swapContract,
-            path[0]
+            router,
+            tokenIn
         );
+
+        uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount); // M:
+        uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount); // M:
 
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x38ed1739), // "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
@@ -125,16 +137,16 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         );
 
         amounts = abi.decode(
-            creditManager.executeOrder(msg.sender, swapContract, data),
+            creditManager.executeOrder(msg.sender, router, data),
             (uint256[])
         );
 
         creditFilter.checkCollateralChange(
             creditAccount,
-            path[0],
-            path[path.length - 1],
-            amounts[0],
-            amounts[amounts.length - 1]
+            tokenIn,
+            tokenOut,
+            balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
+            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
         ); // ToDo: CHECK(!)
     }
 
@@ -194,11 +206,11 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
     }
 
     function factory() external view override returns (address) {
-        return IUniswapV2Router02(swapContract).factory();
+        return IUniswapV2Router02(router).factory();
     }
 
     function WETH() external view override returns (address) {
-        return IUniswapV2Router02(swapContract).WETH();
+        return IUniswapV2Router02(router).WETH();
     }
 
     function addLiquidity(
@@ -339,8 +351,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         uint256 reserveA,
         uint256 reserveB
     ) external view override returns (uint256 amountB) {
-        return
-            IUniswapV2Router02(swapContract).quote(amountA, reserveA, reserveB);
+        return IUniswapV2Router02(router).quote(amountA, reserveA, reserveB);
     }
 
     function getAmountOut(
@@ -349,7 +360,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         uint256 reserveOut
     ) external view override returns (uint256 amountOut) {
         return
-            IUniswapV2Router02(swapContract).getAmountOut(
+            IUniswapV2Router02(router).getAmountOut(
                 amountIn,
                 reserveIn,
                 reserveOut
@@ -362,7 +373,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         uint256 reserveOut
     ) external view override returns (uint256 amountIn) {
         return
-            IUniswapV2Router02(swapContract).getAmountIn(
+            IUniswapV2Router02(router).getAmountIn(
                 amountOut,
                 reserveIn,
                 reserveOut
@@ -375,7 +386,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         override
         returns (uint256[] memory amounts)
     {
-        return IUniswapV2Router02(swapContract).getAmountsOut(amountIn, path);
+        return IUniswapV2Router02(router).getAmountsOut(amountIn, path);
     }
 
     function getAmountsIn(uint256 amountOut, address[] calldata path)
@@ -384,6 +395,6 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         override
         returns (uint256[] memory amounts)
     {
-        return IUniswapV2Router02(swapContract).getAmountsIn(amountOut, path);
+        return IUniswapV2Router02(router).getAmountsIn(amountOut, path);
     }
 }

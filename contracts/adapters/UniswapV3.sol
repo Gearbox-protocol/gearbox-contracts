@@ -21,18 +21,18 @@ contract UniswapV3Adapter is ISwapRouter {
 
     ICreditManager public creditManager;
     ICreditFilter public creditFilter;
-    address public swapContract;
+    address public router;
 
     /// @dev The length of the bytes encoded address
     uint256 private constant ADDR_SIZE = 20;
 
     /// @dev Constructor
     /// @param _creditManager Address Credit manager
-    /// @param _swapContract Address of swap contract
-    constructor(address _creditManager, address _swapContract) {
+    /// @param _router Address of ISwapRouter
+    constructor(address _creditManager, address _router) {
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
-        swapContract = _swapContract;
+        router = _router;
     }
 
     /// @notice Swaps `amountIn` of one token for as much as possible of another token
@@ -50,7 +50,7 @@ contract UniswapV3Adapter is ISwapRouter {
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
-            swapContract,
+            router,
             params.tokenIn
         );
 
@@ -71,10 +71,9 @@ contract UniswapV3Adapter is ISwapRouter {
             creditAccount
         );
 
-        bytes memory result = creditManager.executeOrder(
-            msg.sender,
-            swapContract,
-            data
+        (amountOut) = abi.decode(
+            creditManager.executeOrder(msg.sender, router, data),
+            (uint256)
         );
 
         creditFilter.checkCollateralChange(
@@ -107,7 +106,7 @@ contract UniswapV3Adapter is ISwapRouter {
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
-            swapContract,
+            router,
             tokenIn
         );
 
@@ -123,7 +122,10 @@ contract UniswapV3Adapter is ISwapRouter {
         uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
         uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
 
-        creditManager.executeOrder(msg.sender, swapContract, data);
+        (amountOut) = abi.decode(
+            creditManager.executeOrder(msg.sender, router, data),
+            (uint256)
+        );
 
         creditFilter.checkCollateralChange(
             creditAccount,
@@ -149,7 +151,7 @@ contract UniswapV3Adapter is ISwapRouter {
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
-            swapContract,
+            router,
             params.tokenIn
         );
 
@@ -170,7 +172,10 @@ contract UniswapV3Adapter is ISwapRouter {
             creditAccount
         );
 
-        creditManager.executeOrder(msg.sender, swapContract, data);
+        (amountIn) = abi.decode(
+            creditManager.executeOrder(msg.sender, router, data),
+            (uint256)
+        );
 
         creditFilter.checkCollateralChange(
             creditAccount,
@@ -202,7 +207,7 @@ contract UniswapV3Adapter is ISwapRouter {
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
-            swapContract,
+            router,
             tokenIn
         );
 
@@ -217,7 +222,10 @@ contract UniswapV3Adapter is ISwapRouter {
         uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
         uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
 
-        creditManager.executeOrder(msg.sender, swapContract, data);
+        (amountIn) = abi.decode(
+            creditManager.executeOrder(msg.sender, router, data),
+            (uint256)
+        );
 
         creditFilter.checkCollateralChange(
             creditAccount,

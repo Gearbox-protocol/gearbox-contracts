@@ -14,6 +14,7 @@ import { TestDeployer } from "../../deployer/testDeployer";
 import { MainnetSuite } from "./helper";
 import {
   ADDRESS_0x0,
+  CURVE_3POOL_ADDRESS,
   LEVERAGE_DECIMALS,
   MAX_INT,
   SwapType,
@@ -72,6 +73,11 @@ describe("UniswapV2 adapter", function () {
       );
       await r5.wait();
     }
+
+    const r6 = await ts.daiToken
+      .connect(user)
+      .approve(UNISWAP_V2_ROUTER, MAX_INT);
+    await r6.wait();
   });
 
   const openUserAccount = async () => {
@@ -108,12 +114,14 @@ describe("UniswapV2 adapter", function () {
       "openUserAccount amountOnAccount"
     ).to.be.lte(1);
 
+    const router = UniswapV2Adapter__factory.connect(UNISWAP_V2_ROUTER, user);
     const adapterContract = UniswapV2Adapter__factory.connect(adapter, user);
 
     return {
       amountOnAccount,
       creditAccount,
       uniV2Helper,
+      router,
       adapter: adapterContract,
     };
   };
@@ -128,7 +136,7 @@ describe("UniswapV2 adapter", function () {
   };
 
   it("[UV2-1]: swapExactTokenToTokens works correctly", async () => {
-    const { amountOnAccount, creditAccount, uniV2Helper, adapter } =
+    const { amountOnAccount, creditAccount, uniV2Helper, adapter, router } =
       await openUserAccount();
 
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
@@ -138,6 +146,28 @@ describe("UniswapV2 adapter", function () {
       path,
       amountOnAccount
     );
+
+    const expectAmountsRouter = await router
+      .connect(user)
+      .callStatic.swapExactTokensForTokens(
+        amountOnAccount,
+        ethAmount,
+        path,
+        friend.address,
+        UniV2helper.getDeadline()
+      );
+
+    const expectAmountsAdapter = await adapter
+      .connect(user)
+      .callStatic.swapExactTokensForTokens(
+        amountOnAccount,
+        ethAmount,
+        path,
+        friend.address,
+        UniV2helper.getDeadline()
+      );
+
+    expect(expectAmountsRouter).to.be.eql(expectAmountsAdapter);
 
     const r2 = await adapter.swapExactTokensForTokens(
       amountOnAccount,
@@ -155,7 +185,7 @@ describe("UniswapV2 adapter", function () {
   });
 
   it("[UV2-2]: swapExactTokenToTokens works correctly", async () => {
-    const { amountOnAccount, creditAccount, uniV2Helper, adapter } =
+    const { amountOnAccount, creditAccount, uniV2Helper, adapter, router } =
       await openUserAccount();
 
     const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
@@ -173,6 +203,28 @@ describe("UniswapV2 adapter", function () {
       path,
       ethAmountExpected
     );
+
+    const expectAmountsRouter = await router
+      .connect(user)
+      .callStatic.swapTokensForExactTokens(
+        ethAmountExpected,
+        amountToSwap,
+        path,
+        friend.address,
+        UniV2helper.getDeadline()
+      );
+
+    const expectAmountsAdapter = await adapter
+      .connect(user)
+      .callStatic.swapTokensForExactTokens(
+        ethAmountExpected,
+        amountToSwap,
+        path,
+        friend.address,
+        UniV2helper.getDeadline()
+      );
+
+    expect(expectAmountsRouter).to.be.eql(expectAmountsAdapter);
 
     const r2 = await adapter.swapTokensForExactTokens(
       ethAmountExpected,

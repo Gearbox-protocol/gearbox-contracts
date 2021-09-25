@@ -9,16 +9,21 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "../../utils/expect";
 
-import { Errors, YearnAdapter__factory } from "../../types/ethers-v5";
+import {
+  Errors,
+  IYVault__factory,
+  YearnAdapter__factory,
+} from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
 import { MainnetSuite } from "./helper";
 import {
   LEVERAGE_DECIMALS,
   MAX_INT,
   PERCENTAGE_FACTOR,
-  SwapType, tokenDataByNetwork,
+  SwapType,
+  tokenDataByNetwork,
   WAD,
-  YEARN_DAI_ADDRESS
+  YEARN_DAI_ADDRESS,
 } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
@@ -78,8 +83,6 @@ describe("YEARN adapter", function () {
       .mul(leverageFactor + LEVERAGE_DECIMALS)
       .div(LEVERAGE_DECIMALS);
 
-
-
     const adapter = await ts.creditFilterDAI.contractToAdapter(
       YEARN_DAI_ADDRESS
     );
@@ -89,7 +92,6 @@ describe("YEARN adapter", function () {
       adapter,
       deployer
     );
-
 
     const r1 = await ts.creditManagerDAI.openCreditAccount(
       accountAmount,
@@ -110,14 +112,14 @@ describe("YEARN adapter", function () {
 
     const adapterContract = YearnAdapter__factory.connect(adapter, user);
 
-    const yDAItoken = ERC20__factory.connect(YEARN_DAI_ADDRESS, deployer);
+    const yVault = IYVault__factory.connect(YEARN_DAI_ADDRESS, deployer);
 
     return {
       amountOnAccount,
       creditAccount,
       yearnHelper,
       adapter: adapterContract,
-      yDAItoken,
+      yVault,
     };
   };
 
@@ -131,14 +133,8 @@ describe("YEARN adapter", function () {
   };
 
   it("[YA-1]: deposit() converts whole DAI amount to yDAI", async () => {
-
-
-
-    const { amountOnAccount, creditAccount, yearnHelper, adapter, yDAItoken } =
+    const { amountOnAccount, creditAccount, yearnHelper, adapter, yVault } =
       await openUserAccount();
-
-
-
 
     const yDAIAmount = await yearnHelper.getExpectedAmount(
       SwapType.ExactInput,
@@ -152,7 +148,7 @@ describe("YEARN adapter", function () {
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.eq(0);
 
     expect(
-      (await yDAItoken.balanceOf(creditAccount))
+      (await yVault.balanceOf(creditAccount))
         .mul(PERCENTAGE_FACTOR)
         .div(yDAIAmount)
         .sub(PERCENTAGE_FACTOR)
@@ -164,13 +160,8 @@ describe("YEARN adapter", function () {
 
   for (let func of ["deposit(uint256)", "deposit(uint256,address)"]) {
     it(`[YA-2]: ${func} converts exact DAI amount to yDAI`, async () => {
-      const {
-        amountOnAccount,
-        creditAccount,
-        yearnHelper,
-        adapter,
-        yDAItoken,
-      } = await openUserAccount();
+      const { amountOnAccount, creditAccount, yearnHelper, adapter, yVault } =
+        await openUserAccount();
 
       const amountToDeposit = amountOnAccount.div(2);
 
@@ -189,6 +180,23 @@ describe("YEARN adapter", function () {
             );
       await r2.wait();
 
+      const sharesAdapter =
+        func === "deposit(uint256)"
+          ? await adapter.callStatic["deposit(uint256)"](amountToDeposit)
+          : await adapter.callStatic["deposit(uint256,address)"](
+              amountToDeposit,
+              friend.address
+            );
+      const sharesVault =
+        func === "deposit(uint256)"
+          ? await yVault.callStatic["deposit(uint256)"](amountToDeposit)
+          : await yVault.callStatic["deposit(uint256,address)"](
+              amountToDeposit,
+              friend.address
+            );
+
+      expect(sharesAdapter).to.be.eq(sharesVault);
+
       expect(
         (await ts.daiToken.balanceOf(creditAccount))
           .sub(amountOnAccount.sub(amountToDeposit))
@@ -196,7 +204,7 @@ describe("YEARN adapter", function () {
       ).to.be.lte(2);
 
       expect(
-        (await yDAItoken.balanceOf(creditAccount))
+        (await yVault.balanceOf(creditAccount))
           .mul(PERCENTAGE_FACTOR)
           .div(yDAIAmount)
           .sub(PERCENTAGE_FACTOR)
@@ -208,7 +216,7 @@ describe("YEARN adapter", function () {
   }
 
   it("[YA-3]: withdraw() converts whole yDAI amount to DAI", async () => {
-    const { amountOnAccount, creditAccount, yearnHelper, adapter, yDAItoken } =
+    const { amountOnAccount, creditAccount, yearnHelper, adapter, yVault } =
       await openUserAccount();
 
     const amountToDeposit = amountOnAccount.div(2);
@@ -218,6 +226,15 @@ describe("YEARN adapter", function () {
       [tokenDataByNetwork.Mainnet.DAI.address, YEARN_DAI_ADDRESS],
       amountToDeposit
     );
+
+    const sharesAdapter = await adapter.callStatic["deposit(uint256)"](
+      amountToDeposit
+    );
+    const sharesVault = await yVault.callStatic["deposit(uint256)"](
+      amountToDeposit
+    );
+
+    expect(sharesAdapter).to.be.eq(sharesVault);
 
     const r2 = await adapter["deposit(uint256)"](amountToDeposit);
     await r2.wait();
