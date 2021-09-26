@@ -7,18 +7,11 @@
 import { ethers } from "hardhat";
 import { expect } from "../utils/expect";
 
-import {
-  AccountFactory,
-  AccountMining,
-  Errors,
-  GearToken,
-} from "../types/ethers-v5";
+import { GearToken } from "../types/ethers-v5";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { WAD } from "@diesellabs/gearbox-sdk";
 
 import { CoreDeployer } from "../deployer/coreDeployer";
-import { MerkleDistributorInfo, parseAccounts } from "../merkle/parse-accounts";
-import { ADDRESS_0x0 } from "../core/constants";
+import { ADDRESS_0x0 } from "@diesellabs/gearbox-sdk";
 
 describe("GearToken", function () {
   let deployer: SignerWithAddress;

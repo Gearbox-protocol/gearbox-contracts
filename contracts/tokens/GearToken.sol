@@ -16,7 +16,7 @@ contract GearToken {
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint256 public totalSupply = 500_000_000e18; // 0.5 billion Gear
+    uint256 public constant totalSupply = 500_000_000e18; // 0.5 billion Gear
 
     // Allowance amounts on behalf of others
     mapping(address => mapping(address => uint96)) internal allowances;
@@ -287,7 +287,7 @@ contract GearToken {
      * @notice Delegate votes from `msg.sender` to `delegatee`
      * @param delegatee The address to delegate votes to
      */
-    function delegate(address delegatee) public {
+    function delegate(address delegatee) external {
         return _delegate(msg.sender, delegatee);
     }
 
@@ -307,7 +307,7 @@ contract GearToken {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public {
+    ) external {
         bytes32 domainSeparator = keccak256(
             abi.encode(
                 DOMAIN_TYPEHASH,
@@ -357,7 +357,7 @@ contract GearToken {
      * @return The number of votes the account had as of the given block
      */
     function getPriorVotes(address account, uint256 blockNumber)
-        public
+        external
         view
         returns (uint96)
     {

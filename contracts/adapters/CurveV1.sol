@@ -94,28 +94,12 @@ contract CurveV1Adapter is ICurvePool {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
-    function get_dx_underlying(
-        int128 i,
-        int128 j,
-        uint256 dy
-    ) external view override returns (uint256) {
-        return curvePool.get_dx_underlying(i, j, dy);
-    }
-
     function get_dy_underlying(
         int128 i,
         int128 j,
         uint256 dx
     ) external view override returns (uint256) {
         return curvePool.get_dy_underlying(i, j, dx);
-    }
-
-    function get_dx(
-        int128 i,
-        int128 j,
-        uint256 dy
-    ) external view override returns (uint256) {
-        return curvePool.get_dx(i, j, dy);
     }
 
     function get_dy(

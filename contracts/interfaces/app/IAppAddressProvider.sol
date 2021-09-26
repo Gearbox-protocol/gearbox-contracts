@@ -14,4 +14,6 @@ interface IAppAddressProvider {
     function getWETHGateway() external view returns (address);
 
     function getPriceOracle() external view returns (address);
+
+    function getLeveragedActions() external view returns (address);
 }

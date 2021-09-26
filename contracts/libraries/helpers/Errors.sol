@@ -220,6 +220,7 @@ library Errors {
 
     string public constant PO_TOKENS_WITH_DECIMALS_MORE_18_ISNT_ALLOWED = "P1";
     // "Price Oracle: tokens with decimals >18 is not allowed";
+    string public constant PO_AGGREGATOR_DECIMALS_SHOULD_BE_18 = "P2";
 
     //
     // ACL

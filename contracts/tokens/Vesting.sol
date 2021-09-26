@@ -47,7 +47,7 @@ contract StepVesting {
         cliffAmount = _cliffAmount;
         stepAmount = _stepAmount;
         numOfSteps = _numOfSteps;
-        setReceiver(_receiver);
+        receiver = _receiver;
     }
 
     function available() public view returns (uint256) {

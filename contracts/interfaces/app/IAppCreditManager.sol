@@ -43,4 +43,6 @@ interface IAppCreditManager {
         external
         view
         returns (bool);
+
+    function defaultSwapContract() external view returns (address);
 }

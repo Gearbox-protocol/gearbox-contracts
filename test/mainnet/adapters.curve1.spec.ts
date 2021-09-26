@@ -17,8 +17,9 @@ import {
   LEVERAGE_DECIMALS,
   MAX_INT,
   SwapType,
-  tokenDataByNetwork, UNISWAP_V3_ROUTER,
-  WAD
+  tokenDataByNetwork,
+  UNISWAP_V3_ROUTER,
+  WAD,
 } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
@@ -71,8 +72,6 @@ describe("CurveV1 adapter", function () {
       );
       await r5.wait();
     }
-
-
   });
 
   it("[CVA-1]: exchange works", async () => {
@@ -119,7 +118,6 @@ describe("CurveV1 adapter", function () {
 
     const adapterContract = CurveV1Adapter__factory.connect(adapter, user);
 
-
     await adapterContract.exchange(
       curveHelper.getIndex(tokenDataByNetwork.Mainnet.DAI.address),
       curveHelper.getIndex(tokenDataByNetwork.Mainnet.USDC.address),
@@ -142,5 +140,12 @@ describe("CurveV1 adapter", function () {
       .approve(ts.creditManagerDAI.address, MAX_INT);
 
     await ts.creditManagerDAI.connect(user).repayCreditAccount(friend.address);
+  });
+
+  it("[CVA-2]: coins, get_dy_underlying, get_dy, get_virtual_price() returns the same values as original pool ", async () => {
+
+
+
+
   });
 });
