@@ -15,7 +15,7 @@ import {
   IPriceOracle,
   PriceOracle,
   TokenMock,
-  WETHMock
+  WETHMock,
 } from "../types/ethers-v5";
 
 import { DUMB_ADDRESS } from "../core/constants";
@@ -101,13 +101,13 @@ describe("PriceOracle", function () {
       .withArgs(tokenA.address, chainlinkOracleA.address);
   });
 
-  it("[PO-5]: addPriceFeed set pricefeed only once", async function () {
+  it("[PO-5]: addPriceFeed updated pricefeed correctly", async function () {
     await priceOracle.addPriceFeed(tokenA.address, chainlinkOracleA.address);
     await priceOracle.addPriceFeed(tokenA.address, chainlinkOracleB.address);
 
     expect(
       await priceOracle.getLastPrice(tokenA.address, wethToken.address)
-    ).to.be.eq(tokenAWETHRate);
+    ).to.be.eq(tokenBWETHRate);
   });
 
   it("[PO-6]: getLastPrice returns correct price for TokenA-WETH pairs", async function () {
@@ -148,6 +148,18 @@ describe("PriceOracle", function () {
 
     await expect(
       priceOracle.getLastPrice(DUMB_ADDRESS, tokenA.address)
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[PO-10]: getLastPrice reverts on unknown token", async function () {
+    const revertMsg = await errors.PO_AGGREGATOR_DECIMALS_SHOULD_BE_18();
+
+    chainlinkOracleA = await testDeployer.getChainlinkPriceFeedMock(
+      tokenAWETHRate,
+      6
+    );
+    await expect(
+      priceOracle.addPriceFeed(tokenA.address, chainlinkOracleA.address)
     ).to.be.revertedWith(revertMsg);
   });
 });
