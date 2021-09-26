@@ -9,7 +9,11 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "../../utils/expect";
 
-import { CurveV1Adapter__factory, Errors } from "../../types/ethers-v5";
+import {
+  CurveV1Adapter__factory,
+  Errors,
+  ICurvePool__factory,
+} from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
 import { MainnetSuite } from "./helper";
 import {
@@ -143,9 +147,28 @@ describe("CurveV1 adapter", function () {
   });
 
   it("[CVA-2]: coins, get_dy_underlying, get_dy, get_virtual_price() returns the same values as original pool ", async () => {
+    const adapter = CurveV1Adapter__factory.connect(
+      await ts.creditFilterDAI.contractToAdapter(CURVE_3POOL_ADDRESS),
+      deployer
+    );
 
+    const pool = await ICurvePool__factory.connect(
+      CURVE_3POOL_ADDRESS,
+      deployer
+    );
 
+    for (let i = 0; i < 3; i++) {
+      expect(await adapter.coins(i)).to.be.eq(await pool.coins(i));
+    }
 
-
+    expect(await adapter.get_dy(0, 1, WAD)).to.be.eq(
+      await pool.get_dy(0, 1, WAD)
+    );
+    expect(await adapter.get_dy_underlying(0, 1, WAD)).to.be.eq(
+      await pool.get_dy_underlying(0, 1, WAD)
+    );
+    expect(await adapter.get_virtual_price()).to.be.eq(
+      await pool.get_virtual_price()
+    );
   });
 });
