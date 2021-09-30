@@ -647,10 +647,8 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         ) = getCreditAccountParameters(creditAccount); // T:[CM-30]
 
         require(
-            borrowedAmount.add(amount) <
-                maxAmount.mul(maxLeverageFactor).div(
-                    Constants.LEVERAGE_DECIMALS
-                ),
+            borrowedAmount.add(amount).mul(Constants.LEVERAGE_DECIMALS) <
+                maxAmount.mul(maxLeverageFactor),
             Errors.CM_INCORRECT_AMOUNT
         ); // T:[CM-51]
 

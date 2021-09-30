@@ -151,8 +151,8 @@ contract YearnAdapter is IYVault {
 
         creditFilter.checkCollateralChange(
             creditAccount,
-            token,
             yVault,
+            token,
             balanceInBefore.sub(IERC20(yVault).balanceOf(creditAccount)),
             balanceOutBefore.add(IERC20(token).balanceOf(creditAccount))
         ); // M:[YA-3]

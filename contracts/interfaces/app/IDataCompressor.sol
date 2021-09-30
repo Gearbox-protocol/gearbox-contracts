@@ -63,10 +63,10 @@ interface IDataCompressor {
 
     /// @dev Returns compressed token data for particular token.
     /// Be careful, it can be reverted for non-standart tokens which has no "symbol" method for example
-    function getTokenData(address addr)
+    function getTokenData(address[] memory addr)
         external
         view
-        returns (DataTypes.TokenInfo memory);
+        returns (DataTypes.TokenInfo[] memory);
 
     function calcExpectedHf(
         address creditManager,

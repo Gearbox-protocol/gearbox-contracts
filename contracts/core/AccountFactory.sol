@@ -94,6 +94,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
 
         addCreditAccount(); // T:[AF-1]
         head = tail; // T:[AF-1]
+        _nextCreditAccount[address(0)] = address(0); // ToDo: add check
     }
 
     /**
@@ -259,7 +260,9 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         _checkStock();
 
         if (head == creditAccount) {
+            address prevHead = head;
             head = _nextCreditAccount[head]; // T:[AF-21] it exists cause we called _checkStock();
+            _nextCreditAccount[prevHead] = address(0);
         } else {
             require(
                 _nextCreditAccount[prev] == creditAccount,
@@ -400,7 +403,12 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         return creditAccountsSet.length(); // T:[AF-10]
     }
 
-    function creditAccounts(uint256 id) external view override returns (address) {
+    function creditAccounts(uint256 id)
+        external
+        view
+        override
+        returns (address)
+    {
         return creditAccountsSet.at(id);
     }
 }

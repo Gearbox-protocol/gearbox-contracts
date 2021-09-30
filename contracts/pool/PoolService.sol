@@ -214,8 +214,8 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         //
         uint256 interestAccrued = totalBorrowed
         .mul(borrowAPY_RAY)
-        .div(Constants.RAY)
         .mul(timeDifference)
+        .div(Constants.RAY)
         .div(Constants.SECONDS_PER_YEAR); // T:[PS-29]
 
         return _expectedLiquidityLU.add(interestAccrued); // T:[PS-29]
@@ -401,13 +401,13 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     /// @dev Converts amount into diesel tokens
     /// @param amount Amount in underlying tokens to be converted to diesel tokens
     function toDiesel(uint256 amount) public view override returns (uint256) {
-        return amount.rayDiv(getDieselRate_RAY()); // T:[PS-24]
+        return amount.mul(Constants.RAY).div(getDieselRate_RAY()); // T:[PS-24]
     }
 
     /// @dev Converts amount from diesel tokens to undelying token
     /// @param amount Amount in diesel tokens to be converted to diesel tokens
     function fromDiesel(uint256 amount) public view override returns (uint256) {
-        return amount.rayMul(getDieselRate_RAY()); // T:[PS-24]
+        return amount.mul(getDieselRate_RAY()).div(Constants.RAY); // T:[PS-24]
     }
 
     //

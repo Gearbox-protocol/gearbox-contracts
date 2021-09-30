@@ -14,6 +14,7 @@ import {CreditManager} from "../credit/CreditManager.sol";
 import {IPoolService} from "../interfaces/IPoolService.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {IPriceOracle} from "../interfaces/IPriceOracle.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import {AddressProvider} from "./AddressProvider.sol";
 import {ContractsRegister} from "./ContractsRegister.sol";
@@ -27,6 +28,7 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 contract DataCompressor {
     using SafeMath for uint256;
     using PercentageMath for uint256;
+
     AddressProvider public addressProvider;
     ContractsRegister public immutable contractsRegister;
     address public immutable WETHToken;
@@ -357,17 +359,21 @@ contract DataCompressor {
 
     /// @dev Returns compressed token data for particular token.
     /// Be careful, it can be reverted for non-standart tokens which has no "symbol" method for example
-    function getTokenData(address addr)
-        public
+    function getTokenData(address[] memory addr)
+        external
         view
-        returns (DataTypes.TokenInfo memory)
+        returns (DataTypes.TokenInfo[] memory)
     {
-        DataTypes.TokenInfo memory result;
-        ERC20 token = ERC20(addr);
-        result.addr = addr;
-        result.decimals = token.decimals();
-        result.symbol = token.symbol();
-
+        DataTypes.TokenInfo[] memory result = new DataTypes.TokenInfo[](
+            addr.length
+        );
+        for (uint256 i = 0; i < addr.length; i++) {
+            result[i] = DataTypes.TokenInfo(
+                addr[i],
+                ERC20(addr[i]).symbol(),
+                ERC20(addr[i]).decimals()
+            );
+        }
         return result;
     }
 
