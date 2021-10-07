@@ -395,7 +395,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     function getDieselRate_RAY() public view override returns (uint256) {
         uint256 dieselSupply = IERC20(dieselToken).totalSupply();
         if (dieselSupply == 0) return WadRayMath.RAY; // T:[PS-1]
-        return expectedLiquidity().rayDiv(dieselSupply); // T:[PS-6]
+        return expectedLiquidity().mul(Constants.RAY).div(dieselSupply); // T:[PS-6]
     }
 
     /// @dev Converts amount into diesel tokens

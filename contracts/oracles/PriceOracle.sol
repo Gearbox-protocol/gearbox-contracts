@@ -62,7 +62,7 @@ contract PriceOracle is ACLTrait, IPriceOracle {
         require(
             AggregatorV3Interface(priceFeed).decimals() == 18,
             Errors.PO_AGGREGATOR_DECIMALS_SHOULD_BE_18
-        ); // Todo: Check
+        ); // T:[PO-10]
 
         decimalsMultipliers[token] = 10**(18 - decimals);
         decimalsDividers[token] = 10**(36 - decimals);

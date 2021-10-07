@@ -151,7 +151,7 @@ describe("PriceOracle", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[PO-10]: getLastPrice reverts on unknown token", async function () {
+  it("[PO-10]: addPriceFeed reverts for oracles with decimals != 18", async function () {
     const revertMsg = await errors.PO_AGGREGATOR_DECIMALS_SHOULD_BE_18();
 
     chainlinkOracleA = await testDeployer.getChainlinkPriceFeedMock(
