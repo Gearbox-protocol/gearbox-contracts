@@ -43,14 +43,9 @@ contract YearnAdapter is IYVault {
     }
 
     /// @dev Deposit credit account tokens to Yearn
-    /// @param amount in tokens
-    function deposit(uint256 amount, address)
-        external
-        override
-        returns (uint256)
-    {
-        // bytes4(0xb6b55f25) = deposit
-        return _deposit(abi.encodeWithSelector(bytes4(0xb6b55f25), amount)); // M:[YA-2]
+    function deposit() external override returns (uint256) {
+        // bytes4(0xd0e30db0) = deposit()
+        return _deposit(abi.encodeWithSelector(bytes4(0xd0e30db0)); // M:[YA-1]
     }
 
     /// @dev Deposit credit account tokens to Yearn
@@ -61,12 +56,14 @@ contract YearnAdapter is IYVault {
     }
 
     /// @dev Deposit credit account tokens to Yearn
-    function deposit() external override returns (uint256) {
+    /// @param amount in tokens
+    function deposit(uint256 amount, address)
+        external
+        override
+        returns (uint256)
+    {
         // bytes4(0xb6b55f25) = deposit
-        return
-            _deposit(
-                abi.encodeWithSelector(bytes4(0xb6b55f25), Constants.MAX_INT)
-            ); // M:[YA-1]
+        return _deposit(abi.encodeWithSelector(bytes4(0xb6b55f25), amount)); // M:[YA-2]
     }
 
     function _deposit(bytes memory data) internal returns (uint256 shares) {
@@ -93,16 +90,18 @@ contract YearnAdapter is IYVault {
             token,
             yVault,
             balanceInBefore.sub(IERC20(token).balanceOf(creditAccount)),
-            balanceOutBefore.add(IERC20(yVault).balanceOf(creditAccount))
+            IERC20(yVault).balanceOf(creditAccount).sub(balanceOutBefore)
         ); // M:[YA-1,2]
     }
 
     function withdraw() external override returns (uint256) {
-        return withdraw(Constants.MAX_INT, address(0), 1); // M:[YA-3]
+        // bytes4(0x3ccfd60b) = withdraw()
+        return _withdraw(abi.encodeWithSelector(bytes4(0x3ccfd60b))); // M:[YA-3]
     }
 
     function withdraw(uint256 maxShares) external override returns (uint256) {
-        return withdraw(maxShares, address(0), 1);
+        // bytes4(0x2e1a7d4d) = withdraw(uint256)
+        return _withdraw(abi.encodeWithSelector(bytes4(0x2e1a7d4d), maxShares));
     }
 
     function withdraw(uint256 maxShares, address recipient)
@@ -110,7 +109,9 @@ contract YearnAdapter is IYVault {
         override
         returns (uint256)
     {
-        return withdraw(maxShares, recipient, 1);
+        // Call the function with MaxShares only, cause recepient doesn't make sense here
+        // bytes4(0x2e1a7d4d) = withdraw(uint256)
+        return _withdraw(abi.encodeWithSelector(bytes4(0x2e1a7d4d), maxShares));
     }
 
     /// @dev Withdraw yVaults from credit account
@@ -127,18 +128,26 @@ contract YearnAdapter is IYVault {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         ); // M:[YA-3]
+        return
+            _withdraw(
+                abi.encodeWithSelector(
+                    bytes4(0xe63697c8), //"withdraw(uint256,address,uint256)",
+                    maxShares,
+                    creditAccount,
+                    maxLoss
+                )
+            ); // M:[YA-3])
+    }
+
+    function _withdraw(bytes memory data) internal returns (uint256 shares) {
+        address creditAccount = creditManager.getCreditAccountOrRevert(
+            msg.sender
+        ); // M:[YA-3]
 
         creditManager.provideCreditAccountAllowance(
             creditAccount,
             yVault,
             token
-        ); // M:[YA-3]
-
-        bytes memory data = abi.encodeWithSelector(
-            bytes4(0x2e1a7d4d), //"withdraw(uint256,address,uint256)",
-            maxShares,
-            creditAccount,
-            maxLoss
         ); // M:[YA-3]
 
         uint256 balanceInBefore = IERC20(yVault).balanceOf(creditAccount); // M:[YA-3]
@@ -154,7 +163,7 @@ contract YearnAdapter is IYVault {
             yVault,
             token,
             balanceInBefore.sub(IERC20(yVault).balanceOf(creditAccount)),
-            balanceOutBefore.add(IERC20(token).balanceOf(creditAccount))
+            IERC20(token).balanceOf(creditAccount).sub(balanceOutBefore)
         ); // M:[YA-3]
     }
 
@@ -170,7 +179,7 @@ contract YearnAdapter is IYVault {
         return IYVault(yVault).symbol();
     }
 
-    function decimals() external view override returns (uint256) {
+    function decimals() external view override returns (uint8) {
         return IYVault(yVault).decimals();
     }
 

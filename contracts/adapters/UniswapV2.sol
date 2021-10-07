@@ -86,7 +86,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
             tokenIn,
             tokenOut,
             balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
-            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
+            IERC20(tokenOut).balanceOf(creditAccount).sub(balanceOutBefore)
         ); // ToDo: CHECK(!)
     }
 
@@ -146,7 +146,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
             tokenIn,
             tokenOut,
             balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
-            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
+            IERC20(tokenOut).balanceOf(creditAccount).sub(balanceOutBefore)
         ); // ToDo: CHECK(!)
     }
 

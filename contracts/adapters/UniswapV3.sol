@@ -83,8 +83,8 @@ contract UniswapV3Adapter is ISwapRouter {
             balanceInBefore.sub(
                 IERC20(paramsUpdate.tokenIn).balanceOf(creditAccount)
             ),
-            balanceOutBefore.add(
-                IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount)
+            IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount).sub(
+                balanceOutBefore
             )
         );
     }
@@ -113,26 +113,28 @@ contract UniswapV3Adapter is ISwapRouter {
         ExactInputParams memory paramsUpdate = params;
         paramsUpdate.recipient = creditAccount;
 
-        // 0xc04b8d59 = exactInput((bytes,address,uint256,uint256,uint256))
-        bytes memory data = abi.encodeWithSelector(
-            bytes4(0xc04b8d59), // +
-            paramsUpdate
-        );
-
         uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
         uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
 
-        (amountOut) = abi.decode(
-            creditManager.executeOrder(msg.sender, router, data),
-            (uint256)
-        );
+        {
+            // 0xc04b8d59 = exactInput((bytes,address,uint256,uint256,uint256))
+            bytes memory data = abi.encodeWithSelector(
+                bytes4(0xc04b8d59), // +
+                paramsUpdate
+            );
+
+            (amountOut) = abi.decode(
+                creditManager.executeOrder(msg.sender, router, data),
+                (uint256)
+            );
+        }
 
         creditFilter.checkCollateralChange(
             creditAccount,
             tokenIn,
             tokenOut,
             balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
-            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
+            IERC20(tokenOut).balanceOf(creditAccount).sub(balanceOutBefore)
         );
     }
 
@@ -184,8 +186,8 @@ contract UniswapV3Adapter is ISwapRouter {
             balanceInBefore.sub(
                 IERC20(paramsUpdate.tokenIn).balanceOf(creditAccount)
             ),
-            balanceOutBefore.add(
-                IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount)
+            IERC20(paramsUpdate.tokenOut).balanceOf(creditAccount).sub(
+                balanceOutBefore
             )
         );
     }
@@ -214,25 +216,27 @@ contract UniswapV3Adapter is ISwapRouter {
         ExactOutputParams memory paramsUpdate = params;
         paramsUpdate.recipient = creditAccount;
 
-        bytes memory data = abi.encodeWithSelector(
-            bytes4(0xf28c0498), // exactOutput((bytes,address,uint256,uint256,uint256))
-            paramsUpdate
-        );
-
         uint256 balanceInBefore = IERC20(tokenIn).balanceOf(creditAccount);
         uint256 balanceOutBefore = IERC20(tokenOut).balanceOf(creditAccount);
 
-        (amountIn) = abi.decode(
-            creditManager.executeOrder(msg.sender, router, data),
-            (uint256)
-        );
+        {
+            bytes memory data = abi.encodeWithSelector(
+                bytes4(0xf28c0498), // exactOutput((bytes,address,uint256,uint256,uint256))
+                paramsUpdate
+            );
+
+            (amountIn) = abi.decode(
+                creditManager.executeOrder(msg.sender, router, data),
+                (uint256)
+            );
+        }
 
         creditFilter.checkCollateralChange(
             creditAccount,
             tokenIn,
             tokenOut,
             balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
-            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
+            IERC20(tokenOut).balanceOf(creditAccount).sub(balanceOutBefore)
         );
     }
 

@@ -81,7 +81,7 @@ contract CurveV1Adapter is ICurvePool {
             tokenIn,
             tokenOut,
             balanceInBefore.sub(IERC20(tokenIn).balanceOf(creditAccount)),
-            balanceOutBefore.add(IERC20(tokenOut).balanceOf(creditAccount))
+            IERC20(tokenOut).balanceOf(creditAccount).sub(balanceOutBefore)
         ); // M:[CVA-1]
     }
 
