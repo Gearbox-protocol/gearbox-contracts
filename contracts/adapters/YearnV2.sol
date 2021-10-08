@@ -45,7 +45,7 @@ contract YearnAdapter is IYVault {
     /// @dev Deposit credit account tokens to Yearn
     function deposit() external override returns (uint256) {
         // bytes4(0xd0e30db0) = deposit()
-        return _deposit(abi.encodeWithSelector(bytes4(0xd0e30db0)); // M:[YA-1]
+        return _deposit(abi.encodeWithSelector(bytes4(0xd0e30db0))); // M:[YA-1]
     }
 
     /// @dev Deposit credit account tokens to Yearn
