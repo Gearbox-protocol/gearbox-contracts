@@ -55,6 +55,7 @@ contract LeveragedActions is ReentrancyGuard {
         bytes swapCalldata;
         uint256 lpInterface;
         address lpContract;
+        uint256 amountOutMin;
     }
 
     // Emits each time new action is done
@@ -68,6 +69,14 @@ contract LeveragedActions is ReentrancyGuard {
         address lpContract,
         uint256 referralCode
     );
+
+    modifier registeredCreditManagersOnly(address creditManager) {
+        require(
+            contractsRegister.isCreditManager(creditManager),
+            Errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER
+        );
+        _;
+    }
 
     constructor(address _addressProvider) {
         AddressProvider addressProvider = AddressProvider(_addressProvider);
@@ -207,8 +216,14 @@ contract LeveragedActions is ReentrancyGuard {
         uint256 amountIn,
         uint256 lpInterface,
         address lpContract,
+        uint256 amountOutMin,
         uint256 referralCode
-    ) external payable nonReentrant {
+    )
+        external
+        payable
+        registeredCreditManagersOnly(creditManager)
+        nonReentrant
+    {
         // Gets collateral
         address collateral = ICreditManager(creditManager).underlyingToken(); // M:[LA-8]
 
@@ -228,6 +243,15 @@ contract LeveragedActions is ReentrancyGuard {
 
         // Deposits LP
         address lpAsset = _depositLP(creditManager, lpInterface, lpContract); // M:[LA-8]
+
+        require(
+            IERC20(lpAsset).balanceOf(
+                ICreditManager(creditManager).getCreditAccountOrRevert(
+                    address(this)
+                )
+            ) >= amountOutMin,
+            "Not enough amountOutMin"
+        );
 
         // Transfers ownership to msg.sender
         ICreditManager(creditManager).transferAccountOwnership(msg.sender); // M:[LA-8]
@@ -293,13 +317,9 @@ contract LeveragedActions is ReentrancyGuard {
     /// - executes lp operation, if provided
     function _openLong(LongParameters calldata longParams, uint256 referralCode)
         internal
+        registeredCreditManagersOnly(longParams.creditManager)
         returns (address asset, address collateral)
     {
-        require(
-            contractsRegister.isCreditManager(longParams.creditManager),
-            Errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER
-        );
-
         collateral = ICreditManager(longParams.creditManager).underlyingToken(); // M:[LA-1]
 
         uint256 amount = IERC20(collateral).balanceOf(address(this)); // M:[LA-1]
@@ -312,10 +332,10 @@ contract LeveragedActions is ReentrancyGuard {
             referralCode
         ); // M:[LA-1]
 
-        uint256 leveragedAmount = amount
-        .mul(longParams.leverageFactor)
-        .div(Constants.LEVERAGE_DECIMALS)
-        .add(amount); // M:[LA-1]
+        address creditAccount = ICreditManager(longParams.creditManager)
+        .getCreditAccountOrRevert(address(this));
+
+        uint256 leveragedAmount = IERC20(collateral).balanceOf(creditAccount); // M:[LA-1]
 
         address adapter = _getAdapterOrRevert(
             longParams.creditManager,
@@ -340,11 +360,6 @@ contract LeveragedActions is ReentrancyGuard {
             uint256 amountOutMinLeveraged = amountOutMin
             .mul(leveragedAmount)
             .div(amountIn); // M:[LA-1]
-
-            console.log(leveragedAmount);
-            console.log(amountIn);
-            console.log(amountOutMin);
-            console.log(amountOutMinLeveraged);
 
             IUniswapV2Router02(adapter).swapExactTokensForTokens(
                 leveragedAmount,
@@ -404,6 +419,20 @@ contract LeveragedActions is ReentrancyGuard {
                 longParams.lpContract
             ); // M:[LA-2]
         }
+
+        console.log(
+            IERC20(asset).balanceOf(
+                ICreditManager(longParams.creditManager)
+                    .getCreditAccountOrRevert(address(this))
+            )
+        );
+
+        console.log(longParams.amountOutMin);
+
+        require(
+            IERC20(asset).balanceOf(creditAccount) >= longParams.amountOutMin,
+            "Not enough amountOutMin"
+        );
 
         ICreditManager(longParams.creditManager).transferAccountOwnership(
             msg.sender
