@@ -143,11 +143,19 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
             Errors.POOL_MORE_THAN_EXPECTED_LIQUIDITY_LIMIT
         ); // T:[PS-31]
 
+        uint256 balanceBefore = IERC20(underlyingToken).balanceOf(
+            address(this)
+        );
+
         IERC20(underlyingToken).safeTransferFrom(
             msg.sender,
             address(this),
             amount
         ); // T:[PS-2, 7]
+
+        amount = IERC20(underlyingToken).balanceOf(address(this)).sub(
+            balanceBefore
+        ); // ToDo: add test here
 
         DieselToken(dieselToken).mint(onBehalfOf, toDiesel(amount)); // T:[PS-2, 7]
 
