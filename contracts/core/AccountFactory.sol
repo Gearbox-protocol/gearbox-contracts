@@ -275,6 +275,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
             }
 
             _nextCreditAccount[prev] = _nextCreditAccount[creditAccount]; // T: [AF-16]
+            _nextCreditAccount[creditAccount] = address(0); // T: [AF-16]
         }
         ICreditAccount(creditAccount).connectTo(to); // T: [AF-16, 21]
         creditAccountsSet.remove(creditAccount);

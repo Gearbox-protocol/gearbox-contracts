@@ -265,6 +265,7 @@ describe("AccountFactory", function () {
       await creditAccountContract.creditManager(),
       "Incorrect credit manager update at credit account"
     ).to.be.eq(user.address);
+    expect(await accountFactory.getNext(creditAccount)).to.be.eq(ADDRESS_0x0);
   });
 
   it("[AF-17]: mineCreditAccount, finishMining reverts after finishMining call", async () => {
