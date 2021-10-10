@@ -189,6 +189,11 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
         ); // T:[CF-2]
 
+        require(
+            allowedAdapters[adapter] == false,
+            Errors.CF_ADAPTER_CAN_BE_USED_ONLY_ONCE
+        ); // ToDo: add check
+
         // Remove previous adapter from allowed list and set up new one
         allowedAdapters[contractToAdapter[targetContract]] = false; // T:[CF-10]
         allowedAdapters[adapter] = true; // T:[CF-9, 10]

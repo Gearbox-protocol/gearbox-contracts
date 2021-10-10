@@ -25,7 +25,13 @@ import {
 import { CreditManagerDeployer } from "../deployer/creditManagerDeployer";
 import { CreditManagerTestSuite } from "../deployer/creditManagerTestSuite";
 import { BigNumber } from "ethers";
-import { ADDRESS_0x0, MAX_INT, PERCENTAGE_FACTOR, RAY, WAD } from "@diesellabs/gearbox-sdk";
+import {
+  ADDRESS_0x0,
+  MAX_INT,
+  PERCENTAGE_FACTOR,
+  RAY,
+  WAD,
+} from "@diesellabs/gearbox-sdk";
 import { PoolTestSuite } from "../deployer/poolTestSuite";
 
 const { amount, borrowedAmount } = CreditManagerTestSuite;
@@ -232,8 +238,9 @@ describe("CreditFilter", function () {
     ).to.be.revertedWith(revertMsg);
 
     await creditFilter.allowToken(underlyingToken.address, 10);
-    expect(await creditFilter.liquidationThresholds(underlyingToken.address)).to.be.eq(10);
-
+    expect(
+      await creditFilter.liquidationThresholds(underlyingToken.address)
+    ).to.be.eq(10);
   });
 
   it("[CF-6]: allowToken just update liquidation threshold if called twice", async () => {
@@ -571,7 +578,7 @@ describe("CreditFilter", function () {
       underlyingToken.address
     );
 
-    await creditFilter.connectCreditManager(creditManagerMockForFilter.address)
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
 
     await creditFilter.setEnabledTokens(DUMB_ADDRESS, 100);
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(100);
@@ -810,7 +817,6 @@ describe("CreditFilter", function () {
     expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
 
     const creditAccount = await setupCreditAccount();
-
 
     await expect(
       creditFilter.checkCollateralChange(
@@ -1223,5 +1229,11 @@ describe("CreditFilter", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-
+  it("[CF-40]: it keep one-to-one relationship between contracts and adapters", async () => {
+    const revertMsg = await errors.CF_ADAPTER_CAN_BE_USED_ONLY_ONCE();
+    await creditFilter.allowContract(DUMB_ADDRESS, user.address);
+    await expect(
+      creditFilter.allowContract(DUMB_ADDRESS2, user.address)
+    ).to.be.revertedWith(revertMsg);
+  });
 });
