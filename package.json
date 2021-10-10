@@ -66,15 +66,15 @@
     "fork": "scripts/fork.sh",
     "abigen": "scripts/abigen.sh",
     "compile": "npx hardhat compile",
-    "set-lt": "npx hardhat run scripts/setLT.ts --network kovan",
+    "set-lt": "npx hardhat run scripts/setLT.ts --network localhost",
     "test": "npx hardhat test",
     "mainnet-test": "yarn deploy-fork && yarn charge",
     "update_abi": "scripts/abiCopy.sh",
     "coverage": "yarn build && npx hardhat coverage --temp artifacts"
   },
   "dependencies": {
-    "@diesellabs/gearbox-leverage": "^0.0.48",
-    "@diesellabs/gearbox-sdk": "^0.0.165",
+    "@diesellabs/gearbox-leverage": "^0.0.87",
+    "@diesellabs/gearbox-sdk": "^0.0.198",
     "deep-eql": "^4.0.0",
     "ethereumjs-util": "^7.1.0"
   }

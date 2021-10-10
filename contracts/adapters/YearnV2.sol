@@ -144,12 +144,6 @@ contract YearnAdapter is IYVault {
             msg.sender
         ); // M:[YA-3]
 
-        creditManager.provideCreditAccountAllowance(
-            creditAccount,
-            yVault,
-            token
-        ); // M:[YA-3]
-
         uint256 balanceInBefore = IERC20(yVault).balanceOf(creditAccount); // M:[YA-3]
         uint256 balanceOutBefore = IERC20(token).balanceOf(creditAccount); // M:[YA-3]
 

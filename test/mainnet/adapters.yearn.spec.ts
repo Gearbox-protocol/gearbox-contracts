@@ -89,6 +89,7 @@ describe("YEARN adapter", function () {
 
     const yearnHelper = await YearnHelper.getHelper(
       "Yearn DAI",
+      YEARN_DAI_ADDRESS,
       adapter,
       deployer
     );
