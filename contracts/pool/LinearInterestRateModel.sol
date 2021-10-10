@@ -8,6 +8,7 @@ import {PercentageMath} from "../libraries/math/PercentageMath.sol";
 import {WadRayMath} from "../libraries/math/WadRayMath.sol";
 import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
 import {Constants} from "../libraries/helpers/Constants.sol";
+import {Errors} from "../libraries/helpers/Errors.sol";
 import "hardhat/console.sol";
 
 /// @title Linear Interest Rate Model
@@ -43,6 +44,23 @@ contract LinearInterestRateModel is IInterestRateModel {
         uint256 R_slope1,
         uint256 R_slope2
     ) {
+        require(
+            U_optimal <= PercentageMath.PERCENTAGE_FACTOR,
+            Errors.LIM_INCORRECT_PARAMETER
+        );
+        require(
+            R_base <= PercentageMath.PERCENTAGE_FACTOR,
+            Errors.LIM_INCORRECT_PARAMETER
+        );
+        require(
+            R_slope1 <= PercentageMath.PERCENTAGE_FACTOR,
+            Errors.LIM_INCORRECT_PARAMETER
+        );
+        require(
+            R_slope2 <= PercentageMath.PERCENTAGE_FACTOR,
+            Errors.LIM_INCORRECT_PARAMETER
+        );
+
         // Convert percetns to WAD
         uint256 U_optimal_WAD = WadRayMath.WAD.percentMul(U_optimal);
         _U_Optimal_WAD = U_optimal_WAD;

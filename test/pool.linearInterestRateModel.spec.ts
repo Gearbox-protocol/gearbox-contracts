@@ -1,13 +1,19 @@
 import { expect } from "../utils/expect";
-import * as chai from "chai";
 
-import { LinearInterestRateModel } from "../types/ethers-v5";
+import { Errors, LinearInterestRateModel } from "../types/ethers-v5";
 import { LinearInterestRateModelDeployer } from "../deployer/linearIRModelDeployer";
 import { RAY } from "@diesellabs/gearbox-sdk";
+import { TestDeployer } from "../deployer/testDeployer";
 
 describe("LinearInterestRateModel", function () {
   let linearModelDeployer: LinearInterestRateModelDeployer;
   let linearInterestRateModel: LinearInterestRateModel;
+  let errors: Errors;
+
+  before(async () => {
+    const td = new TestDeployer();
+    errors = await td.getErrors();
+  });
 
   it("[LR-1]: calcBorrowRate correctly computes borrowRate", async function () {
     const testCases = [
@@ -88,5 +94,43 @@ describe("LinearInterestRateModel", function () {
       await linearModelDeployer.getLinearInterestRateModel();
     const result = await linearInterestRateModel.calcBorrowRate(12, 100);
     expect(result).to.be.eq(RAY.div(100));
+  });
+
+  it("[LR-5]: linear model revers with incorrect parameters", async () => {
+    const revertMsg = await errors.LIM_INCORRECT_PARAMETER();
+
+    const testCases = [
+      {
+        Uoptimal: 100.1,
+        Rbase: 0,
+        Rslope1: 4,
+        Rslope2: 75,
+      },
+      {
+        Uoptimal: 80,
+        Rbase: 100.1,
+        Rslope1: 4,
+        Rslope2: 75,
+      },
+      {
+        Uoptimal: 0,
+        Rbase: 0,
+        Rslope1: 100.1,
+        Rslope2: 75,
+      },
+      {
+        Uoptimal: 0,
+        Rbase: 0,
+        Rslope1: 99,
+        Rslope2: 100.1,
+      },
+    ];
+
+    for (let testCase of testCases) {
+      linearModelDeployer = new LinearInterestRateModelDeployer(testCase);
+      await expect(
+        linearModelDeployer.getLinearInterestRateModel()
+      ).to.be.revertedWith(revertMsg);
+    }
   });
 });
