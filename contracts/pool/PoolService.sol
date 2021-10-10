@@ -81,9 +81,6 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     // Withdraw fee in PERCENTAGE FORMAT
     uint256 public override withdrawFee;
 
-    // = PERCENTAGE_AMOUNT - withdrawFee
-    uint256 public withdrawMultiplier;
-
     //
     // CONSTRUCTOR
     //
@@ -181,15 +178,18 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     {
         uint256 underlyingTokensAmount = fromDiesel(amount); // T:[PS-3, 8]
 
-        uint256 amountSent = underlyingTokensAmount.percentMul(
-            withdrawMultiplier
-        );
+        uint256 amountTreasury = underlyingTokensAmount.percentMul(withdrawFee);
+        uint256 amountSent = underlyingTokensAmount.sub(amountTreasury);
 
         IERC20(underlyingToken).safeTransfer(to, amountSent); // T:[PS-3, 34]
-        IERC20(underlyingToken).safeTransfer(
-            treasuryAddress,
-            underlyingTokensAmount.sub(amountSent)
-        ); // T:[PS-3, 34]
+
+        if (amountTreasury > 1) {
+            IERC20(underlyingToken).safeTransfer(
+                treasuryAddress,
+                amountTreasury
+            );
+        } // T:[PS-3, 34]
+
         DieselToken(dieselToken).burn(msg.sender, amount); // T:[PS-3, 8]
 
         _expectedLiquidityLU = _expectedLiquidityLU.sub(underlyingTokensAmount); // T:[PS-3, 8]
@@ -477,7 +477,6 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
             Errors.POOL_INCORRECT_WITHDRAW_FEE
         ); // T:[PS-32]
         withdrawFee = fee; // T:[PS-33]
-        withdrawMultiplier = PercentageMath.PERCENTAGE_FACTOR.sub(fee); // T:[PS-33]
     }
 
     /// @dev Returns quantity of connected credit accounts managers

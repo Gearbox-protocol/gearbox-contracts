@@ -71,7 +71,6 @@ describe("PoolService", function () {
   it("[PS-1]: getDieselRate_RAY=RAY, withdrawFee=0, withdrawMultiplier=100% at start", async function () {
     expect(await poolService.getDieselRate_RAY()).to.be.eq(RAY);
     expect(await poolService.withdrawFee()).to.be.eq(0);
-    expect(await poolService.withdrawMultiplier()).to.be.eq(PERCENTAGE_FACTOR);
   });
 
   it("[PS-2]: addLiquidity correctly adds liquidity", async function () {
@@ -1095,9 +1094,6 @@ describe("PoolService", function () {
     const fee = 10;
     await poolService.setWithdrawFee(fee);
     expect(await poolService.withdrawFee()).to.be.eq(fee);
-    expect(await poolService.withdrawMultiplier()).to.be.eq(
-      PERCENTAGE_FACTOR - fee
-    );
   });
 
   it("[PS-34]: remove liquidity correctly takes withdraw fee", async function () {
