@@ -134,7 +134,7 @@ describe("CreditFilter", function () {
     ).to.be.revertedWith(revertMsg);
 
     await expect(
-      creditFilter.connect(user).changeAllowedTokenState(DUMB_ADDRESS, false)
+      creditFilter.connect(user).forbidToken(DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);
 
     await expect(
@@ -1127,10 +1127,8 @@ describe("CreditFilter", function () {
     await creditFilter.allowToken(tokenA.address, 9000);
     await creditFilter.allowToken(tokenB.address, 9000);
 
-    await creditFilter.changeAllowedTokenState(tokenB.address, false);
+    await creditFilter.forbidToken(tokenB.address);
     expect(await creditFilter.isTokenAllowed(tokenB.address)).to.be.false;
-    await creditFilter.changeAllowedTokenState(tokenB.address, true);
-    expect(await creditFilter.isTokenAllowed(tokenB.address)).to.be.true;
   });
 
   it("[CF-36]: checkAndEnableToken reverts if token forbidden", async () => {
@@ -1142,7 +1140,7 @@ describe("CreditFilter", function () {
     await priceOracle.addPriceFeed(tokenA.address, chainlinkMock.address);
     await creditFilter.allowToken(tokenA.address, 9000);
 
-    await creditFilter.changeAllowedTokenState(tokenA.address, false);
+    await creditFilter.forbidToken(tokenA.address);
 
     await creditManagerMockForFilter.connectFilter(
       creditFilter.address,

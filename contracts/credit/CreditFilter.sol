@@ -175,6 +175,15 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         emit TokenAllowed(token, liquidationThreshold); // T:[CF-4]
     }
 
+    /// @dev Forbid token. To allow token one more time use allowToken function
+    /// @param token Address of forbidden token
+    function forbidToken(address token)
+        external
+        configuratorOnly // T:[CF-1]
+    {
+        _allowedTokensMap[token] = false; // T: [CF-35, 36]
+    }
+
     /// @dev Adds contract and adapter to the list of allowed contracts
     /// if contract exists it updates adapter only
     /// @param targetContract Address of allowed contract
@@ -395,15 +404,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
                 enabledTokens[creditAccount] |
                 tokenMasksMap[token];
         } // T:[CF-23]
-    }
-
-    /// @dev Change allowedTokenMask bit for partical token to opposite
-    /// It disables enabled tokens and vice versa
-    function changeAllowedTokenState(address token, bool state)
-        external
-        configuratorOnly // T:[CF-1]
-    {
-        _allowedTokensMap[token] = state; // T: [CF-35, 36]
     }
 
     /// @dev Sets fast check parameters chi & hfCheckCollateral
