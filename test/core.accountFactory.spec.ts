@@ -451,4 +451,12 @@ describe("AccountFactory", function () {
     expect(await accountFactory.tail()).to.be.eq(await accountFactory.head());
     expect(await accountFactory.tail()).to.be.not.eq(ADDRESS_0x0);
   });
+
+  it("[AF-24]: returnAccount reverts in someone tries to return account not deployed by factory", async () => {
+    const revertMsg = await errors.AF_EXTERNAL_ACCOUNTS_ARE_FORBIDDEN();
+    await contractsRegister.addCreditManager(deployer.address);
+    await expect(
+      accountFactory.returnCreditAccount(DUMB_ADDRESS)
+    ).to.be.revertedWith(revertMsg);
+  });
 });

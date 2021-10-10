@@ -192,6 +192,8 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         override
         creditManagerOnly // T:[AF-12]
     {
+
+        require(creditAccountsSet.contains(usedAccount), Errors.AF_EXTERNAL_ACCOUNTS_ARE_FORBIDDEN);
         require(
             ICreditAccount(usedAccount).since() != block.number,
             Errors.AF_CANT_CLOSE_CREDIT_ACCOUNT_IN_THE_SAME_BLOCK
