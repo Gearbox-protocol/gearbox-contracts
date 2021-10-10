@@ -59,7 +59,6 @@ interface ICreditManager is IAppCreditManager {
         uint256 minAmount,
         uint256 maxAmount,
         uint256 maxLeverage,
-        uint256 feeSuccess,
         uint256 feeInterest,
         uint256 feeLiquidation,
         uint256 liquidationDiscount
@@ -236,7 +235,7 @@ interface ICreditManager is IAppCreditManager {
         override
         returns (address);
 
-    function feeSuccess() external view returns (uint256);
+//    function feeSuccess() external view returns (uint256);
 
     function feeInterest() external view returns (uint256);
 

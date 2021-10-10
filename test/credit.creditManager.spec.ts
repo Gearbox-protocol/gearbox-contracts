@@ -24,7 +24,6 @@ import {
   DUMB_ADDRESS,
   FEE_INTEREST,
   FEE_LIQUIDATION,
-  FEE_SUCCESS,
   LIQUIDATION_DISCOUNTED_SUM,
   PAUSABLE_REVERT_MSG,
   UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
@@ -114,23 +113,18 @@ describe("CreditManager", function () {
 
   it("[CM-1]: constructor set parameters correctly", async () => {
     const [
-      apContract,
       poolContract,
       cfContract,
       wtContract,
       wgContract,
       dsContract,
     ] = await Promise.all([
-      creditManager.addressProvider(),
       creditManager.poolService(),
       creditManager.creditFilter(),
       creditManager.wethAddress(),
       creditManager.wethGateway(),
       creditManager.defaultSwapContract(),
     ]);
-
-    const apExpected = await coreDeployer.getAddressProvider();
-    expect(apContract, "AddressProvider").to.be.eq(apExpected.address);
 
     const poolExpected = poolService.address;
     expect(poolContract, "PoolService").to.be.eq(poolExpected);
@@ -152,7 +146,6 @@ describe("CreditManager", function () {
       minHeathFactor,
       minAmount,
       maxAmount,
-      feeSuccess,
       feeInterest,
       feeLiquidation,
       liquidationDiscount,
@@ -161,7 +154,6 @@ describe("CreditManager", function () {
       creditManager.minHealthFactor(),
       creditManager.minAmount(),
       creditManager.maxAmount(),
-      creditManager.feeSuccess(),
       creditManager.feeInterest(),
       creditManager.feeLiquidation(),
       creditManager.liquidationDiscount(),
@@ -177,7 +169,6 @@ describe("CreditManager", function () {
     expect(minHeathFactor, "minHealthFactor").to.be.eq(mhfExpected);
     expect(minAmount, "minAmount").to.be.eq(DEFAULT_CREDIT_MANAGER.minAmount);
     expect(maxAmount, "maxAmount").to.be.eq(DEFAULT_CREDIT_MANAGER.maxAmount);
-    expect(feeSuccess.toNumber(), "FEE_SUCCESS").to.be.eq(FEE_SUCCESS);
     expect(feeInterest.toNumber(), "FEE_INTEREST").to.be.eq(FEE_INTEREST);
     expect(feeLiquidation.toNumber(), "FEE_LIQUIDATION").to.be.eq(
       FEE_LIQUIDATION
@@ -232,7 +223,8 @@ describe("CreditManager", function () {
   });
 
   it("[CM-3]: openCreditAccount reverts if user has already opened account", async () => {
-    const revertMsg = await errors.CM_YOU_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
+    const revertMsg =
+      await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
 
     // Open trader account
     await creditManager
@@ -414,10 +406,8 @@ describe("CreditManager", function () {
 
     // user balance = amount + borrowed amount
     const fee = percentMul(
-      amount.add(borrowedAmount).sub(borrowedAmountWithInterest),
-      FEE_SUCCESS
-    ).add(
-      percentMul(borrowedAmountWithInterest.sub(borrowedAmount), FEE_INTEREST)
+      borrowedAmountWithInterest.sub(borrowedAmount),
+      FEE_INTEREST
     );
 
     const remainingFunds = amount
@@ -459,10 +449,8 @@ describe("CreditManager", function () {
       );
 
     const fee = percentMul(
-      amount.add(borrowedAmount).sub(borrowedAmountWithInterest),
-      FEE_SUCCESS
-    ).add(
-      percentMul(borrowedAmountWithInterest.sub(borrowedAmount), FEE_INTEREST)
+      borrowedAmountWithInterest.sub(borrowedAmount),
+      FEE_INTEREST
     );
 
     const remainingFunds = amount
@@ -674,14 +662,7 @@ describe("CreditManager", function () {
       underlyingToken.address
     );
 
-    const fee = percentMul(
-      amount
-        // we should uniswapInitBalance, cause rate is 1, we set one chainlink mock for both assets
-        .add(tokenAamountConverted)
-        .add(ba)
-        .sub(borrowedAmountWithInterest),
-      FEE_SUCCESS
-    ).add(percentMul(borrowedAmountWithInterest.sub(ba), FEE_INTEREST));
+    const fee = percentMul(borrowedAmountWithInterest.sub(ba), FEE_INTEREST);
 
     const repayCost = borrowedAmountWithInterest.add(fee);
 
@@ -726,18 +707,26 @@ describe("CreditManager", function () {
 
   // This statement protects protocol from FlashLoan attack
   it("[CM-20]: closeCreditAccount, repayCreditAccount reverts if called the same block as OpenCreditAccount", async () => {
+    const revertMsg =
+      await errors.AF_CANT_CLOSE_CREDIT_ACCOUNT_IN_THE_SAME_BLOCK();
+
     const flashLoanAttacker = await testDeployer.getFlashLoanAttacker(
       creditManager.address
     );
 
     await underlyingToken.mint(flashLoanAttacker.address, userInitBalance);
 
-    const revertMsg =
-      await errors.AF_CANT_CLOSE_CREDIT_ACCOUNT_IN_THE_SAME_BLOCK();
+    const tokensQty = await creditFilter.allowedTokensCount();
+    const paths: Array<{ path: Array<string>; amountOutMin: BigNumber }> = [];
+    for (let i = 0; i < tokensQty.toNumber(); i++) {
+      paths.push({
+        path: [await creditFilter.allowedTokens(i), underlyingToken.address],
+        amountOutMin: WAD,
+      });
+    }
+
     await expect(
-      flashLoanAttacker.attackClose(amount, leverageFactor, [
-        { path: [], amountOutMin: WAD },
-      ]),
+      flashLoanAttacker.attackClose(amount, leverageFactor, paths),
       "Error during close attack"
     ).to.revertedWith(revertMsg);
 
@@ -942,10 +931,8 @@ describe("CreditManager", function () {
 
     // user balance = amount + borrowed amount
     const fee = percentMul(
-      amount.add(borrowedAmount).sub(borrowedAmountWithInterest),
-      FEE_SUCCESS
-    ).add(
-      percentMul(borrowedAmountWithInterest.sub(borrowedAmount), FEE_INTEREST)
+      borrowedAmountWithInterest.sub(borrowedAmount),
+      FEE_INTEREST
     );
 
     const feeLiq = percentMul(
@@ -996,12 +983,12 @@ describe("CreditManager", function () {
   // });
 
   it("[CM-34]: setParams reverts if maxAmount > minAmount", async () => {
-    const revertMsg = await errors.CM_INCORRECT_LIMITS();
+    const revertMsg = await errors.CM_INCORRECT_PARAMS();
     const minAmountNew = WAD.mul(1239203);
     const maxAmountNew = WAD.mul(77823);
 
     await expect(
-      creditManager.setParams(minAmountNew, maxAmountNew, 1, 1, 1, 1, 1)
+      creditManager.setParams(minAmountNew, maxAmountNew, 1, 1, 1, 1)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -1054,21 +1041,7 @@ describe("CreditManager", function () {
     const maxLeverage = 400;
 
     await expect(
-      creditManager
-        .connect(user)
-        .setParams(0, 1000, maxLeverage, 100, 100, 100, 100)
-    ).to.be.revertedWith(revertMsgNonConfig);
-
-    await expect(
-      creditManager.setParams(
-        0,
-        1000,
-        maxLeverage,
-        incorrectValue,
-        100,
-        100,
-        100
-      )
+      creditManager.setParams(0, 1000, maxLeverage, incorrectValue, 100, 100)
     ).to.be.revertedWith(revertMsgIncorrect);
 
     await expect(
@@ -1076,19 +1049,6 @@ describe("CreditManager", function () {
         0,
         1000,
         maxLeverage,
-        100,
-        incorrectValue,
-        100,
-        100
-      )
-    ).to.be.revertedWith(revertMsgIncorrect);
-
-    await expect(
-      creditManager.setParams(
-        0,
-        1000,
-        maxLeverage,
-        100,
         100,
         incorrectValue,
         incorrectValue
@@ -1096,22 +1056,13 @@ describe("CreditManager", function () {
     ).to.be.revertedWith(revertMsgIncorrect);
 
     await expect(
-      creditManager.setParams(
-        0,
-        1000,
-        maxLeverage,
-        100,
-        100,
-        100,
-        incorrectValue
-      )
+      creditManager.setParams(0, 1000, maxLeverage, 100, 100, incorrectValue)
     ).to.be.revertedWith(revertMsgIncorrect);
   });
 
   it("[CM-37]: setFees sets correct values & emits event", async () => {
     const minAmount = 0;
     const maxAmount = 1000;
-    const feeSuccess = 1000;
     const feeInterest = 200;
     const feeLiquidation = 300;
     const liquidationDiscount = 9300;
@@ -1121,7 +1072,6 @@ describe("CreditManager", function () {
         minAmount,
         maxAmount,
         maxLeverage,
-        feeSuccess,
         feeInterest,
         feeLiquidation,
         liquidationDiscount
@@ -1132,14 +1082,12 @@ describe("CreditManager", function () {
         minAmount,
         maxAmount,
         maxLeverage,
-        feeSuccess,
         feeInterest,
         feeLiquidation,
         liquidationDiscount
       );
 
     expect(await creditManager.maxLeverageFactor()).to.be.eq(maxLeverage);
-    expect(await creditManager.feeSuccess()).to.be.eq(feeSuccess);
     expect(await creditManager.feeInterest()).to.be.eq(feeInterest);
     expect(await creditManager.feeLiquidation()).to.be.eq(feeLiquidation);
     expect(await creditManager.liquidationDiscount()).to.be.eq(
@@ -1221,7 +1169,7 @@ describe("CreditManager", function () {
   it("[CM-40]: setParams reverts if minHeathFactor is too high", async () => {
     const revertMsg = await errors.CM_MAX_LEVERAGE_IS_TOO_HIGH();
     await expect(
-      creditManager.setParams(0, 1000, 1000, 0, 0, 0, 9500)
+      creditManager.setParams(0, 1000, 1000, 0, 0, 9500)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -1250,24 +1198,23 @@ describe("CreditManager", function () {
     );
 
     // We consider edge case where:
-    // tv = bai + (tv-bai)*feeS + iR * feeI
+    // tv = bai + iR * feeI
     // or:
     //
-    //        tv * (1-feeS) + ba * feeI
+    //        tv  + ba * feeI
     // bai = ---------------------------
-    //               1 + feeI - feeS
+    //               1 + feeI
     //
     //                      bai
     // ciClose = ciAtOpen ------
     //                       ba
     // With less than one it should be reverted.
 
-    const feeS = (await creditManager.feeSuccess()).toNumber();
     const feeI = (await creditManager.feeInterest()).toNumber();
 
     const ciAtCloseThrow = ciAtOpen
-      .mul(tv.mul(PERCENTAGE_FACTOR - feeS).add(borrowedAmount.mul(feeI)))
-      .div(PERCENTAGE_FACTOR + feeI - feeS)
+      .mul(tv.mul(PERCENTAGE_FACTOR).add(borrowedAmount.mul(feeI)))
+      .div(PERCENTAGE_FACTOR + feeI)
       .div(borrowedAmount);
 
     const closePath = await ts.getClosePath(user.address, closeSlippage);
@@ -1393,17 +1340,11 @@ describe("CreditManager", function () {
         .div(UniswapModel.FEE_discriminator)
     );
 
-    const feeSuccess = await creditManager.feeSuccess();
     const feeInterest = await creditManager.feeInterest();
 
     const fee = percentMul(
-      totalValue.sub(borrowedAmountWithInterest),
-      feeSuccess.toNumber()
-    ).add(
-      percentMul(
-        borrowedAmountWithInterest.sub(borrowedAmount),
-        feeInterest.toNumber()
-      )
+      borrowedAmountWithInterest.sub(borrowedAmount),
+      feeInterest.toNumber()
     );
 
     const expectedBalanceAfter = totalValue
@@ -1565,7 +1506,7 @@ describe("CreditManager", function () {
   });
 
   it("[CM-49]: setFees updates creditFilter parameters", async () => {
-    await creditManager.setParams(0, 1000, 400, 0, 0, 500, 9500);
+    await creditManager.setParams(0, 1000, 400, 0, 500, 9500);
     expect(
       await creditFilter.liquidationThresholds(underlyingToken.address)
     ).to.be.eq(9000);
@@ -1621,7 +1562,6 @@ describe("CreditManager", function () {
       0,
       CreditManagerTestSuite.amount,
       CreditManagerTestSuite.leverageFactor,
-      100,
       100,
       200,
       9500

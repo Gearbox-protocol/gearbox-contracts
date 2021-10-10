@@ -18,7 +18,6 @@ import {IPoolService} from "../interfaces/IPoolService.sol";
 import {IWETHGateway} from "../interfaces/IWETHGateway.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
-import {CreditAccount} from "./CreditAccount.sol";
 import {AddressProvider} from "../core/AddressProvider.sol";
 import {ACLTrait} from "../core/ACLTrait.sol";
 
@@ -53,9 +52,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     // Mapping between borrowers'/farmers' address and credit account
     mapping(address => address) public override creditAccounts;
 
-    // Address provider
-    AddressProvider public addressProvider;
-
     // Account manager - provides credit accounts to pool
     IAccountFactory internal _accountFactory;
 
@@ -76,8 +72,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
 
     // Default swap contracts - uses for automatic close
     address public override defaultSwapContract;
-
-    uint256 public override feeSuccess;
 
     uint256 public override feeInterest;
 
@@ -115,7 +109,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         address _creditFilterAddress,
         address _defaultSwapContract
     ) ACLTrait(_addressProvider) {
-        addressProvider = AddressProvider(_addressProvider); // T:[CM-1]
+        AddressProvider addressProvider = AddressProvider(_addressProvider); // T:[CM-1]
         poolService = _poolService; // T:[CM-1]
         underlyingToken = IPoolService(_poolService).underlyingToken(); // T:[CM-1]
 
@@ -128,7 +122,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             _minAmount,
             _maxAmount,
             _maxLeverage,
-            Constants.FEE_SUCCESS,
             Constants.FEE_INTEREST,
             Constants.FEE_LIQUIDATION,
             Constants.LIQUIDATION_DISCOUNTED_SUM
@@ -177,8 +170,8 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
 
         // Checks that user "onBehalfOf" has no opened accounts
         require(
-            !hasOpenedCreditAccount(onBehalfOf),
-            Errors.CM_YOU_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT
+            !hasOpenedCreditAccount(onBehalfOf) && onBehalfOf != address(0),
+            Errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT
         ); // T:[CM-3]
 
         // Checks that leverage factor is in limits
@@ -391,6 +384,8 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     ) internal returns (uint256, uint256) {
         bool isLiquidated = operation == Constants.OPERATION_LIQUIDATION;
 
+        require(to != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+
         (
             uint256 borrowedAmount,
             uint256 amountToPool,
@@ -428,11 +423,13 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             ); // T:[CM-14]
 
             // transfer remaining funds to borrower
-            IERC20(underlyingToken).safeTransferFrom(
-                liquidator,
-                borrower,
-                remainingFunds
-            ); //T:[CM-14]
+            if (remainingFunds > 0) {
+                IERC20(underlyingToken).safeTransferFrom(
+                    liquidator,
+                    borrower,
+                    remainingFunds
+                ); //T:[CM-14]
+            }
         }
         // REPAY
         else {
@@ -538,23 +535,18 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
                 ? totalFunds.percentMul(feeLiquidation).add(
                     borrowedAmountWithInterest
                 )
-                : totalFunds
-                .sub(borrowedAmountWithInterest)
-                .percentMul(feeSuccess)
-                .add(borrowedAmountWithInterest)
-                .add(
+                : borrowedAmountWithInterest.add(
                     borrowedAmountWithInterest.sub(borrowedAmount).percentMul(
                         feeInterest
                     )
                 ); // T:[CM-45]
 
-            remainingFunds = totalFunds > amountToPool
-                ? totalFunds.sub(amountToPool).sub(1)
-                : 0; // T:[CM-45]
+            if (totalFunds > amountToPool) {
+                remainingFunds = totalFunds.sub(amountToPool).sub(1); // T:[CM-45]
+            } else {
+                amountToPool = totalFunds; // T:[CM-45]
+            }
 
-            amountToPool = totalFunds >= amountToPool
-                ? amountToPool
-                : totalFunds; // T:[CM-45]
             profit = amountToPool.sub(borrowedAmountWithInterest); // T:[CM-45]
         }
     }
@@ -567,8 +559,8 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         address to,
         bool force
     ) internal returns (uint256 totalValue, uint256 totalWeightedValue) {
-        totalValue = 0;
-        totalWeightedValue = 0;
+        //        totalValue = 0;
+        //        totalWeightedValue = 0;
 
         uint256 tokenMask;
         uint256 enabledTokens = creditFilter.enabledTokens(creditAccount);
@@ -583,17 +575,19 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
                     uint256 tvw
                 ) = creditFilter.getCreditAccountTokenById(creditAccount, i); // T:[CM-14, 17, 22, 23]
                 if (amount > 1) {
-                    _safeTokenTransfer(
-                        creditAccount,
-                        token,
-                        to,
-                        amount.sub(1),
-                        force
-                    ); // T:[CM-14, 17, 22, 23]
-
-                    totalValue += tv;
-                    totalWeightedValue += tvw;
-                } // Michael Egorov gas efficiency trick
+                    if (
+                        _safeTokenTransfer(
+                            creditAccount,
+                            token,
+                            to,
+                            amount.sub(1), // Michael Egorov gas efficiency trick
+                            force
+                        )
+                    ) {
+                        totalValue = totalValue.add(tv); // T:[CM-14, 17, 22, 23]
+                        totalWeightedValue = totalWeightedValue.add(tvw); // T:[CM-14, 17, 22, 23]
+                    }
+                }
             }
         }
     }
@@ -605,18 +599,20 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     /// @param amount Amount to be transferred
     /// @param force If true it will skip reverts of safeTransfer function. Used for force liquidation if there is
     /// a blocked token on creditAccount
+    /// @return true if transfer were successful otherwise false
     function _safeTokenTransfer(
         address creditAccount,
         address token,
         address to,
         uint256 amount,
         bool force
-    ) internal {
+    ) internal returns (bool) {
         if (token != wethAddress) {
             try
                 ICreditAccount(creditAccount).safeTransfer(token, to, amount) // T:[CM-14, 17]
             {} catch {
                 require(force, Errors.CM_TRANSFER_FAILED); // T:[CM-50]
+                return false;
             }
         } else {
             ICreditAccount(creditAccount).safeTransfer(
@@ -626,6 +622,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             ); // T:[CM-22, 23]
             IWETHGateway(wethGateway).unwrapWETH(to, amount); // T:[CM-22, 23]
         }
+        return true;
     }
 
     /// @dev Increases borrowed amount by transferring additional funds from
@@ -646,28 +643,31 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             uint256 cumulativeIndexAtOpen
         ) = getCreditAccountParameters(creditAccount); // T:[CM-30]
 
+        //
+        uint256 newBorrowedAmount = borrowedAmount.add(
+            IPoolService(poolService).calcTimeDiscountedAmount(
+                amount,
+                cumulativeIndexAtOpen
+            )
+        ); // T:[CM-30]
+
         require(
-            borrowedAmount.add(amount).mul(Constants.LEVERAGE_DECIMALS) <
+            newBorrowedAmount.mul(Constants.LEVERAGE_DECIMALS) <
                 maxAmount.mul(maxLeverageFactor),
             Errors.CM_INCORRECT_AMOUNT
         ); // T:[CM-51]
 
-        uint256 timeDiscountedAmount = amount.mul(cumulativeIndexAtOpen).div(
-            IPoolService(poolService).calcLinearCumulative_RAY()
-        ); // T:[CM-30]
-
+        //
         // Increase _totalBorrowed, it used to compute forecasted interest
         IPoolService(poolService).lendCreditAccount(amount, creditAccount); // T:[CM-29]
-
+        //
         // Set parameters for new credit account
-        ICreditAccount(creditAccount).updateBorrowedAmount(
-            borrowedAmount.add(timeDiscountedAmount)
-        ); // T:[CM-30]
+        ICreditAccount(creditAccount).updateBorrowedAmount(newBorrowedAmount); // T:[CM-30]
 
-        require(
-            creditFilter.calcCreditAccountHealthFactor(creditAccount) >=
-                minHealthFactor,
-            Errors.CM_CAN_UPDATE_WITH_SUCH_HEALTH_FACTOR
+        //
+        creditFilter.revertIfCantIncreaseBorrowing(
+            creditAccount,
+            minHealthFactor
         ); // T:[CM-28]
 
         emit IncreaseBorrowedAmount(msg.sender, amount); // T:[CM-29]
@@ -697,7 +697,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     /// @param _minAmount Minimum amount to open account
     /// @param _maxAmount Maximum amount to open account
     /// @param _maxLeverageFactor Maximum leverage factor
-    /// @param _feeSuccess Success fee multiplier (for (totalValue - borrowAmount))
     /// @param _feeInterest Interest fee multiplier
     /// @param _feeLiquidation Liquidation fee multiplier (for totalValue)
     /// @param _liquidationDiscount Liquidation premium multiplier (= PERCENTAGE_FACTOR - premium)
@@ -705,7 +704,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         uint256 _minAmount,
         uint256 _maxAmount,
         uint256 _maxLeverageFactor,
-        uint256 _feeSuccess,
         uint256 _feeInterest,
         uint256 _feeLiquidation,
         uint256 _liquidationDiscount
@@ -713,14 +711,16 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         public
         configuratorOnly // T:[CM-36]
     {
-        require(_minAmount <= _maxAmount, Errors.CM_INCORRECT_LIMITS); // T:[CM-34]
+        require(
+            _minAmount <= _maxAmount && _maxLeverageFactor > 0,
+            Errors.CM_INCORRECT_PARAMS
+        ); // T:[CM-34]
 
         minAmount = _minAmount; // T:[CM-32]
         maxAmount = _maxAmount; // T:[CM-32]
 
         maxLeverageFactor = _maxLeverageFactor;
 
-        feeSuccess = _feeSuccess; // T:[CM-37]
         feeInterest = _feeInterest; // T:[CM-37]
         feeLiquidation = _feeLiquidation; // T:[CM-37]
         liquidationDiscount = _liquidationDiscount; // T:[CM-37]
@@ -739,7 +739,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             minAmount,
             maxAmount,
             maxLeverageFactor,
-            feeSuccess,
             feeInterest,
             feeLiquidation,
             liquidationDiscount
@@ -762,6 +761,8 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             creditFilter.contractToAdapter(targetContract) != address(0),
             Errors.CM_TARGET_CONTRACT_iS_NOT_ALLOWED
         );
+
+        creditFilter.revertIfTokenNotAllowed(token);
         _provideCreditAccountAllowance(creditAccount, targetContract, token);
     }
 
@@ -811,13 +812,18 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         uint256 tokenMask;
         uint256 enabledTokens = creditFilter.enabledTokens(creditAccount); // T: [CM-44]
 
-        for (uint256 i = 1; i < creditFilter.allowedTokensCount(); i++) {
+        require(
+            paths.length == creditFilter.allowedTokensCount(),
+            Errors.CM_INCORRECT_CLOSE_PATH_LENGTH
+        ); // ToDo: check
+
+        for (uint256 i = 1; i < paths.length; i++) {
             tokenMask = 1 << i;
             if (enabledTokens & tokenMask > 0) {
                 (address tokenAddr, uint256 amount, , ) = creditFilter
                 .getCreditAccountTokenById(creditAccount, i); // T: [CM-44]
 
-                if (amount > 0) {
+                if (amount > 1) {
                     _provideCreditAccountAllowance(
                         creditAccount,
                         defaultSwapContract,
@@ -837,7 +843,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
                         block.timestamp
                     ); // T: [CM-44]
 
-                    CreditAccount(creditAccount).execute(
+                    ICreditAccount(creditAccount).execute(
                         defaultSwapContract,
                         data
                     ); // T: [CM-44]
@@ -864,7 +870,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     {
         address creditAccount = getCreditAccountOrRevert(borrower); // T:[CM-9]
         emit ExecuteOrder(borrower, target);
-        return CreditAccount(creditAccount).execute(target, data); // : [CM-47]
+        return ICreditAccount(creditAccount).execute(target, data); // : [CM-47]
     }
 
     //

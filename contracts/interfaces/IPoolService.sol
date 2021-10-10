@@ -10,8 +10,7 @@ import {IAppPoolService} from "./app/IAppPoolService.sol";
 ///   - Managing diesel tokens & diesel rates
 ///   - Lending/repaying funds to credit Manager
 /// More: https://dev.gearbox.fi/developers/pool/abstractpoolservice
-interface IPoolService is IAppPoolService{
-
+interface IPoolService is IAppPoolService {
     // Emits each time when LP adds liquidity to the pool
     event AddLiquidity(
         address indexed sender,
@@ -76,7 +75,7 @@ interface IPoolService is IAppPoolService{
         uint256 amount,
         address onBehalfOf,
         uint256 referralCode
-    ) external  override;
+    ) external override;
 
     /**
      * @dev Removes liquidity from pool
@@ -86,7 +85,10 @@ interface IPoolService is IAppPoolService{
      * @param to Address to transfer liquidity
      */
 
-    function removeLiquidity(uint256 amount, address to) external  override returns(uint256);
+    function removeLiquidity(uint256 amount, address to)
+        external
+        override
+        returns (uint256);
 
     /**
      * @dev Transfers money from the pool to credit account
@@ -117,8 +119,8 @@ interface IPoolService is IAppPoolService{
     function expectedLiquidity() external view returns (uint256);
 
     /**
-   * @return expected liquidity limit
-   */
+     * @return expected liquidity limit
+     */
     function expectedLiquidityLimit() external view returns (uint256);
 
     /**
@@ -174,7 +176,7 @@ interface IPoolService is IAppPoolService{
      */
     function creditManagersCount() external view returns (uint256);
 
-    function creditManagersCanBorrow(address id) external view returns(bool);
+    function creditManagersCanBorrow(address id) external view returns (bool);
 
     function toDiesel(uint256 amount) external view returns (uint256);
 
@@ -186,4 +188,8 @@ interface IPoolService is IAppPoolService{
 
     function _cumulativeIndex_RAY() external view returns (uint256);
 
+    function calcTimeDiscountedAmount(
+        uint256 amount,
+        uint256 cumulativeIndexAtOpen
+    ) external view returns (uint256);
 }

@@ -54,7 +54,7 @@ describe("CreditFilter", function () {
   let errors: Errors;
 
   beforeEach(async () => {
-    ts = new CreditManagerTestSuite({ allowedContracts: [] });
+    ts = new CreditManagerTestSuite();
     await ts.getSuite();
 
     creditManagerDeployer = new CreditManagerDeployer({
@@ -66,7 +66,6 @@ describe("CreditFilter", function () {
       },
       coreDeployer: ts.coreDeployer,
       poolService: ts.poolService,
-      uniswapAddress: (await ts.integrationsDeployer.getUniswapMock()).address,
     });
 
     deployer = ts.deployer;

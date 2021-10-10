@@ -123,10 +123,13 @@ contract DataCompressor {
     function getCreditAccountData(address _creditManager, address borrower)
         public
         view
-        registeredCreditManagerOnly(_creditManager)
         returns (DataTypes.CreditAccountData memory)
     {
-        ICreditManager creditManager = ICreditManager(_creditManager);
+        (
+            ICreditManager creditManager,
+            ICreditFilter creditFilter
+        ) = getCreditContracts(_creditManager);
+
         address creditAccount = creditManager.getCreditAccountOrRevert(
             borrower
         );
@@ -136,10 +139,6 @@ contract DataCompressor {
         result.borrower = borrower;
         result.creditManager = _creditManager;
         result.addr = creditAccount;
-
-        ICreditFilter creditFilter = ICreditFilter(
-            ICreditManager(creditManager).creditFilter()
-        );
 
         result.underlyingToken = creditFilter.underlyingToken();
 
@@ -211,10 +210,10 @@ contract DataCompressor {
         result.liquidationAmount = ICreditManager(creditManager)
         .calcRepayAmount(borrower, true);
 
-        (, , , , uint256 loss) = CreditManager(creditManager)
+        (, , uint256 remainingFunds, , ) = CreditManager(creditManager)
         ._calcClosePayments(creditAccount, data.totalValue, false);
 
-        result.canBeClosed = loss == 0;
+        result.canBeClosed = remainingFunds > 0;
 
         return result;
     }
@@ -248,18 +247,17 @@ contract DataCompressor {
     function getCreditManagerData(address _creditManager, address borrower)
         public
         view
-        registeredCreditManagerOnly(_creditManager)
         returns (DataTypes.CreditManagerData memory)
     {
-        ICreditManager creditManager = ICreditManager(_creditManager);
+        (
+            ICreditManager creditManager,
+            ICreditFilter creditFilter
+        ) = getCreditContracts(_creditManager);
+
         DataTypes.CreditManagerData memory result;
 
         result.addr = _creditManager;
         result.hasAccount = creditManager.hasOpenedCreditAccount(borrower);
-
-        ICreditFilter creditFilter = ICreditFilter(
-            ICreditManager(creditManager).creditFilter()
-        );
 
         result.underlyingToken = creditFilter.underlyingToken();
         result.isWETH = result.underlyingToken == WETHToken;
@@ -394,19 +392,14 @@ contract DataCompressor {
         address _creditManager,
         address borrower,
         uint256[] memory balances
-    )
-        external
-        view
-        registeredCreditManagerOnly(_creditManager)
-        returns (uint256)
-    {
-        ICreditManager creditManager = ICreditManager(_creditManager);
+    ) external view returns (uint256) {
+        (
+            ICreditManager creditManager,
+            ICreditFilter creditFilter
+        ) = getCreditContracts(_creditManager);
+
         address creditAccount = creditManager.getCreditAccountOrRevert(
             borrower
-        );
-
-        ICreditFilter creditFilter = ICreditFilter(
-            creditManager.creditFilter()
         );
 
         IPriceOracle priceOracle = IPriceOracle(creditFilter.priceOracle());
@@ -437,5 +430,35 @@ contract DataCompressor {
             total.div(
                 creditFilter.calcCreditAccountAccruedInterest(creditAccount)
             );
+    }
+
+    function calcExpectedAtOpenHf(
+        address _creditManager,
+        address token,
+        uint256 amount,
+        uint256 borrowedAmount
+    ) external view returns (uint256) {
+        (
+            ICreditManager creditManager,
+            ICreditFilter creditFilter
+        ) = getCreditContracts(_creditManager);
+
+        IPriceOracle priceOracle = IPriceOracle(creditFilter.priceOracle());
+
+        uint256 total = priceOracle
+        .convert(amount, token, creditManager.underlyingToken())
+        .mul(creditFilter.liquidationThresholds(token));
+
+        return total.div(borrowedAmount);
+    }
+
+    function getCreditContracts(address _creditManager)
+        internal
+        view
+        registeredCreditManagerOnly(_creditManager)
+        returns (ICreditManager creditManager, ICreditFilter creditFilter)
+    {
+        creditManager = ICreditManager(_creditManager);
+        creditFilter = ICreditFilter(creditManager.creditFilter());
     }
 }

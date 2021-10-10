@@ -433,9 +433,9 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         creditManagerOnly // T:[CF-20]
     {
         require(
-            ICreditManager(creditManager).feeSuccess() <
-                PercentageMath.PERCENTAGE_FACTOR &&
-                ICreditManager(creditManager).feeInterest() <
+            //            ICreditManager(creditManager).feeSuccess() <
+            //                PercentageMath.PERCENTAGE_FACTOR &&
+            ICreditManager(creditManager).feeInterest() <
                 PercentageMath.PERCENTAGE_FACTOR &&
                 ICreditManager(creditManager).feeLiquidation() <
                 PercentageMath.PERCENTAGE_FACTOR &&
@@ -655,5 +655,26 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             calcThresholdWeightedValue(creditAccount)
                 .mul(PercentageMath.PERCENTAGE_FACTOR)
                 .div(calcCreditAccountAccruedInterest(creditAccount)); // T:[CF-27]
+    }
+
+    function revertIfCantIncreaseBorrowing(
+        address creditAccount,
+        uint256 minHealthFactor
+    ) external view override {
+        //        (
+        //            uint256 borrowedAmount,
+        //            uint256 cumulativeIndexAtOpen
+        //        ) = getCreditAccountParameters(creditAccount); // T:[CM-30]
+        //
+        //
+        //
+        //        uint256 timeDiscountedAmount = amount.mul(cumulativeIndexAtOpen).div(
+        //            IPoolService(poolService).calcLinearCumulative_RAY()
+        //        ); // T:[CM-30]
+
+        require(
+            calcCreditAccountHealthFactor(creditAccount) >= minHealthFactor,
+            Errors.CM_CAN_UPDATE_WITH_SUCH_HEALTH_FACTOR
+        ); // T:[CM-28]}
     }
 }

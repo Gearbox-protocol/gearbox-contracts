@@ -60,7 +60,7 @@ library Errors {
     string public constant CM_NO_OPEN_ACCOUNT = "V1";
     // "CM_: trader has no opened account";
 
-    string public constant CM_YOU_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT = "V2";
+    string public constant CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT = "V2";
     // "CM_: You have already opened credit account";
 
     string public constant CM_INCORRECT_AMOUNT = "V3";
@@ -90,7 +90,7 @@ library Errors {
     string public constant CM_WETH_GATEWAY_ONLY = "VG";
     // "CM_: cant update borrowed amount with this health factor";
 
-    string public constant CM_INCORRECT_LIMITS = "VL";
+    string public constant CM_INCORRECT_PARAMS = "VL";
     // "CM_: incorrect minAmount or maxAmount";
 
     string public constant CM_INCORRECT_FEES = "VF";
@@ -110,6 +110,8 @@ library Errors {
     string public constant CM_TRANSFER_FAILED = "VT";
 
     string public constant CM_INCORRECT_NEW_OWNER = "VO";
+
+    string public constant CM_INCORRECT_CLOSE_PATH_LENGTH = "VP";
 
     // Account Factory
 
@@ -140,6 +142,8 @@ library Errors {
 
     string public constant AM_USER_HAS_NO_BIDS = "F9";
     // "AccountMiner: user has no bid";
+
+    string public constant AF_EXTERNAL_ACCOUNTS_ARE_FORBIDDEN = "FA";
 
     //
     // ADDRESS PROVIDER
@@ -202,6 +206,9 @@ library Errors {
     string public constant CF_SOME_LIQUIDATION_THRESHOLD_MORE_THAN_NEW_ONE =
         "CC";
 
+    string public constant CF_ADAPTER_CAN_BE_USED_ONLY_ONCE = "CO";
+    // "CF: contract <> adapters have one-to-one relationship"
+
     string public constant CF_POOLS_ONLY = "CP";
 
     //
@@ -258,5 +265,13 @@ library Errors {
 
     string public constant LA_UNKNOWN_SWAP_INTERFACE = "I3";
 
-    string public constant LA_UNKNOWN_LP_INTERFACE = "I3";
+    string public constant LA_UNKNOWN_LP_INTERFACE = "I4";
+
+    string public constant LA_INCORRECT_PATH_LENGTH = "I5";
+
+    string public constant LA_NOT_ENOUGH_AMOUNT_MIN = "I6";
+
+
+
+    string public constant LIM_INCORRECT_PARAMETER = "LIM0";
 }

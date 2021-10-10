@@ -170,4 +170,6 @@ interface ICreditFilter {
     function priceOracle() external view returns (address);
 
     function updateUnderlyingTokenLiquidationThreshold() external;
+
+    function revertIfCantIncreaseBorrowing(address creditAccount, uint256 minHealthFactor) external view;
 }

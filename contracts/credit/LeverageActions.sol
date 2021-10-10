@@ -37,6 +37,7 @@ contract LeveragedActions is ReentrancyGuard {
 
     /// @dev The length of the bytes encoded address
     uint256 private constant ADDR_SIZE = 20;
+    uint256 private constant FEE_SIZE = 3;
 
     /// @dev Contracts reggister to check that credit manager is registered in Gearbox
     ContractsRegister public immutable contractsRegister;
@@ -102,6 +103,8 @@ contract LeveragedActions is ReentrancyGuard {
         LongParameters calldata longParams,
         uint256 referralCode
     ) external payable nonReentrant {
+        require(path.length >= 2, Errors.LA_INCORRECT_PATH_LENGTH);
+
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x38ed1739), // "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
             amountIn,
@@ -250,7 +253,7 @@ contract LeveragedActions is ReentrancyGuard {
                     address(this)
                 )
             ) >= amountOutMin,
-            "Not enough amountOutMin"
+            Errors.LA_NOT_ENOUGH_AMOUNT_MIN
         );
 
         // Transfers ownership to msg.sender
@@ -431,7 +434,7 @@ contract LeveragedActions is ReentrancyGuard {
 
         require(
             IERC20(asset).balanceOf(creditAccount) >= longParams.amountOutMin,
-            "Not enough amountOutMin"
+            Errors.LA_NOT_ENOUGH_AMOUNT_MIN
         );
 
         ICreditManager(longParams.creditManager).transferAccountOwnership(
@@ -516,6 +519,11 @@ contract LeveragedActions is ReentrancyGuard {
         pure
         returns (address tokenA, address tokenB)
     {
+        require(
+            path.length >= 2 * ADDR_SIZE + FEE_SIZE,
+            Errors.LA_INCORRECT_PATH_LENGTH
+        );
+
         tokenA = path.toAddress(0);
         tokenB = path.toAddress(path.length - ADDR_SIZE);
     }
