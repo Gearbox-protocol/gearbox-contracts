@@ -137,7 +137,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         nonReentrant
     {
         require(
-            expectedLiquidity() + amount <= expectedLiquidityLimit,
+            expectedLiquidity().add(amount) <= expectedLiquidityLimit,
             Errors.POOL_MORE_THAN_EXPECTED_LIQUIDITY_LIMIT
         ); // T:[PS-31]
 
@@ -458,7 +458,10 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         public
         configuratorOnly // T:[PS-9]
     {
-        require(_interestRateModel != address (0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+        require(
+            _interestRateModel != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         interestRateModel = IInterestRateModel(_interestRateModel); // T:[PS-25]
         _updateBorrowRate(); // T:[PS-26]
         emit NewInterestRateModel(_interestRateModel); // T:[PS-25]
