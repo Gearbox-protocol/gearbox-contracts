@@ -381,7 +381,7 @@ contract GearToken {
             return 0;
         }
 
-        uint32 lower = 0;
+        uint32 lower;
         uint32 upper = nCheckpoints - 1;
         while (upper > lower) {
             uint32 center = upper - (upper - lower) / 2; // ceil, avoiding overflow

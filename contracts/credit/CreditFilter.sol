@@ -310,8 +310,8 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         adapterOnly // T:[CF-20]
     {
         // Convert to WETH is more gas efficient and doesn't make difference for ratio
-        uint256 amountInCollateral = 0;
-        uint256 amountOutCollateral = 0;
+        uint256 amountInCollateral;
+        uint256 amountOutCollateral;
 
         for (uint256 i = 0; i < amountIn.length; i++) {
             amountInCollateral = amountInCollateral.add(
@@ -509,8 +509,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         override
         returns (uint256 total)
     {
-        total = 0; // T:[CF-17]
-
         uint256 tokenMask;
         uint256 eTokens = enabledTokens[creditAccount];
         for (uint256 i = 0; i < allowedTokensCount(); i++) {
@@ -535,7 +533,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         override
         returns (uint256 total)
     {
-        total = 0;
         uint256 tokenMask;
         uint256 eTokens = enabledTokens[creditAccount];
         for (uint256 i = 0; i < allowedTokensCount(); i++) {

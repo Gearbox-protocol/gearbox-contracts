@@ -71,7 +71,7 @@ contract DataCompressor {
         returns (DataTypes.CreditAccountData[] memory)
     {
         // Counts how much opened account a borrower has
-        uint256 count = 0;
+        uint256 count;
         for (
             uint256 i = 0;
             i < contractsRegister.getCreditManagersCount();
