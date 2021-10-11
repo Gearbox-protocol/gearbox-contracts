@@ -97,15 +97,13 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         address _interestRateModelAddress
     ) ACLTrait(_addressProvider) {
         addressProvider = AddressProvider(_addressProvider);
-        interestRateModel = IInterestRateModel(_interestRateModelAddress);
+
         underlyingToken = _underlyingToken;
         dieselToken = _dieselAddress;
         treasuryAddress = addressProvider.getTreasuryContract();
 
         _cumulativeIndex_RAY = WadRayMath.RAY; // T:[PS-5]
-        _updateBorrowRate(); // to set up correct borrow rate at start
-
-        setWithdrawFee(0);
+        updateInterestRateModel(_interestRateModelAddress);
     }
 
     //
@@ -454,12 +452,13 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         emit BorrowForbidden(_creditManager); // T:[PS-13]
     }
 
-    /// @dev Set the new interest rate model for pool
+    /// @dev Sets the new interest rate model for pool
     /// @param _interestRateModel Address of new interest rate model contract
-    function newInterestRateModel(address _interestRateModel)
-        external
+    function updateInterestRateModel(address _interestRateModel)
+        public
         configuratorOnly // T:[PS-9]
     {
+        require(_interestRateModel != address (0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
         interestRateModel = IInterestRateModel(_interestRateModel); // T:[PS-25]
         _updateBorrowRate(); // T:[PS-26]
         emit NewInterestRateModel(_interestRateModel); // T:[PS-25]
@@ -485,6 +484,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
             Errors.POOL_INCORRECT_WITHDRAW_FEE
         ); // T:[PS-32]
         withdrawFee = fee; // T:[PS-33]
+        emit NewWithdrawFee(fee); // T:[PS-33]
     }
 
     /// @dev Returns quantity of connected credit accounts managers

@@ -3,6 +3,7 @@ import { ethers } from "hardhat";
 import { expect } from "../utils/expect";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import {
+  ADDRESS_0x0,
   PERCENTAGE_FACTOR,
   percentMul,
   RAY,
@@ -48,7 +49,7 @@ describe("PoolService", function () {
   let underlyingToken: TokenMock;
   let errors: Errors;
 
-  beforeEach(async function () {
+  beforeEach(async () => {
     ts = new PoolTestSuite();
     await ts.getSuite();
     await ts.setupVanillaPoolService(true);
@@ -68,12 +69,12 @@ describe("PoolService", function () {
     errors = ts.errors;
   });
 
-  it("[PS-1]: getDieselRate_RAY=RAY, withdrawFee=0, withdrawMultiplier=100% at start", async function () {
+  it("[PS-1]: getDieselRate_RAY=RAY, withdrawFee=0, withdrawMultiplier=100% at start", async () => {
     expect(await poolService.getDieselRate_RAY()).to.be.eq(RAY);
     expect(await poolService.withdrawFee()).to.be.eq(0);
   });
 
-  it("[PS-2]: addLiquidity correctly adds liquidity", async function () {
+  it("[PS-2]: addLiquidity correctly adds liquidity", async () => {
     await expect(
       poolService
         .connect(liquidityProvider)
@@ -95,7 +96,7 @@ describe("PoolService", function () {
     expect(await poolService.availableLiquidity()).to.be.eq(addLiquidity);
   });
 
-  it("[PS-3]: removeLiquidity correctly removes liquidity", async function () {
+  it("[PS-3]: removeLiquidity correctly removes liquidity", async () => {
     // Adds liquidity to pool
     await poolService
       .connect(liquidityProvider)
@@ -131,7 +132,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-4]: addLiquidity, removeLiquidity, lendCreditAccount reverts if contract is paused", async function () {
+  it("[PS-4]: addLiquidity, removeLiquidity, lendCreditAccount reverts if contract is paused", async () => {
     const acl = await coreDeployer.getACL();
     await acl.addPausableAdmin(deployer.address);
     await acl.addUnpausableAdmin(deployer.address);
@@ -166,11 +167,11 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-5]: constructor set correct cumulative index to 1 at start", async function () {
+  it("[PS-5]: constructor set correct cumulative index to 1 at start", async () => {
     expect(await poolService.getCumulativeIndex_RAY()).to.be.eq(RAY);
   });
 
-  it("[PS-6]: getDieselRate_RAY correctly computes rate", async function () {
+  it("[PS-6]: getDieselRate_RAY correctly computes rate", async () => {
     await poolService
       .connect(liquidityProvider)
       .addLiquidity(addLiquidity, liquidityProvider.address, referral);
@@ -182,7 +183,7 @@ describe("PoolService", function () {
     expect(await poolService.getDieselRate_RAY()).to.be.eq(RAY.mul(2));
   });
 
-  it("[PS-7]: addLiquidity correctly adds liquidity with DieselRate != 1", async function () {
+  it("[PS-7]: addLiquidity correctly adds liquidity with DieselRate != 1", async () => {
     await poolService
       .connect(liquidityProvider)
       .addLiquidity(addLiquidity, liquidityProvider.address, referral);
@@ -223,7 +224,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-8]: removeLiquidity correctly removes liquidity if diesel rate != 1", async function () {
+  it("[PS-8]: removeLiquidity correctly removes liquidity if diesel rate != 1", async () => {
     // Adds liquiditity to pool
     await poolService
       .connect(liquidityProvider)
@@ -262,7 +263,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-9]: connectCreditManager, forbidCreditManagerToBorrow, newInterestRateModel, setExpecetedLiquidityLimit reverts if called with non-configurator", async function () {
+  it("[PS-9]: connectCreditManager, forbidCreditManagerToBorrow, newInterestRateModel, setExpecetedLiquidityLimit reverts if called with non-configurator", async () => {
     const revertMsg = await errors.ACL_CALLER_NOT_CONFIGURATOR();
 
     await expect(
@@ -276,7 +277,9 @@ describe("PoolService", function () {
     ).to.revertedWith(revertMsg);
 
     await expect(
-      poolService.connect(liquidityProvider).newInterestRateModel(DUMB_ADDRESS)
+      poolService
+        .connect(liquidityProvider)
+        .updateInterestRateModel(DUMB_ADDRESS)
     ).to.revertedWith(revertMsg);
 
     await expect(
@@ -288,7 +291,7 @@ describe("PoolService", function () {
     ).to.revertedWith(revertMsg);
   });
 
-  it("[PS-10]: connectCreditManager reverts if another pool is setup in CreditManager", async function () {
+  it("[PS-10]: connectCreditManager reverts if another pool is setup in CreditManager", async () => {
     const revertMsg = await errors.POOL_INCOMPATIBLE_CREDIT_ACCOUNT_MANAGER();
 
     const vts = new CreditManagerTestSuite();
@@ -300,7 +303,7 @@ describe("PoolService", function () {
     ).to.revertedWith(revertMsg);
   });
 
-  it("[PS-11]: connectCreditManager adds CreditManager correctly and emits event", async function () {
+  it("[PS-11]: connectCreditManager adds CreditManager correctly and emits event", async () => {
     const vts = new CreditManagerTestSuite();
     await vts.getSuite({ poolService });
 
@@ -328,7 +331,7 @@ describe("PoolService", function () {
     expect(eventsAfter.length).to.be.eq(1);
   });
 
-  it("[PS-12]: lendCreditAccount, repayCreditAccount reverts if called non-CreditManager", async function () {
+  it("[PS-12]: lendCreditAccount, repayCreditAccount reverts if called non-CreditManager", async () => {
     const revertMsg = await errors.POOL_CREDIT_MANAGERS_ONLY();
     await expect(
       poolService.lendCreditAccount(0, DUMB_ADDRESS)
@@ -338,7 +341,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-13]: lendCreditAccount reverts of creditManagers was disallowed by forbidCreditManagerToBorrow", async function () {
+  it("[PS-13]: lendCreditAccount reverts of creditManagers was disallowed by forbidCreditManagerToBorrow", async () => {
     const revertMsg = await errors.POOL_CREDIT_MANAGERS_ONLY();
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
@@ -371,7 +374,7 @@ describe("PoolService", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[PS-14]: lendCreditAccount lends transfers tokens correctly", async function () {
+  it("[PS-14]: lendCreditAccount lends transfers tokens correctly", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -399,7 +402,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-15]: lendCreditAccount emits Borrow event", async function () {
+  it("[PS-15]: lendCreditAccount emits Borrow event", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -425,7 +428,7 @@ describe("PoolService", function () {
       );
   });
 
-  it("[PS-16]: lendCreditAccount correctly updates parameters", async function () {
+  it("[PS-16]: lendCreditAccount correctly updates parameters", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -447,7 +450,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-17]: lendCreditAccount correctly updates borrow rate", async function () {
+  it("[PS-17]: lendCreditAccount correctly updates borrow rate", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -481,7 +484,7 @@ describe("PoolService", function () {
     expect(await poolService.borrowAPY_RAY()).to.be.eq(borrowRateModel);
   });
 
-  it("[PS-18]: repay correctly emits Repay event", async function () {
+  it("[PS-18]: repay correctly emits Repay event", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -513,7 +516,7 @@ describe("PoolService", function () {
     }
   });
 
-  it("[PS-19]: repay correctly update pool params if loss accrued: case treasury < loss", async function () {
+  it("[PS-19]: repay correctly update pool params if loss accrued: case treasury < loss", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -604,7 +607,7 @@ describe("PoolService", function () {
     expect(await poolService.borrowAPY_RAY()).to.be.eq(borrowRateModel);
   });
 
-  it("[PS-20]: repay correctly update  pool params if loss accrued: case treasury > loss", async function () {
+  it("[PS-20]: repay correctly update  pool params if loss accrued: case treasury > loss", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -679,7 +682,7 @@ describe("PoolService", function () {
     expect(await poolService.borrowAPY_RAY()).to.be.eq(borrowRateModel);
   });
 
-  it("[PS-21]: repay correctly update  pool params if profit accrued", async function () {
+  it("[PS-21]: repay correctly update  pool params if profit accrued", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -751,7 +754,7 @@ describe("PoolService", function () {
     expect(await poolService.borrowAPY_RAY()).to.be.eq(borrowRateModel);
   });
 
-  it("[PS-22]: repay with profit doesnt change diesel rate", async function () {
+  it("[PS-22]: repay with profit doesnt change diesel rate", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -805,7 +808,7 @@ describe("PoolService", function () {
     expect(dieselRateBefore.div(1e6)).to.be.eq(dieselRateAfter.div(1e6));
   });
 
-  it("[PS-22]: repay with treasury > loss doesnt change diesel rate", async function () {
+  it("[PS-22]: repay with treasury > loss doesnt change diesel rate", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -859,7 +862,7 @@ describe("PoolService", function () {
     expect(dieselRateBefore.div(1e8)).to.be.eq(dieselRateAfter.div(1e8));
   });
 
-  it("[PS-23]: repay with treasury < loss emit UncoveredEvent", async function () {
+  it("[PS-23]: repay with treasury < loss emit UncoveredEvent", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -890,7 +893,7 @@ describe("PoolService", function () {
       .withArgs(creditManagerMock.address, loss);
   });
 
-  it("[PS-24]: fromDiesel / toDiesel works correct", async function () {
+  it("[PS-24]: fromDiesel / toDiesel works correct", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -918,7 +921,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-25]: newInterestRateModel changes interest rate model & emit event", async function () {
+  it("[PS-25]: newInterestRateModel changes interest rate model & emit event", async () => {
     const IRMDeployer = new LinearInterestRateModelDeployer({
       Rbase: 10,
       Rslope1: 20,
@@ -928,14 +931,14 @@ describe("PoolService", function () {
 
     const iModel = await IRMDeployer.getLinearInterestRateModel();
 
-    await expect(poolService.newInterestRateModel(iModel.address))
+    await expect(poolService.updateInterestRateModel(iModel.address))
       .to.emit(poolService, "NewInterestRateModel")
       .withArgs(iModel.address);
 
     expect(await poolService.interestRateModel()).to.be.eq(iModel.address);
   });
 
-  it("[PS-26]: newInterestRateModel updates borrow rate correctly", async function () {
+  it("[PS-26]: newInterestRateModel updates borrow rate correctly", async () => {
     const IRMDeployer = new LinearInterestRateModelDeployer({
       Rbase: 10,
       Rslope1: 20,
@@ -945,7 +948,7 @@ describe("PoolService", function () {
 
     const iModel = await IRMDeployer.getLinearInterestRateModel();
 
-    const receipt = await poolService.newInterestRateModel(iModel.address);
+    const receipt = await poolService.updateInterestRateModel(iModel.address);
 
     const expectedLiqReal = await poolService.expectedLiquidity({
       blockTag: receipt.blockNumber,
@@ -959,7 +962,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-27]: borrowRate updates parameters correctly", async function () {
+  it("[PS-27]: borrowRate updates parameters correctly", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -1005,7 +1008,7 @@ describe("PoolService", function () {
     expect(await poolService.borrowAPY_RAY()).to.be.eq(iModelRate);
   });
 
-  it("[PS-28]: calcLinearCumulative_RAY computes correctly", async function () {
+  it("[PS-28]: calcLinearCumulative_RAY computes correctly", async () => {
     const timestampLU = await poolService.getTimestampLU();
     await ts.oneYearAhead();
 
@@ -1023,7 +1026,7 @@ describe("PoolService", function () {
     expect(LC_RAY).to.be.eq(LC_Model);
   });
 
-  it("[PS-29]: expectedLiquidity() computes correctly", async function () {
+  it("[PS-29]: expectedLiquidity() computes correctly", async () => {
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address
@@ -1063,7 +1066,7 @@ describe("PoolService", function () {
     );
   });
 
-  it("[PS-30]: setExpectedLiquidityLimit() set limit & emits event", async function () {
+  it("[PS-30]: setExpectedLiquidityLimit() set limit & emits event", async () => {
     const newLimit = 98834;
     await expect(poolService.setExpectedLiquidityLimit(newLimit))
       .to.emit(poolService, "NewExpectedLiquidityLimit")
@@ -1072,7 +1075,7 @@ describe("PoolService", function () {
     expect(await poolService.expectedLiquidityLimit()).to.be.eq(newLimit);
   });
 
-  it("[PS-31]: addLiquidity reverts if expectLiquidity > limit", async function () {
+  it("[PS-31]: addLiquidity reverts if expectLiquidity > limit", async () => {
     const revertedMsg = await errors.POOL_MORE_THAN_EXPECTED_LIQUIDITY_LIMIT();
 
     await poolService.setExpectedLiquidityLimit(addLiquidity);
@@ -1085,18 +1088,20 @@ describe("PoolService", function () {
     ).to.revertedWith(revertedMsg);
   });
 
-  it("[PS-32]: setWithdrawFee reverts in fee > 1%", async function () {
+  it("[PS-32]: setWithdrawFee reverts in fee > 1%", async () => {
     const revertMsg = await errors.POOL_INCORRECT_WITHDRAW_FEE();
     await expect(poolService.setWithdrawFee(101)).to.be.revertedWith(revertMsg);
   });
 
-  it("[PS-33]: setWithdrawFee sets fees correct", async function () {
+  it("[PS-33]: setWithdrawFee sets fees correct", async () => {
     const fee = 10;
-    await poolService.setWithdrawFee(fee);
+    await expect(poolService.setWithdrawFee(fee))
+      .to.emit(poolService, "NewWithdrawFee")
+      .withArgs(fee);
     expect(await poolService.withdrawFee()).to.be.eq(fee);
   });
 
-  it("[PS-34]: remove liquidity correctly takes withdraw fee", async function () {
+  it("[PS-34]: remove liquidity correctly takes withdraw fee", async () => {
     await poolService
       .connect(liquidityProvider)
       .addLiquidity(addLiquidity, friend.address, referral);
@@ -1134,7 +1139,7 @@ describe("PoolService", function () {
     ).to.be.eq(treasureBalanceExpected);
   });
 
-  it("[PS-35]: connectCreditManager reverts if creditManager is already connected", async function () {
+  it("[PS-35]: connectCreditManager reverts if creditManager is already connected", async () => {
     const revertMsg = await errors.POOL_CANT_ADD_CREDIT_MANAGER_TWICE();
     const vts = new CreditManagerTestSuite();
     await vts.getSuite({ poolService });
@@ -1144,6 +1149,13 @@ describe("PoolService", function () {
     await vts.setupCreditManager();
     await expect(
       poolService.connectCreditManager(vts.creditManager.address)
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[PS-35]: updateInterestModel reverts for zero address", async () => {
+    const revertMsg = await errors.ZERO_ADDRESS_IS_NOT_ALLOWED();
+    await expect(
+      poolService.updateInterestRateModel(ADDRESS_0x0)
     ).to.be.revertedWith(revertMsg);
   });
 });
