@@ -54,7 +54,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     // Credit accounts list
     EnumerableSet.AddressSet private creditAccountsSet;
 
-    // Credit accounts list
+    // List of approvals which is needed during account mining campaign
     DataTypes.MiningApproval[] public miningApprovals;
 
     // Contracts register
