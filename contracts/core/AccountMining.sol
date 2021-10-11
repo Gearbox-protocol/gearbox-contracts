@@ -61,7 +61,8 @@ contract AccountMining is IMerkleDistributor {
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, salt));
         require(
-            MerkleProof.verify(merkleProof, merkleRoot, node),
+            merkleProof.length > 0 &&
+                MerkleProof.verify(merkleProof, merkleRoot, node),
             "MerkleDistributor: Invalid proof."
         );
 

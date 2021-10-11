@@ -104,4 +104,14 @@ describe("AccountMining", function () {
         .claim(claim.index, claim.salt, claim.proof)
     ).to.be.revertedWith(revertMsg);
   });
+
+  it("[AM-4]: it reverts if merkeProof lenght is zero", async () => {
+    const revertMsg = "MerkleDistributor: Invalid proof.";
+
+    const claim = merkle.claims[user.address];
+
+    await expect(
+      accountMining.connect(deployer).claim(claim.index, claim.salt, [])
+    ).to.be.revertedWith(revertMsg);
+  });
 });
