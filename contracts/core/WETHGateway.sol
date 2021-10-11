@@ -189,7 +189,7 @@ contract WETHGateway is IWETHGateway {
         .repayCreditAccountETH(msg.sender, to); // T: [WG-11, 13]
 
         if (amount > repayAmount) {
-            IWETH(wethAddress).withdraw(amount - repayAmount));
+            IWETH(wethAddress).withdraw(amount - repayAmount);
             msg.sender.sendValue(amount.sub(repayAmount)); // T: [WG-12]
         }
     }
