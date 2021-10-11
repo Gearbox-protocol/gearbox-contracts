@@ -433,8 +433,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         creditManagerOnly // T:[CF-20]
     {
         require(
-            //            ICreditManager(creditManager).feeSuccess() <
-            //                PercentageMath.PERCENTAGE_FACTOR &&
             ICreditManager(creditManager).feeInterest() <
                 PercentageMath.PERCENTAGE_FACTOR &&
                 ICreditManager(creditManager).feeLiquidation() <

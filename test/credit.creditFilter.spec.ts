@@ -102,8 +102,7 @@ describe("CreditFilter", function () {
   const setupCreditAccount = async (): Promise<CreditAccount> => {
     const creditAccount = await ts.testDeployer.getCreditAccount();
     await creditAccount.initialize();
-    await creditAccount.connectTo(deployer.address);
-    await creditAccount.setGenericParameters(borrowedAmount, RAY);
+    await creditAccount.connectTo(deployer.address, borrowedAmount, RAY);
     await underlyingToken.transfer(
       creditAccount.address,
       amount.add(borrowedAmount)
@@ -842,8 +841,7 @@ describe("CreditFilter", function () {
 
     const creditAccount = await ts.testDeployer.getCreditAccount();
     await creditAccount.initialize();
-    await creditAccount.connectTo(deployer.address);
-    await creditAccount.setGenericParameters(borrowedAmount, ciAtOpen);
+    await creditAccount.connectTo(deployer.address, borrowedAmount, ciAtOpen);
 
     expect(
       await creditFilter.calcCreditAccountAccruedInterest(creditAccount.address)
@@ -864,8 +862,7 @@ describe("CreditFilter", function () {
 
     const creditAccount = await ts.testDeployer.getCreditAccount();
     await creditAccount.initialize();
-    await creditAccount.connectTo(deployer.address);
-    await creditAccount.setGenericParameters(borrowedAmount, ciAtOpen);
+    await creditAccount.connectTo(deployer.address, borrowedAmount, ciAtOpen);
     await underlyingToken.transfer(
       creditAccount.address,
       amount.add(borrowedAmount)

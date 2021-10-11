@@ -38,7 +38,7 @@ import {
   YEARN_USDC_KOVAN_MOCK
 } from "@diesellabs/gearbox-sdk";
 
-describe("UniswapV2 adapter", function () {
+describe("Liquidator test", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);
@@ -184,7 +184,7 @@ describe("UniswapV2 adapter", function () {
     const r1 = await creditManager.openCreditAccount(
       accountAmount,
       user.address,
-      leverageFactor,
+      leverageFactor,  // 150, x400 = 150 + 150x4.00=750 as result
       referralCode
     );
     await r1.wait();

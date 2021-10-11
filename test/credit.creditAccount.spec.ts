@@ -36,15 +36,12 @@ describe("CreditAccount", function () {
     const revertMsg = await errors.CA_FACTORY_ONLY();
 
     await expect(
-      creditAccount.connect(user).connectTo(DUMB_ADDRESS)
+      creditAccount.connect(user).connectTo(DUMB_ADDRESS, 1, 1)
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CA-2]: setGenericParameters, updateBorrowedAmount, approveTokenForContract, transfer reverts if call non credit Manager", async function () {
+  it("[CA-2]:  updateBorrowedAmount, approveTokenForContract, transfer reverts if call non credit Manager", async function () {
     const revertMsg = await errors.CA_CREDIT_MANAGER_ONLY();
-    await expect(
-      creditAccount.connect(user).setGenericParameters(100, 100)
-    ).to.be.revertedWith(revertMsg);
 
     await expect(
       creditAccount.connect(user).updateBorrowedAmount(12)
@@ -59,22 +56,20 @@ describe("CreditAccount", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CA-3]: setGenericParameters set parameters correctly", async function () {
-    await creditAccount.connectTo(deployer.address);
-    await creditAccount.setGenericParameters(100, 200);
+  it("[CA-3]: connectTo set parameters correctly", async function () {
+    await creditAccount.connectTo(deployer.address, 100, 200);
     expect(await creditAccount.borrowedAmount()).to.be.eq(100);
     expect(await creditAccount.cumulativeIndexAtOpen()).to.be.eq(200);
   });
 
   it("[CA-4]: updateBorrowAmount updates correctly", async function () {
-    await creditAccount.connectTo(deployer.address);
-    await creditAccount.setGenericParameters(100, 200);
+    await creditAccount.connectTo(deployer.address, 100, 200);
     await creditAccount.updateBorrowedAmount(454);
     expect(await creditAccount.borrowedAmount()).to.be.eq(454);
   });
 
   it("[CA-5]: approveTokenForContract sets MAX allowance for provided token", async function () {
-    await creditAccount.connectTo(deployer.address);
+    await creditAccount.connectTo(deployer.address, 1, 1);
     const tokenMock = await testDeployer.getTokenMock("TEST", "TEST");
 
     await creditAccount.approveToken(tokenMock.address, DUMB_ADDRESS);
@@ -84,7 +79,7 @@ describe("CreditAccount", function () {
   });
 
   it("[CA-6]: transfer transfers tokens correctly", async function () {
-    await creditAccount.connectTo(deployer.address);
+    await creditAccount.connectTo(deployer.address, 1, 1);
 
     const amountTransfer = 1000;
     const tokenMock = await testDeployer.getTokenMock("TEST", "TEST");
@@ -109,10 +104,12 @@ describe("CreditAccount", function () {
     );
   });
 
-  it("[CA-7]: initalize() sets creditManager & since parameters correctly", async function () {
-    const receipt = await creditAccount.connectTo(user.address);
+  it("[CA-7]: connectTo() sets creditManager & since parameters correctly", async function () {
+    const receipt = await creditAccount.connectTo(user.address, 101, 202);
 
     expect(await creditAccount.since()).to.be.eq(receipt.blockNumber);
+    expect(await creditAccount.borrowedAmount()).to.be.eq(101);
+    expect(await creditAccount.cumulativeIndexAtOpen()).to.be.eq(202);
     expect(await creditAccount.creditManager()).to.be.eq(user.address);
   });
 });

@@ -164,8 +164,11 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     {
         // Checks that amount is in limits
         require(
-            amount >= minAmount && amount <= maxAmount,
-            Errors.CM_INCORRECT_AMOUNT
+            amount >= minAmount &&
+                amount <= maxAmount &&
+                leverageFactor > 0 &&
+                leverageFactor <= maxLeverageFactor,
+            Errors.CM_INCORRECT_PARAMS
         ); // T:[CM-2]
 
         // Checks that user "onBehalfOf" has no opened accounts
@@ -174,19 +177,14 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             Errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT
         ); // T:[CM-3]
 
-        // Checks that leverage factor is in limits
-        require(
-            leverageFactor > 0 && leverageFactor <= maxLeverageFactor,
-            Errors.CM_INCORRECT_LEVERAGE_FACTOR
-        ); // T:[CM-4]
-
         // borrowedAmount = amount * leverageFactor
         uint256 borrowedAmount = amount.mul(leverageFactor).div(
             Constants.LEVERAGE_DECIMALS
         ); // T:[CM-7]
 
         // Get Reusable Credit account creditAccount
-        address creditAccount = _accountFactory.takeCreditAccount(); // T:[CM-5]
+        address creditAccount = _accountFactory.takeCreditAccount(borrowedAmount,
+            IPoolService(poolService).calcLinearCumulative_RAY()); // T:[CM-5]
 
         // Initializes enabled tokens for the account. Enabled tokens is a bit mask which
         // holds information which tokens were used by user
@@ -205,11 +203,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             amount
         ); // T:[CM-6]
 
-        // Set parameters for new credit account
-        ICreditAccount(creditAccount).setGenericParameters(
-            borrowedAmount,
-            IPoolService(poolService).calcLinearCumulative_RAY()
-        ); // T:[CM-7]
+//        // Set parameters for new credit account
+//        ICreditAccount(creditAccount).setGenericParameters(
+//
+//        ); // T:[CM-7]
 
         // link credit account address with borrower address
         creditAccounts[onBehalfOf] = creditAccount; // T:[CM-5]
@@ -762,7 +759,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             Errors.CM_TARGET_CONTRACT_iS_NOT_ALLOWED
         );
 
-        creditFilter.revertIfTokenNotAllowed(token);
+        creditFilter.revertIfTokenNotAllowed(token); // ToDo: add test
         _provideCreditAccountAllowance(creditAccount, targetContract, token);
     }
 

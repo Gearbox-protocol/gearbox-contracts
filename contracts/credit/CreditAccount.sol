@@ -55,25 +55,16 @@ contract CreditAccount is ICreditAccount, Initializable {
 
     /// @dev Connects credit account to credit account address. Restricted to account factory (owner) only
     /// @param _creditManager Credit manager address
-    function connectTo(address _creditManager) external override {
-        require(msg.sender == factory, Errors.CA_FACTORY_ONLY);
-        creditManager = _creditManager; // T:[CA-7]
-        since = block.number; // T:[CA-7]
-    }
-
-    /// @dev Sets general credit account parameters. Restricted for current credit manager only
-    /// @param _borrowedAmount Amount which pool lent to credit account
-    /// @param _cumulativeIndexAtOpen Cumulative index at open. Uses for interest calculation
-    function setGenericParameters(
+    function connectTo(
+        address _creditManager,
         uint256 _borrowedAmount,
         uint256 _cumulativeIndexAtOpen
-    )
-        external
-        override
-        creditManagerOnly // T:[CA-2]
-    {
-        borrowedAmount = _borrowedAmount; // T:[CA-3]
-        cumulativeIndexAtOpen = _cumulativeIndexAtOpen; // T:[CA-3]
+    ) external override {
+        require(msg.sender == factory, Errors.CA_FACTORY_ONLY);
+        creditManager = _creditManager; // T:[CA-7]
+        borrowedAmount = _borrowedAmount; // T:[CA-3,7]
+        cumulativeIndexAtOpen = _cumulativeIndexAtOpen; //  T:[CA-3,7]
+        since = block.number; // T:[CA-7]
     }
 
     /// @dev Updates borrowed amount. Restricted for current credit manager only

@@ -139,7 +139,10 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
      *
      * @return Address of credit account
      */
-    function takeCreditAccount()
+    function takeCreditAccount(
+        uint256 _borrowedAmount,
+        uint256 _cumulativeIndexAtOpen
+    )
         external
         override
         creditManagerOnly // T:[AF-12]
@@ -153,7 +156,11 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         _nextCreditAccount[result] = address(0); // T:[AF-2]
 
         // Initialize creditManager
-        ICreditAccount(result).connectTo(msg.sender); // T:[AF-11]
+        ICreditAccount(result).connectTo(
+            msg.sender,
+            _borrowedAmount,
+            _cumulativeIndexAtOpen
+        ); // T:[AF-11, 14]
 
         emit InitializeCreditAccount(result, msg.sender); // T:[AF-5]
         return result; // T:[AF-14]
@@ -192,8 +199,10 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         override
         creditManagerOnly // T:[AF-12]
     {
-
-        require(creditAccountsSet.contains(usedAccount), Errors.AF_EXTERNAL_ACCOUNTS_ARE_FORBIDDEN);
+        require(
+            creditAccountsSet.contains(usedAccount),
+            Errors.AF_EXTERNAL_ACCOUNTS_ARE_FORBIDDEN
+        );
         require(
             ICreditAccount(usedAccount).since() != block.number,
             Errors.AF_CANT_CLOSE_CREDIT_ACCOUNT_IN_THE_SAME_BLOCK
@@ -279,7 +288,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
             _nextCreditAccount[prev] = _nextCreditAccount[creditAccount]; // T: [AF-16]
             _nextCreditAccount[creditAccount] = address(0); // T: [AF-16]
         }
-        ICreditAccount(creditAccount).connectTo(to); // T: [AF-16, 21]
+        ICreditAccount(creditAccount).connectTo(to, 0, 0); // T: [AF-16, 21]
         creditAccountsSet.remove(creditAccount);
         emit TakeForever(creditAccount, to); // T: [AF-16, 21]
     }
@@ -295,8 +304,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     function mineCreditAccount() external nonReentrant {
         require(!isMiningFinished, Errors.AF_MINING_IS_FINISHED); // T:[AF-17]
         addCreditAccount(); // T:[AF-18]
-        ICreditAccount(tail).connectTo(address(this)); // T:[AF-18]
-        ICreditAccount(tail).setGenericParameters(1, 1); // T:[AF-18]
+        ICreditAccount(tail).connectTo(address(this), 1, 1); // T:[AF-18]
         for (uint256 i = 0; i < miningApprovals.length; i++) {
             ICreditAccount(tail).approveToken(
                 miningApprovals[i].token,

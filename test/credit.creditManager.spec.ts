@@ -181,7 +181,7 @@ describe("CreditManager", function () {
   });
 
   it("[CM-2]: openCreditAccount reverts if amount < minAmount or amount > maxAmount", async () => {
-    const revertMsg = await errors.CM_INCORRECT_AMOUNT();
+    const revertMsg = await errors.CM_INCORRECT_PARAMS();
     // Adding liquidity
     const minAmount = await creditManager.minAmount();
     // Open trader account
@@ -239,7 +239,7 @@ describe("CreditManager", function () {
   });
 
   it("[CM-4]: openCreditAccount reverts if leverage > maxLeverage or leverage = 0", async () => {
-    const revertMsg = await errors.CM_INCORRECT_LEVERAGE_FACTOR();
+    const revertMsg = await errors.CM_INCORRECT_PARAMS();
 
     // Open trader account
     await expect(
