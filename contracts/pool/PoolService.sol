@@ -94,7 +94,8 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         address _addressProvider,
         address _underlyingToken,
         address _dieselAddress,
-        address _interestRateModelAddress
+        address _interestRateModelAddress,
+        uint256 _expectedLiquidityLimit
     ) ACLTrait(_addressProvider) {
         addressProvider = AddressProvider(_addressProvider);
 
@@ -104,6 +105,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
 
         _cumulativeIndex_RAY = WadRayMath.RAY; // T:[PS-5]
         updateInterestRateModel(_interestRateModelAddress);
+        expectedLiquidityLimit = _expectedLiquidityLimit;
     }
 
     //

@@ -4,6 +4,7 @@ import { expect } from "../utils/expect";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import {
   ADDRESS_0x0,
+  MAX_INT,
   PERCENTAGE_FACTOR,
   percentMul,
   RAY,
@@ -69,9 +70,10 @@ describe("PoolService", function () {
     errors = ts.errors;
   });
 
-  it("[PS-1]: getDieselRate_RAY=RAY, withdrawFee=0, withdrawMultiplier=100% at start", async () => {
+  it("[PS-1]: getDieselRate_RAY=RAY, withdrawFee=0 and expectedLiquidityLimit as expected at start", async () => {
     expect(await poolService.getDieselRate_RAY()).to.be.eq(RAY);
     expect(await poolService.withdrawFee()).to.be.eq(0);
+    expect(await poolService.expectedLiquidityLimit()).to.be.eq(MAX_INT);
   });
 
   it("[PS-2]: addLiquidity correctly adds liquidity", async () => {
