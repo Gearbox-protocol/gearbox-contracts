@@ -181,7 +181,6 @@ contract WETHGateway is IWETHGateway {
         uint256 amount = msg.value; // T: [WG-11]
 
         IWETH(wethAddress).deposit{value: amount}(); // T: [WG-11]
-//        address pool = ICreditManager(creditManager).poolService(); // T: [WG-11]
         _checkAllowance(creditManager, amount); // T: [WG-11]
 
         // This function is protected from reentrant attack
@@ -191,6 +190,8 @@ contract WETHGateway is IWETHGateway {
         if (amount > repayAmount) {
             IWETH(wethAddress).withdraw(amount - repayAmount);
             msg.sender.sendValue(amount.sub(repayAmount)); // T: [WG-12]
+        } else {
+            require(amount == repayAmount, Errors.WG_NOT_ENOUGH_FUNDS);
         }
     }
 
