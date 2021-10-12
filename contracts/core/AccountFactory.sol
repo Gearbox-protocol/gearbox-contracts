@@ -90,7 +90,8 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
             AddressProvider(addressProvider).getContractsRegister()
         ); // T:[AF-1]
 
-        masterCreditAccount = address(new CreditAccount());
+        masterCreditAccount = address(new CreditAccount());  // T:[AF-1]
+        CreditAccount(masterCreditAccount).initialize();  // T:[AF-1]
 
         addCreditAccount(); // T:[AF-1]
         head = tail; // T:[AF-1]

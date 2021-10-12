@@ -51,9 +51,7 @@ describe("AccountFactory", function () {
   it("[AF-1]: constructor correctly creates a genesis credit account", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const creditAccount = await accountFactory.head();
-    expect(await accountFactory.getNext(creditAccount)).to.be.eq(
-      "0x0000000000000000000000000000000000000000"
-    );
+    expect(await accountFactory.getNext(creditAccount)).to.be.eq(ADDRESS_0x0);
     expect(await accountFactory.tail(), "tail").to.be.eq(creditAccount);
     expect(
       await accountFactory.countCreditAccountsInStock(),
@@ -67,11 +65,18 @@ describe("AccountFactory", function () {
       await accountFactory._contractsRegister(),
       "contracts register"
     ).to.be.eq((await coreDeployer.getContractsRegister()).address);
+
+    const masterAccount = CreditAccount__factory.connect(
+      await accountFactory.masterCreditAccount(),
+      deployer
+    );
+    expect(await masterAccount.factory()).to.be.eq(accountFactory.address);
+    expect(await accountFactory.getNext(ADDRESS_0x0)).to.be.eq(ADDRESS_0x0);
   });
 
   it("[AF-2]: takeCreditAccount correctly add credit account", async () => {
     await contractsRegister.addCreditManager(deployer.address);
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     const initHead = await accountFactory.head();
     const next = await accountFactory.getNext(initHead);
     const next2 = await accountFactory.getNext(next);
@@ -81,11 +86,11 @@ describe("AccountFactory", function () {
 
   it("[AF-3]: takeCreditAccount keeps at least 1 VA in stock", async () => {
     await contractsRegister.addCreditManager(deployer.address);
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
   });
 
@@ -93,7 +98,7 @@ describe("AccountFactory", function () {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
 
-    await expect(accountFactory.takeCreditAccount(1,1))
+    await expect(accountFactory.takeCreditAccount(1, 1))
       .to.emit(accountFactory, "InitializeCreditAccount")
       .withArgs(head, deployer.address);
   });
@@ -101,7 +106,7 @@ describe("AccountFactory", function () {
   it("[AF-7]: returnCreditAccount set returned container to the end of list", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
 
     await accountFactory.returnCreditAccount(head);
@@ -118,7 +123,7 @@ describe("AccountFactory", function () {
   it("[AF-8]: returnCreditAccount emits ReturnCreditAccount", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
 
     await expect(accountFactory.returnCreditAccount(head))
@@ -138,13 +143,13 @@ describe("AccountFactory", function () {
   it("[AF-9]: takeCreditAccount doesn't produce extra VA if not needed", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const head = await accountFactory.head();
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
 
     await accountFactory.returnCreditAccount(head);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(2);
 
-    await accountFactory.takeCreditAccount(1,1);
+    await accountFactory.takeCreditAccount(1, 1);
     expect(await accountFactory.countCreditAccountsInStock()).to.be.eq(1);
   });
 
@@ -155,7 +160,7 @@ describe("AccountFactory", function () {
     for (let i = 0; i < 5; i++) {
       accounts.push(await accountFactory.head());
       expect(await accountFactory.countCreditAccounts()).to.be.eq(i + 1);
-      await accountFactory.takeCreditAccount(1,1);
+      await accountFactory.takeCreditAccount(1, 1);
     }
 
     for (let i = 0; i < 5; i++) {
@@ -166,7 +171,7 @@ describe("AccountFactory", function () {
   it("[AF-11]: takeCreditAccount set correct address of new va", async () => {
     await contractsRegister.addCreditManager(deployer.address);
     const creditAccount = await accountFactory.head();
-    const receipt = await accountFactory.takeCreditAccount(1,1);
+    const receipt = await accountFactory.takeCreditAccount(1, 1);
 
     const creditAccountArtifact = (await ethers.getContractFactory(
       "CreditAccount"
@@ -179,7 +184,7 @@ describe("AccountFactory", function () {
 
   it("[AF-12]: takeCreditAccount, returns creditAccount reverts if was called by non creditManagers", async () => {
     const revertMsg = await errors.CR_CREDIT_ACCOUNT_MANAGERS_ONLY();
-    await expect(accountFactory.takeCreditAccount(1,2)).to.be.revertedWith(
+    await expect(accountFactory.takeCreditAccount(1, 2)).to.be.revertedWith(
       revertMsg
     );
     await expect(
@@ -223,7 +228,6 @@ describe("AccountFactory", function () {
     const CreditAccountArtifact = (await ethers.getContractFactory(
       contractName
     )) as CreditAccount__factory;
-
 
     const tva = await CreditAccountArtifact.attach(firstCreditAccount);
 
