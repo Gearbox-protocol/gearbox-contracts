@@ -91,6 +91,12 @@ contract GearToken {
         uint256 amount
     );
 
+    event OwnershipTransferred(address indexed owner, address indexed newOwner);
+
+    event MinerSet(address indexed miner);
+
+    event TransferAllowed();
+
     modifier managerOnly() {
         require(msg.sender == manager, "Gear::caller is not the manager");
         _;
@@ -112,6 +118,7 @@ contract GearToken {
         managerOnly // T:[GT-3]
     {
         require(newManager != address(0), "Zero address is not allowed"); // T:[GT-5]
+        emit OwnershipTransferred(manager, newManager); // T:[GT-6]
         manager = newManager; // T:[GT-6]
     }
 
@@ -120,6 +127,7 @@ contract GearToken {
         managerOnly // T:[GT-3]
     {
         miner = _miner; // T:[GT-4]
+        emit MinerSet(miner); // T:[GT-4]
     }
 
     function allowTransfers()
@@ -127,6 +135,7 @@ contract GearToken {
         managerOnly // T:[GT-3]
     {
         transfersAllowed = true; // T:[GT-1]
+        emit TransferAllowed();
     }
 
     /**

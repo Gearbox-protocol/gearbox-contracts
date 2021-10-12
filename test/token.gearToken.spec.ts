@@ -45,7 +45,7 @@ describe("GearToken", function () {
     await gearToken.transfer(miner.address, 10000);
     await gearToken.connect(miner).transfer(user.address, 1000);
     expect(await gearToken.transfersAllowed()).to.be.false;
-    await gearToken.allowTransfers();
+    await expect(gearToken.allowTransfers()).to.emit(gearToken, "TransferAllowed");
     await gearToken.connect(miner).transfer(miner.address, 100);
     expect(await gearToken.transfersAllowed()).to.be.true;
   });
@@ -67,7 +67,8 @@ describe("GearToken", function () {
   });
   it("[GT-4]: setMiner sets miner correctly", async () => {
     expect(await gearToken.miner()).to.be.eq(miner.address);
-    await gearToken.connect(deployer).setMiner(user.address);
+    await expect(gearToken.connect(deployer).setMiner(user.address))
+      .to.emit(gearToken, "MinerSet").withArgs(user.address);
 
     expect(await gearToken.miner()).to.be.eq(user.address);
   });
@@ -82,7 +83,9 @@ describe("GearToken", function () {
 
   it("[GT-6]: transferOwnership changes manager", async () => {
     expect(await gearToken.miner()).to.be.eq(miner.address);
-    await gearToken.connect(deployer).transferOwnership(user.address);
+    await expect(gearToken.connect(deployer).transferOwnership(user.address))
+      .to.emit(gearToken, "OwnershipTransferred")
+      .withArgs(deployer.address, user.address);
 
     expect(await gearToken.manager()).to.be.eq(user.address);
   });
