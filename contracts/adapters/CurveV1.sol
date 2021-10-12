@@ -4,6 +4,7 @@
 pragma solidity ^0.7.4;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
@@ -18,7 +19,7 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 import "hardhat/console.sol";
 
 /// @title CurveV1 adapter
-contract CurveV1Adapter is ICurvePool {
+contract CurveV1Adapter is ICurvePool, ReentrancyGuard {
     using SafeMath for uint256;
 
     // Original pool contract
@@ -49,7 +50,7 @@ contract CurveV1Adapter is ICurvePool {
         int128 j,
         uint256 dx,
         uint256 min_dy
-    ) external override {
+    ) external override  nonReentrant {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         ); // M:[CVA-1]

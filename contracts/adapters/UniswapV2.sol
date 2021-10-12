@@ -2,7 +2,7 @@
 // Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
-
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IUniswapV2Router02} from "../integrations/uniswap/IUniswapV2Router02.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
@@ -15,7 +15,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import "hardhat/console.sol";
 
 /// @title UniswapV2 Router adapter
-contract UniswapV2Adapter is IUniswapV2Router02 {
+contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
     using SafeMath for uint256;
 
     ICreditManager public creditManager;
@@ -50,7 +50,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         address[] calldata path,
         address,
         uint256 deadline
-    ) external override returns (uint256[] memory amounts) {
+    ) external override  nonReentrant returns (uint256[] memory amounts) {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         );
@@ -110,7 +110,7 @@ contract UniswapV2Adapter is IUniswapV2Router02 {
         address[] calldata path,
         address,
         uint256 deadline
-    ) external override returns (uint256[] memory amounts) {
+    ) external override  nonReentrant returns (uint256[] memory amounts) {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         );

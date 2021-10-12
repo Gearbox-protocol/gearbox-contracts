@@ -3,6 +3,7 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -19,7 +20,7 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 import "hardhat/console.sol";
 
 /// @title Yearn adapter
-contract YearnAdapter is IYVault {
+contract YearnAdapter is IYVault, ReentrancyGuard {
     using SafeMath for uint256;
 
     address public yVault;
@@ -43,14 +44,19 @@ contract YearnAdapter is IYVault {
     }
 
     /// @dev Deposit credit account tokens to Yearn
-    function deposit() external override returns (uint256) {
+    function deposit() external override nonReentrant returns (uint256) {
         // bytes4(0xd0e30db0) = deposit()
         return _deposit(abi.encodeWithSelector(bytes4(0xd0e30db0))); // M:[YA-1]
     }
 
     /// @dev Deposit credit account tokens to Yearn
     /// @param amount in tokens
-    function deposit(uint256 amount) external override returns (uint256) {
+    function deposit(uint256 amount)
+        external
+        override
+        nonReentrant
+        returns (uint256)
+    {
         // bytes4(0xb6b55f25) = deposit
         return _deposit(abi.encodeWithSelector(bytes4(0xb6b55f25), amount)); // M:[YA-2]
     }
@@ -60,6 +66,7 @@ contract YearnAdapter is IYVault {
     function deposit(uint256 amount, address)
         external
         override
+        nonReentrant
         returns (uint256)
     {
         // bytes4(0xb6b55f25) = deposit
@@ -94,19 +101,25 @@ contract YearnAdapter is IYVault {
         ); // M:[YA-1,2]
     }
 
-    function withdraw() external override returns (uint256) {
+    function withdraw() external override nonReentrant returns (uint256) {
         // bytes4(0x3ccfd60b) = withdraw()
         return _withdraw(abi.encodeWithSelector(bytes4(0x3ccfd60b))); // M:[YA-3]
     }
 
-    function withdraw(uint256 maxShares) external override returns (uint256) {
+    function withdraw(uint256 maxShares)
+        external
+        override
+        nonReentrant
+        returns (uint256)
+    {
         // bytes4(0x2e1a7d4d) = withdraw(uint256)
         return _withdraw(abi.encodeWithSelector(bytes4(0x2e1a7d4d), maxShares));
     }
 
-    function withdraw(uint256 maxShares, address recipient)
+    function withdraw(uint256 maxShares, address)
         external
         override
+        nonReentrant
         returns (uint256)
     {
         // Call the function with MaxShares only, cause recepient doesn't make sense here
@@ -124,7 +137,7 @@ contract YearnAdapter is IYVault {
         uint256 maxShares,
         address,
         uint256 maxLoss
-    ) public override returns (uint256 shares) {
+    ) public override nonReentrant returns (uint256 shares) {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         ); // M:[YA-3]

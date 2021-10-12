@@ -4,6 +4,7 @@
 pragma solidity ^0.7.4;
 pragma abicoder v2;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {ISwapRouter} from "../integrations/uniswap/IUniswapV3.sol";
 import {BytesLib} from "../integrations/uniswap/BytesLib.sol";
@@ -15,7 +16,7 @@ import {CreditManager} from "../credit/CreditManager.sol";
 import "hardhat/console.sol";
 
 /// @title UniswapV3 Router adapter
-contract UniswapV3Adapter is ISwapRouter {
+contract UniswapV3Adapter is ISwapRouter, ReentrancyGuard {
     using BytesLib for bytes;
     using SafeMath for uint256;
 
@@ -42,6 +43,7 @@ contract UniswapV3Adapter is ISwapRouter {
         external
         payable
         override
+        nonReentrant
         returns (uint256 amountOut)
     {
         address creditAccount = creditManager.getCreditAccountOrRevert(
@@ -96,6 +98,7 @@ contract UniswapV3Adapter is ISwapRouter {
         external
         payable
         override
+        nonReentrant
         returns (uint256 amountOut)
     {
         address creditAccount = creditManager.getCreditAccountOrRevert(
@@ -145,6 +148,7 @@ contract UniswapV3Adapter is ISwapRouter {
         external
         payable
         override
+        nonReentrant
         returns (uint256 amountIn)
     {
         address creditAccount = creditManager.getCreditAccountOrRevert(
@@ -199,6 +203,7 @@ contract UniswapV3Adapter is ISwapRouter {
         external
         payable
         override
+        nonReentrant
         returns (uint256 amountIn)
     {
         address creditAccount = creditManager.getCreditAccountOrRevert(
