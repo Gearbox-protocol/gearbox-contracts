@@ -13,11 +13,11 @@ import "hardhat/console.sol";
 contract ContractsRegister is ACLTrait {
     // Pools list
     address[] public pools;
-    mapping(address => bool) _poolSet;
+    mapping(address => bool) public isPool;
 
     // Credit Managers list
     address[] public creditManagers;
-    mapping(address => bool) _creditManagersSet;
+    mapping(address => bool) public isCreditManager;
 
     // emits each time when new pool was added to register
     event NewPoolAdded(address indexed pool);
@@ -33,9 +33,9 @@ contract ContractsRegister is ACLTrait {
         external
         configuratorOnly // T:[CR-1]
     {
-        require(!_poolSet[newPoolAddress], Errors.CR_POOL_ALREADY_ADDED); // T:[CR-2]
+        require(!isPool[newPoolAddress], Errors.CR_POOL_ALREADY_ADDED); // T:[CR-2]
         pools.push(newPoolAddress); // T:[CR-3]
-        _poolSet[newPoolAddress] = true; // T:[CR-3]
+        isPool[newPoolAddress] = true; // T:[CR-3]
 
         emit NewPoolAdded(newPoolAddress); // T:[CR-4]
     }
@@ -50,11 +50,6 @@ contract ContractsRegister is ACLTrait {
         return pools.length; // T:[CR-3]
     }
 
-    /// @return Returns true if address is pool address
-    function isPool(address addr) external view returns (bool) {
-        return _poolSet[addr]; // T:[CR-3]
-    }
-
     /// @dev Adds credit accounts manager address to the registry
     /// @param newCreditManager Address on new pausableAdmin added
     function addCreditManager(address newCreditManager)
@@ -62,11 +57,11 @@ contract ContractsRegister is ACLTrait {
         configuratorOnly // T:[CR-1]
     {
         require(
-            !_creditManagersSet[newCreditManager],
+            !isCreditManager[newCreditManager],
             Errors.CR_CREDIT_MANAGER_ALREADY_ADDED
         ); // T:[CR-5]
         creditManagers.push(newCreditManager); // T:[CR-6]
-        _creditManagersSet[newCreditManager] = true; // T:[CR-6]
+        isCreditManager[newCreditManager] = true; // T:[CR-6]
 
         emit NewCreditManagerAdded(newCreditManager); // T:[CR-7]
     }
@@ -79,10 +74,5 @@ contract ContractsRegister is ACLTrait {
     /// @return Returns quantity of registered credit managers
     function getCreditManagersCount() external view returns (uint256) {
         return creditManagers.length; // T:[CR-6]
-    }
-
-    /// @dev Returns true if the address is credit Manager and false if not
-    function isCreditManager(address addr) external view returns (bool) {
-        return _creditManagersSet[addr]; // T:[CR-6]
     }
 }
