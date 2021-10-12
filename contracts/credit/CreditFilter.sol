@@ -21,7 +21,6 @@ import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
 import "hardhat/console.sol";
-import "../core/ContractsRegister.sol";
 
 /// @title CreditFilter
 /// @notice Implements filter logic for allowed tokens & contract-adapters
@@ -157,9 +156,13 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
         // Checks that contract has balanceOf method and it returns uint256
         require(IERC20(token).balanceOf(address(this)) >= 0); // T:[CF-11]
+        // ToDo: check
 
         // Checks that pair token - underlyingToken has priceFeed
-        IPriceOracle(priceOracle).getLastPrice(token, underlyingToken); // T:[CF-15]
+        require(
+            IPriceOracle(priceOracle).getLastPrice(token, underlyingToken) > 0,
+            Errors.CF_INCORRECT_PRICEFEED
+        );
 
         // we add allowed tokens to array if it wasn't added before
         // T:[CF-6] controls that
