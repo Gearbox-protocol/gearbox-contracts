@@ -60,7 +60,9 @@ library Errors {
     string public constant CM_NO_OPEN_ACCOUNT = "V1";
     // "CM_: trader has no opened account";
 
-    string public constant CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT = "V2";
+    string
+        public constant CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT =
+        "V2";
     // "CM_: You have already opened credit account";
 
     string public constant CM_INCORRECT_AMOUNT = "V3";
@@ -211,6 +213,10 @@ library Errors {
 
     string public constant CF_POOLS_ONLY = "CP";
 
+    string public constant CF_INCORRECT_PRICEFEED = "CF";
+
+    string public constant CF_INCORRECT_ARRAY_LENGTH = "CR";
+
     //
     // CREDIT ACCOUNT
     //
@@ -270,8 +276,6 @@ library Errors {
     string public constant LA_INCORRECT_PATH_LENGTH = "I5";
 
     string public constant LA_NOT_ENOUGH_AMOUNT_MIN = "I6";
-
-
 
     string public constant LIM_INCORRECT_PARAMETER = "LIM0";
 }

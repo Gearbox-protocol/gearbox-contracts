@@ -316,6 +316,12 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         uint256 amountInCollateral;
         uint256 amountOutCollateral;
 
+        require(
+            amountIn.length == tokenIn.length &&
+                amountOut.length == tokenOut.length,
+            Errors.CF_INCORRECT_ARRAY_LENGTH
+        );
+
         for (uint256 i = 0; i < amountIn.length; i++) {
             amountInCollateral = amountInCollateral.add(
                 IPriceOracle(priceOracle).convert(

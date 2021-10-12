@@ -1230,4 +1230,37 @@ describe("CreditFilter", function () {
       creditFilter.allowContract(DUMB_ADDRESS2, user.address)
     ).to.be.revertedWith(revertMsg);
   });
+
+  it("[CF-41]: checkMultiTokenCollateral reverts for incorrect arrays length", async () => {
+
+    const revertMsg = await errors.CF_INCORRECT_ARRAY_LENGTH();
+
+    const creditAccount = await setupCreditAccount();
+    const fakeContract = DUMB_ADDRESS2;
+
+    await creditFilter.allowContract(fakeContract, deployer.address);
+
+    expect(await creditFilter.fastCheckCounter(creditAccount.address)).to.be.eq(
+      0
+    );
+
+    await expect(creditFilter.checkMultiTokenCollateral(
+      creditAccount.address,
+
+      [0, 1],
+      [1, 1],
+      [tokenA.address],
+      [tokenA.address, tokenA.address]
+    )).to.be.revertedWith(revertMsg);
+
+    await expect(creditFilter.checkMultiTokenCollateral(
+      creditAccount.address,
+
+      [0],
+      [1],
+      [tokenA.address],
+      [tokenA.address, tokenA.address]
+    )).to.be.revertedWith(revertMsg);
+  });
+
 });
