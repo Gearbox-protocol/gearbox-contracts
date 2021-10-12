@@ -73,4 +73,11 @@ interface IDataCompressor {
         address borrower,
         uint256[] memory balances
     ) external view returns (uint256);
+
+    function calcExpectedAtOpenHf(
+        address _creditManager,
+        address token,
+        uint256 amount,
+        uint256 borrowedAmount
+    ) external view returns (uint256);
 }

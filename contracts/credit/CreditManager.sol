@@ -183,8 +183,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         ); // T:[CM-7]
 
         // Get Reusable Credit account creditAccount
-        address creditAccount = _accountFactory.takeCreditAccount(borrowedAmount,
-            IPoolService(poolService).calcLinearCumulative_RAY()); // T:[CM-5]
+        address creditAccount = _accountFactory.takeCreditAccount(
+            borrowedAmount,
+            IPoolService(poolService).calcLinearCumulative_RAY()
+        ); // T:[CM-5]
 
         // Initializes enabled tokens for the account. Enabled tokens is a bit mask which
         // holds information which tokens were used by user
@@ -203,10 +205,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             amount
         ); // T:[CM-6]
 
-//        // Set parameters for new credit account
-//        ICreditAccount(creditAccount).setGenericParameters(
-//
-//        ); // T:[CM-7]
+        //        // Set parameters for new credit account
+        //        ICreditAccount(creditAccount).setGenericParameters(
+        //
+        //        ); // T:[CM-7]
 
         // link credit account address with borrower address
         creditAccounts[onBehalfOf] = creditAccount; // T:[CM-5]
@@ -556,8 +558,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         address to,
         bool force
     ) internal returns (uint256 totalValue, uint256 totalWeightedValue) {
-        //        totalValue = 0;
-        //        totalWeightedValue = 0;
 
         uint256 tokenMask;
         uint256 enabledTokens = creditFilter.enabledTokens(creditAccount);
@@ -949,7 +949,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     {
         address creditAccount = getCreditAccountOrRevert(msg.sender); // M:[LA-1,2,3,4,5,6,7,8] // T:[CM-52,53, 54]
         require(
-            newOwner != address(0) && !hasOpenedCreditAccount(newOwner),
+            newOwner != address(0) &&
+                !hasOpenedCreditAccount(newOwner) &&
+                creditFilter.calcCreditAccountHealthFactor(creditAccount) >
+                PercentageMath.PERCENTAGE_FACTOR,
             Errors.CM_INCORRECT_NEW_OWNER
         ); // T:[CM-52,53]
         delete creditAccounts[msg.sender]; // M:[LA-1,2,3,4,5,6,7,8]

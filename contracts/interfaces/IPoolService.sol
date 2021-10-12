@@ -56,6 +56,9 @@ interface IPoolService is IAppPoolService {
     // Emits after expected liquidity limit update
     event NewExpectedLiquidityLimit(uint256 newLimit);
 
+    // Emits each time when withdraw fee is udpated
+    event NewWithdrawFee(uint256 fee);
+
     //
     // LIQUIDITY MANAGEMENT
     //

@@ -357,7 +357,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         } else {
             // Require Hf > 1
 
-            console.log(calcCreditAccountHealthFactor(creditAccount));
             require(
                 calcCreditAccountHealthFactor(creditAccount) >=
                     PercentageMath.PERCENTAGE_FACTOR,

@@ -27,7 +27,10 @@ interface IAccountFactory {
 
     /// @dev Provide new creditAccount to pool. Creates a new one, if needed
     /// @return Address of creditAccount
-    function takeCreditAccount() external returns (address);
+    function takeCreditAccount(
+        uint256 _borrowedAmount,
+        uint256 _cumulativeIndexAtOpen
+    ) external returns (address);
 
     /// @dev Takes credit account back and stay in tn the queue
     /// @param usedAccount Address of used credit account

@@ -20,15 +20,18 @@ interface ICreditAccount {
 
     /// @dev Connects credit account to credit manager
     /// @param _creditManager Credit manager address
-    function connectTo(address _creditManager) external;
-
-    /// @dev Set general credit account parameters. Restricted to credit managers only
-    /// @param _borrowedAmount Amount which pool lent to credit account
-    /// @param _cumulativeIndexAtOpen Cumulative index at open. Uses for interest calculation
-    function setGenericParameters(
+    function connectTo(
+        address _creditManager,
         uint256 _borrowedAmount,
         uint256 _cumulativeIndexAtOpen
     ) external;
+
+    //    /// @dev Set general credit account parameters. Restricted to credit managers only
+    //    /// @param _borrowedAmount Amount which pool lent to credit account
+    //    /// @param _cumulativeIndexAtOpen Cumulative index at open. Uses for interest calculation
+    //    function setGenericParameters(
+    //
+    //    ) external;
 
     /// @dev Updates borrowed amount. Restricted to credit managers only
     /// @param _borrowedAmount Amount which pool lent to credit account

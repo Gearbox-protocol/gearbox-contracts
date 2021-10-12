@@ -20,9 +20,6 @@ library Constants {
     // FEE = 10%
     uint256 constant FEE_INTEREST = 1000; // 10%
 
-    // FEE_PROFIT = 1%
-    uint256 constant FEE_SUCCESS = 100; // 1%
-
     // FEE + LIQUIDATION_FEE 2%
     uint256 constant FEE_LIQUIDATION = 200;
 

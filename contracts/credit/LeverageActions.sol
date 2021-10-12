@@ -423,15 +423,6 @@ contract LeveragedActions is ReentrancyGuard {
             ); // M:[LA-2]
         }
 
-        console.log(
-            IERC20(asset).balanceOf(
-                ICreditManager(longParams.creditManager)
-                    .getCreditAccountOrRevert(address(this))
-            )
-        );
-
-        console.log(longParams.amountOutMin);
-
         require(
             IERC20(asset).balanceOf(creditAccount) >= longParams.amountOutMin,
             Errors.LA_NOT_ENOUGH_AMOUNT_MIN
