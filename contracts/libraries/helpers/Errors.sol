@@ -217,6 +217,8 @@ library Errors {
 
     string public constant CF_INCORRECT_ARRAY_LENGTH = "CR";
 
+    string public constant CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED = "CT";
+
     //
     // CREDIT ACCOUNT
     //
@@ -263,6 +265,8 @@ library Errors {
 
     string public constant WG_FALLBACK_IS_NOT_ALLOWED = "W5";
     // "WETH Gateway: Fallback is not allowed";
+
+    string public constant WG_NOT_ENOUGH_FUNDS = "W6";
 
     string public constant LA_INCORRECT_VALUE = "I1";
     // Leveraged Actions: "Incorrect value");

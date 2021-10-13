@@ -36,6 +36,8 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    AddressProvider public addressProvider;
+
     // Address of credit Manager
     address public creditManager;
 
@@ -109,9 +111,9 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     constructor(address _addressProvider, address _underlyingToken)
         ACLTrait(_addressProvider)
     {
-        priceOracle = AddressProvider(_addressProvider).getPriceOracle(); // T:[CF-21]
-
-        wethAddress = AddressProvider(_addressProvider).getWethToken(); // T:[CF-21]
+        addressProvider = AddressProvider(_addressProvider);
+        priceOracle = addressProvider.getPriceOracle(); // T:[CF-21]
+        wethAddress = addressProvider.getWethToken(); // T:[CF-21]
 
         underlyingToken = _underlyingToken; // T:[CF-21]
 
@@ -664,20 +666,20 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         address creditAccount,
         uint256 minHealthFactor
     ) external view override {
-        //        (
-        //            uint256 borrowedAmount,
-        //            uint256 cumulativeIndexAtOpen
-        //        ) = getCreditAccountParameters(creditAccount); // T:[CM-30]
-        //
-        //
-        //
-        //        uint256 timeDiscountedAmount = amount.mul(cumulativeIndexAtOpen).div(
-        //            IPoolService(poolService).calcLinearCumulative_RAY()
-        //        ); // T:[CM-30]
-
         require(
             calcCreditAccountHealthFactor(creditAccount) >= minHealthFactor,
             Errors.CM_CAN_UPDATE_WITH_SUCH_HEALTH_FACTOR
         ); // T:[CM-28]}
+    }
+
+    function revertIfAccountTransferIsNotAllowed(
+        address owner,
+        address creditAccount
+    ) external view override {
+        require(
+            owner == addressProvider.getLeveragedActions() ||
+                calcCreditAccountHealthFactor(creditAccount) >
+                PercentageMath.PERCENTAGE_FACTOR, Errors.CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED
+        );
     }
 }

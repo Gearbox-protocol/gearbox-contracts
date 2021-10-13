@@ -112,19 +112,14 @@ describe("CreditManager", function () {
   });
 
   it("[CM-1]: constructor set parameters correctly", async () => {
-    const [
-      poolContract,
-      cfContract,
-      wtContract,
-      wgContract,
-      dsContract,
-    ] = await Promise.all([
-      creditManager.poolService(),
-      creditManager.creditFilter(),
-      creditManager.wethAddress(),
-      creditManager.wethGateway(),
-      creditManager.defaultSwapContract(),
-    ]);
+    const [poolContract, cfContract, wtContract, wgContract, dsContract] =
+      await Promise.all([
+        creditManager.poolService(),
+        creditManager.creditFilter(),
+        creditManager.wethAddress(),
+        creditManager.wethGateway(),
+        creditManager.defaultSwapContract(),
+      ]);
 
     const poolExpected = poolService.address;
     expect(poolContract, "PoolService").to.be.eq(poolExpected);
@@ -1620,6 +1615,23 @@ describe("CreditManager", function () {
     await creditManager.getCreditAccountOrRevert(deployer.address);
     await expect(
       creditManager.getCreditAccountOrRevert(user.address)
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[CM-55]: account with hf<1 cannot be transffered", async () => {
+    const revertMsg = await errors.CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED();
+    await ts.openDefaultCreditAccount();
+
+    const creditAcc = await creditManager.getCreditAccountOrRevert(
+      user.address
+    );
+
+    await ts.creditFilter.allowToken(underlyingToken.address, 2);
+    expect(
+      await creditFilter.calcCreditAccountHealthFactor(creditAcc)
+    ).to.be.lt(PERCENTAGE_FACTOR);
+    await expect(
+      creditManager.connect(user).transferAccountOwnership(deployer.address)
     ).to.be.revertedWith(revertMsg);
   });
 });

@@ -195,4 +195,5 @@ interface IPoolService is IAppPoolService {
         uint256 amount,
         uint256 cumulativeIndexAtOpen
     ) external view returns (uint256);
+
 }

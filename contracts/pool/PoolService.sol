@@ -497,6 +497,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         return creditManagers.length; // T:[PS-11]
     }
 
+
     function calcTimeDiscountedAmount(
         uint256 amount,
         uint256 cumulativeIndexAtOpen

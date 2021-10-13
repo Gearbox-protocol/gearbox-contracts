@@ -205,11 +205,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             amount
         ); // T:[CM-6]
 
-        //        // Set parameters for new credit account
-        //        ICreditAccount(creditAccount).setGenericParameters(
-        //
-        //        ); // T:[CM-7]
-
         // link credit account address with borrower address
         creditAccounts[onBehalfOf] = creditAccount; // T:[CM-5]
 
@@ -558,7 +553,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         address to,
         bool force
     ) internal returns (uint256 totalValue, uint256 totalWeightedValue) {
-
         uint256 tokenMask;
         uint256 enabledTokens = creditFilter.enabledTokens(creditAccount);
 
@@ -949,12 +943,13 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     {
         address creditAccount = getCreditAccountOrRevert(msg.sender); // M:[LA-1,2,3,4,5,6,7,8] // T:[CM-52,53, 54]
         require(
-            newOwner != address(0) &&
-                !hasOpenedCreditAccount(newOwner) &&
-                creditFilter.calcCreditAccountHealthFactor(creditAccount) >
-                PercentageMath.PERCENTAGE_FACTOR,
+            newOwner != address(0) && !hasOpenedCreditAccount(newOwner),
             Errors.CM_INCORRECT_NEW_OWNER
         ); // T:[CM-52,53]
+        creditFilter.revertIfAccountTransferIsNotAllowed(
+            msg.sender,
+            creditAccount
+        );
         delete creditAccounts[msg.sender]; // M:[LA-1,2,3,4,5,6,7,8]
         creditAccounts[newOwner] = creditAccount; // M:[LA-1,2,3,4,5,6,7,8]
         emit TransferAccount(msg.sender, newOwner); // T:[CM-54]

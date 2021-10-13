@@ -171,5 +171,12 @@ interface ICreditFilter {
 
     function updateUnderlyingTokenLiquidationThreshold() external;
 
-    function revertIfCantIncreaseBorrowing(address creditAccount, uint256 minHealthFactor) external view;
+    function revertIfCantIncreaseBorrowing(
+        address creditAccount,
+        uint256 minHealthFactor
+    ) external view;
+
+    function revertIfAccountTransferIsNotAllowed(address onwer, address creditAccount)
+        external
+        view;
 }
