@@ -1515,6 +1515,8 @@ describe("CreditManager", function () {
       "BLK"
     );
 
+    const blockAmount = 100000;
+
     const chainlinkMock = await ts.testDeployer.getChainlinkPriceFeedMock(
       BigNumber.from(1).mul(WAD)
     );
@@ -1527,11 +1529,11 @@ describe("CreditManager", function () {
     await creditFilter.allowToken(blockedToken.address, 1);
     await creditFilter.allowToken(underlyingToken.address, 1);
 
-    await blockedToken.mint(user.address, 100);
+    await blockedToken.mint(user.address, blockAmount);
     await blockedToken.connect(user).approve(creditManager.address, MAX_INT);
     await creditManager
       .connect(user)
-      .addCollateral(user.address, blockedToken.address, 100);
+      .addCollateral(user.address, blockedToken.address, blockAmount);
     await blockedToken.blockToken();
 
     await underlyingToken.approve(creditManager.address, MAX_INT);
@@ -1543,10 +1545,30 @@ describe("CreditManager", function () {
       )
     ).to.be.revertedWith(revertMsg);
 
+    const repayAmount = await creditManager.calcRepayAmount(user.address, true);
+
+    const balanceBefore = await underlyingToken.balanceOf(deployer.address);
+
+    const amountNotTransferred = await ts.priceOracle.convert(
+      blockAmount,
+      blockedToken.address,
+      underlyingToken.address
+    );
+
     await creditManager.liquidateCreditAccount(
       user.address,
-      deployer.address,
+      friend.address,
       true
+    );
+
+    expect(await underlyingToken.balanceOf(deployer.address)).to.be.eq(
+      balanceBefore
+        .sub(repayAmount)
+        .add(
+          amountNotTransferred
+            .mul(await creditManager.liquidationDiscount())
+            .div(PERCENTAGE_FACTOR)
+        )
     );
   });
 
