@@ -1112,7 +1112,7 @@ describe("CreditFilter", function () {
     expect(await ts.creditFilter.fastCheckCounter(creditAccount)).to.be.eq(1);
   });
 
-  it("[CF-35]: changeAllowedTokenMask change bit mask correctly", async () => {
+  it("[CF-35]: forbid token updates state correctly", async () => {
     const tokenA = await testDeployer.getTokenMock("TokenA", "TTA");
     const tokenB = await testDeployer.getTokenMock("TokenB", "TTB");
 
