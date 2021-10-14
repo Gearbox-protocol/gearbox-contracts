@@ -1263,4 +1263,50 @@ describe("CreditFilter", function () {
     )).to.be.revertedWith(revertMsg);
   });
 
+  it("[CF-42]: checkCollateralChange reverts for non-fastcheck and Hf<1 after operation", async () => {
+    const revertMsg = await errors.CF_OPERATION_LOW_HEALTH_FACTOR();
+
+    await creditManagerMockForFilter.connectFilter(
+      creditFilter.address,
+      underlyingToken.address
+    );
+    await creditFilter.connectCreditManager(creditManagerMockForFilter.address);
+
+    await creditManagerMockForFilter.setLinearCumulative(RAY);
+
+    await creditFilter.allowContract(DUMB_ADDRESS, deployer.address);
+
+    await priceOracle.addPriceFeed(
+      underlyingToken.address,
+      (
+        await creditManagerDeployer.getUnderlyingPriceFeedMock(WAD)
+      ).address
+    );
+
+    await priceOracle.addPriceFeed(
+      tokenA.address,
+      (
+        await creditManagerDeployer.getUnderlyingPriceFeedMock(WAD)
+      ).address
+    );
+
+    await creditFilter.allowToken(
+      tokenA.address,
+      UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD - 1
+    );
+
+    expect(await creditFilter.enabledTokens(DUMB_ADDRESS)).to.be.eq(0);
+
+    const creditAccount = await setupCreditAccount();
+
+    await expect(
+      creditFilter.checkMultiTokenCollateral(
+        creditAccount.address,
+        [0, 0],
+        [1],
+        [underlyingToken.address],
+        [tokenA.address]
+      )
+    ).to.be.revertedWith(revertMsg);
+  });
 });
