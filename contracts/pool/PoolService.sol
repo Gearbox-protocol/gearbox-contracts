@@ -165,7 +165,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
 
         amount = IERC20(underlyingToken).balanceOf(address(this)).sub(
             balanceBefore
-        ); // ToDo: add test here
+        ); // T:[FT-1]
 
         DieselToken(dieselToken).mint(onBehalfOf, toDiesel(amount)); // T:[PS-2, 7]
 

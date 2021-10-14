@@ -239,7 +239,7 @@ contract LeveragedActions is ReentrancyGuard {
 
         // Opens credit account
         ICreditManager(creditManager).openCreditAccount(
-            amountIn,
+            IERC20(collateral).balanceOf(address (this)),
             address(this),
             leverageFactor,
             referralCode
