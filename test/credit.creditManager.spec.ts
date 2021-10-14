@@ -1672,4 +1672,20 @@ describe("CreditManager", function () {
       creditManager.connect(user).repayCreditAccount(ADDRESS_0x0)
     ).to.be.revertedWith(revertMsg);
   });
+  it("[CM-57]: closeCreditAccount reverts if closePath.length !== allowedAccountCount()", async () => {
+    const revertMsg = await errors.CM_INCORRECT_CLOSE_PATH_LENGTH();
+
+    // Open default credit account
+    await ts.openDefaultCreditAccount();
+
+
+    const ciAtClose = RAY.mul(102).div(100);
+    await poolService.setCumulative_RAY(ciAtClose);
+
+    const closePath = await ts.getClosePath(user.address, 0);
+
+    await expect(
+      creditManager.connect(user).closeCreditAccount(friend.address, closePath.slice(0, 2))
+    ).to.be.revertedWith(revertMsg);
+  });
 });
