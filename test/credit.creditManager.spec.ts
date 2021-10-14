@@ -1706,4 +1706,13 @@ describe("CreditManager", function () {
       creditManager.connect(user).approve(uniMock.address, DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);
   });
+
+
+  it("[CM-59]: maxFactor =0 reverts", async () => {
+    const revertMsg = await errors.CM_INCORRECT_PARAMS()
+
+    await expect(
+      creditManager.setParams(0, 1, 0, 200, 200, 9500)
+    ).to.be.revertedWith(revertMsg);
+  });
 });
