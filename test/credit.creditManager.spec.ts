@@ -1672,12 +1672,12 @@ describe("CreditManager", function () {
       creditManager.connect(user).repayCreditAccount(ADDRESS_0x0)
     ).to.be.revertedWith(revertMsg);
   });
+
   it("[CM-57]: closeCreditAccount reverts if closePath.length !== allowedAccountCount()", async () => {
     const revertMsg = await errors.CM_INCORRECT_CLOSE_PATH_LENGTH();
 
     // Open default credit account
     await ts.openDefaultCreditAccount();
-
 
     const ciAtClose = RAY.mul(102).div(100);
     await poolService.setCumulative_RAY(ciAtClose);
@@ -1685,7 +1685,25 @@ describe("CreditManager", function () {
     const closePath = await ts.getClosePath(user.address, 0);
 
     await expect(
-      creditManager.connect(user).closeCreditAccount(friend.address, closePath.slice(0, 2))
+      creditManager
+        .connect(user)
+        .closeCreditAccount(friend.address, closePath.slice(0, 2))
+    ).to.be.revertedWith(revertMsg);
+  });
+  it("[CM-58]: approve reverts for non-allowed tokens", async () => {
+    const revertMsg = await errors.CF_TOKEN_IS_NOT_ALLOWED();
+
+    // Open default credit account
+    await ts.openDefaultCreditAccount();
+
+    const uniMock = await integrationsDeployer.getUniswapMock();
+    const adapter = await integrationsDeployer.getUniswapV2Adapter(
+      uniMock.address
+    );
+    await creditFilter.allowContract(uniMock.address, adapter.address);
+
+    await expect(
+      creditManager.connect(user).approve(uniMock.address, DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);
   });
 });
