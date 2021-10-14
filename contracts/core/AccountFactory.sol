@@ -86,7 +86,6 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
      * @param addressProvider Address of address repository
      */
     constructor(address addressProvider) ACLTrait(addressProvider) {
-
         require(
             addressProvider != address(0),
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
@@ -101,7 +100,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
 
         addCreditAccount(); // T:[AF-1]
         head = tail; // T:[AF-1]
-        _nextCreditAccount[address(0)] = address(0);  // T:[AF-1]
+        _nextCreditAccount[address(0)] = address(0); // T:[AF-1]
     }
 
     /**
@@ -262,7 +261,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         ICreditAccount(clonedAccount).initialize();
         _nextCreditAccount[tail] = clonedAccount; // T:[AF-2]
         tail = clonedAccount; // T:[AF-2]
-        creditAccountsSet.add(clonedAccount); // T:[AF-10]
+        creditAccountsSet.add(clonedAccount); // T:[AF-10, 16]
         emit NewCreditAccount(clonedAccount);
     }
 
@@ -289,15 +288,15 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
 
             // updates tail if we take the last one
             if (creditAccount == tail) {
-                tail = prev;
+                tail = prev; // T:[AF-22]
             }
 
-            _nextCreditAccount[prev] = _nextCreditAccount[creditAccount]; // T: [AF-16]
-            _nextCreditAccount[creditAccount] = address(0); // T: [AF-16]
+            _nextCreditAccount[prev] = _nextCreditAccount[creditAccount]; // T:[AF-16]
+            _nextCreditAccount[creditAccount] = address(0); // T:[AF-16]
         }
-        ICreditAccount(creditAccount).connectTo(to, 0, 0); // T: [AF-16, 21]
-        creditAccountsSet.remove(creditAccount);
-        emit TakeForever(creditAccount, to); // T: [AF-16, 21]
+        ICreditAccount(creditAccount).connectTo(to, 0, 0); // T:[AF-16, 21]
+        creditAccountsSet.remove(creditAccount);  // T:[AF-16]
+        emit TakeForever(creditAccount, to); // T:[AF-16, 21]
     }
 
     ///
@@ -433,5 +432,9 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         returns (address)
     {
         return creditAccountsSet.at(id);
+    }
+
+    function isCreditAccount(address addr) external view returns (bool) {
+        return creditAccountsSet.contains(addr); // T:[AF-16]
     }
 }

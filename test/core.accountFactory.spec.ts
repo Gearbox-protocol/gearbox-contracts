@@ -254,13 +254,21 @@ describe("AccountFactory", function () {
     const creditAccount = await accountFactory.getNext(prev);
     const accountAfter = await accountFactory.getNext(creditAccount);
 
+    await expect(await accountFactory.isCreditAccount(creditAccount)).to.be
+      .true;
+
     await expect(accountFactory.takeOut(prev, creditAccount, user.address))
       .to.emit(accountFactory, "TakeForever")
       .withArgs(creditAccount, user.address);
+
     expect(
       await accountFactory.getNext(prev),
       "Incorrect list update"
     ).to.be.eq(accountAfter);
+
+    await expect(await accountFactory.isCreditAccount(creditAccount)).to.be
+      .false;
+
     const creditAccountContract = ICreditAccount__factory.connect(
       creditAccount,
       deployer
