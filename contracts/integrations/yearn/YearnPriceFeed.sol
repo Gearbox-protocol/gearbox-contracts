@@ -8,6 +8,7 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/Ag
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {IYVault} from "./IYVault.sol";
+import {Errors} from "../../libraries/helpers/Errors.sol";
 
 import "hardhat/console.sol";
 
@@ -19,6 +20,10 @@ contract YearnPriceFeed is AggregatorV3Interface {
     uint256 decimalsDivider;
 
     constructor(address _yVault, address _priceFeed) {
+        require(
+            _yVault != address(0) && _priceFeed != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         yVault = IYVault(_yVault);
         priceFeed = AggregatorV3Interface(_priceFeed);
         decimalsDivider = 10**yVault.decimals();

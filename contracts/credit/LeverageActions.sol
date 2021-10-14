@@ -80,6 +80,7 @@ contract LeveragedActions is ReentrancyGuard {
     }
 
     constructor(address _addressProvider) {
+        require(_addressProvider != address (0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
         AddressProvider addressProvider = AddressProvider(_addressProvider);
         contractsRegister = ContractsRegister(
             addressProvider.getContractsRegister()

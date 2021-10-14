@@ -33,6 +33,7 @@ contract ContractsRegister is ACLTrait {
         external
         configuratorOnly // T:[CR-1]
     {
+        require(newPoolAddress != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
         require(!isPool[newPoolAddress], Errors.CR_POOL_ALREADY_ADDED); // T:[CR-2]
         pools.push(newPoolAddress); // T:[CR-3]
         isPool[newPoolAddress] = true; // T:[CR-3]
@@ -56,6 +57,9 @@ contract ContractsRegister is ACLTrait {
         external
         configuratorOnly // T:[CR-1]
     {
+
+        require(newCreditManager != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+
         require(
             !isCreditManager[newCreditManager],
             Errors.CR_CREDIT_MANAGER_ALREADY_ADDED

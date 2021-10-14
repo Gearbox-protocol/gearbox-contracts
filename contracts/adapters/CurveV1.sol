@@ -31,6 +31,10 @@ contract CurveV1Adapter is ICurvePool, ReentrancyGuard {
     /// @param _creditManager Address Credit manager
     /// @param _curvePool Address of curve-compatible pool
     constructor(address _creditManager, address _curvePool) {
+        require(
+            _creditManager != address(0) && _creditManager != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
         curvePool = ICurvePool(_curvePool);
@@ -50,7 +54,7 @@ contract CurveV1Adapter is ICurvePool, ReentrancyGuard {
         int128 j,
         uint256 dx,
         uint256 min_dy
-    ) external override  nonReentrant {
+    ) external override nonReentrant {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         ); // M:[CVA-1]

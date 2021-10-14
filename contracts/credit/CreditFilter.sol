@@ -111,6 +111,10 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     constructor(address _addressProvider, address _underlyingToken)
         ACLTrait(_addressProvider)
     {
+        require(
+            _addressProvider != address(0) && _underlyingToken != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         addressProvider = AddressProvider(_addressProvider);
         priceOracle = addressProvider.getPriceOracle(); // T:[CF-21]
         wethAddress = addressProvider.getWethToken(); // T:[CF-21]
@@ -251,6 +255,11 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         duringConfigOnly // T:[CF-13]
         configuratorOnly // T:[CF-1]
     {
+        require(
+            _creditManager != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
+
         creditManager = _creditManager; // T:[CF-14]
         poolService = ICreditManager(_creditManager).poolService(); //  T:[CF-14]
 
@@ -679,7 +688,8 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         require(
             owner == addressProvider.getLeveragedActions() ||
                 calcCreditAccountHealthFactor(creditAccount) >
-                PercentageMath.PERCENTAGE_FACTOR, Errors.CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED
+                PercentageMath.PERCENTAGE_FACTOR,
+            Errors.CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED
         );
     }
 }

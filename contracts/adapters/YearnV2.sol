@@ -33,6 +33,10 @@ contract YearnAdapter is IYVault, ReentrancyGuard {
     /// @param _creditManager Address Credit manager
     /// @param _yVault Address of yVault
     constructor(address _creditManager, address _yVault) {
+        require(
+            _creditManager != address(0) && _yVault != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
 

@@ -11,13 +11,17 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 /// @title ACL Trait
 /// @notice Trait which adds acl functions to contract
 abstract contract ACLTrait is Pausable {
-
     // ACL contract to check rights
     ACL private _acl;
 
     /// @dev constructor
     /// @param addressProvider Address of address repository
     constructor(address addressProvider) {
+        require(
+            addressProvider != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
+
         _acl = ACL(AddressProvider(addressProvider).getACL());
     }
 

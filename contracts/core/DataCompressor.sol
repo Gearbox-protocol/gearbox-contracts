@@ -56,6 +56,10 @@ contract DataCompressor {
     }
 
     constructor(address _addressProvider) {
+        require(
+            _addressProvider != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         addressProvider = AddressProvider(_addressProvider);
         contractsRegister = ContractsRegister(
             addressProvider.getContractsRegister()

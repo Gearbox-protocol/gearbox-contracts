@@ -97,6 +97,14 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         address _interestRateModelAddress,
         uint256 _expectedLiquidityLimit
     ) ACLTrait(_addressProvider) {
+        require(
+            _addressProvider != address(0) &&
+                _underlyingToken != address(0) &&
+                _dieselAddress != address(0) &&
+                _interestRateModelAddress != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
+
         addressProvider = AddressProvider(_addressProvider);
 
         underlyingToken = _underlyingToken;
@@ -138,6 +146,8 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         whenNotPaused // T:[PS-4]
         nonReentrant
     {
+        require(onBehalfOf != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+
         require(
             expectedLiquidity().add(amount) <= expectedLiquidityLimit,
             Errors.POOL_MORE_THAN_EXPECTED_LIQUIDITY_LIMIT
@@ -184,6 +194,8 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         nonReentrant
         returns (uint256)
     {
+        require(to != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+
         uint256 underlyingTokensAmount = fromDiesel(amount); // T:[PS-3, 8]
 
         uint256 amountTreasury = underlyingTokensAmount.percentMul(withdrawFee);
@@ -496,7 +508,6 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     function creditManagersCount() external view override returns (uint256) {
         return creditManagers.length; // T:[PS-11]
     }
-
 
     function calcTimeDiscountedAmount(
         uint256 amount,

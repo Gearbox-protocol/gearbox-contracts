@@ -6,6 +6,7 @@ import {MerkleProof} from "@openzeppelin/contracts/cryptography/MerkleProof.sol"
 import {AddressProvider} from "./AddressProvider.sol";
 import {AccountFactory} from "./AccountFactory.sol";
 import {IMerkleDistributor} from "../interfaces/IMerkleDistributor.sol";
+import {Errors} from "../libraries/helpers/Errors.sol";
 
 /// @dev Account Mining contract, based on https://github.com/Uniswap/merkle-distributor
 /// It's needed only during Account Mining phase before protocol will be launched
@@ -24,6 +25,12 @@ contract AccountMining is IMerkleDistributor {
         uint256 amount_,
         AddressProvider addressProvider
     ) {
+        require(
+            token_ != address(0) &&
+                merkleRoot_.length > 0 &&
+                address(addressProvider) != address(0),
+            Errors.AM_INCORRECT_PARAMS
+        );
         token = token_;
         merkleRoot = merkleRoot_;
         amount = amount_;

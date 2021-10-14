@@ -3,10 +3,11 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
-import "@openzeppelin/contracts/math/Math.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../interfaces/IGearToken.sol";
+import {Math} from "@openzeppelin/contracts/math/Math.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import {IGearToken} from "../interfaces/IGearToken.sol";
+import {Errors} from "../libraries/helpers/Errors.sol";
 
 contract StepVesting {
     using SafeMath for uint256;
@@ -40,6 +41,10 @@ contract StepVesting {
         uint256 _numOfSteps,
         address _receiver
     ) {
+        require(
+            address(_token) != address(0) && _receiver != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         token = _token;
         started = _started;
         cliffDuration = _cliffDuration;
@@ -70,12 +75,13 @@ contract StepVesting {
     }
 
     function setReceiver(address _receiver) public onlyReceiver {
-        require(_receiver != address(0), "Receiver is zero address");
+        require(_receiver != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
         emit ReceiverChanged(receiver, _receiver);
         receiver = _receiver;
     }
 
     function delegate(address delegatee) external onlyReceiver {
+        require(delegatee != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
         token.delegate(delegatee);
     }
 

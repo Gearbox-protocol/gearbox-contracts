@@ -109,6 +109,13 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         address _creditFilterAddress,
         address _defaultSwapContract
     ) ACLTrait(_addressProvider) {
+        require(
+            _addressProvider != address(0) &&
+                _poolService != address(0) &&
+                _creditFilterAddress != address(0) &&
+                _defaultSwapContract != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         AddressProvider addressProvider = AddressProvider(_addressProvider); // T:[CM-1]
         poolService = _poolService; // T:[CM-1]
         underlyingToken = IPoolService(_poolService).underlyingToken(); // T:[CM-1]

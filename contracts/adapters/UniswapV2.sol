@@ -26,6 +26,10 @@ contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
     /// @param _creditManager Address Credit manager
     /// @param _router Address of IUniswapV2Router02
     constructor(address _creditManager, address _router) {
+        require(
+            _creditManager != address(0) && _router != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
         router = _router;
@@ -50,7 +54,7 @@ contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
         address[] calldata path,
         address,
         uint256 deadline
-    ) external override  nonReentrant returns (uint256[] memory amounts) {
+    ) external override nonReentrant returns (uint256[] memory amounts) {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         );
@@ -110,7 +114,7 @@ contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
         address[] calldata path,
         address,
         uint256 deadline
-    ) external override  nonReentrant returns (uint256[] memory amounts) {
+    ) external override nonReentrant returns (uint256[] memory amounts) {
         address creditAccount = creditManager.getCreditAccountOrRevert(
             msg.sender
         );

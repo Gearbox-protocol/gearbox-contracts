@@ -82,6 +82,10 @@ contract WETHGateway is IWETHGateway {
     /// @dev Constructor
     /// @param addressProvider Address Repository for upgradable contract model
     constructor(address addressProvider) {
+        require(
+            addressProvider != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         wethAddress = AddressProvider(addressProvider).getWethToken();
         _contractsRegister = ContractsRegister(
             AddressProvider(addressProvider).getContractsRegister()

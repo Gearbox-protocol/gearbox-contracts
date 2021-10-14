@@ -12,6 +12,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {CreditManager} from "../credit/CreditManager.sol";
+import {Errors} from "../libraries/helpers/Errors.sol";
 
 import "hardhat/console.sol";
 
@@ -31,6 +32,10 @@ contract UniswapV3Adapter is ISwapRouter, ReentrancyGuard {
     /// @param _creditManager Address Credit manager
     /// @param _router Address of ISwapRouter
     constructor(address _creditManager, address _router) {
+        require(
+            _creditManager != address(0) && _router != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         creditManager = ICreditManager(_creditManager);
         creditFilter = ICreditFilter(creditManager.creditFilter());
         router = _router;

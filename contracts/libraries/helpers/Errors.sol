@@ -126,26 +126,11 @@ library Errors {
     // "AccountFactory: cant take the last account";
     string public constant AF_CREDIT_ACCOUNT_NOT_IN_STOCK = "F4";
 
-    // Account Miner
-    string public constant AM_ACCOUNT_FACTORY_ONLY = "F3";
-    // "AccountMiner: for account factory only";
-
-    string public constant AM_ACCOUNT_FACTORY_ALREADY_EXISTS = "F4";
-    // "AccountMiner: account factory already exists";
-
-    string public constant AM_NO_BIDS_WERE_MADE = "F6";
-    // "AccountMiner: can't mine new va, no bids were made";
-
-    string public constant AM_BID_LOWER_THAN_MINIMAL = "F7";
-    // "AccountMinter: your bid is low than minimal available";
-
-    string public constant AM_USER_ALREADY_HAS_BID = "F8";
-    // "AccountMinter: you've already place a bid";
-
-    string public constant AM_USER_HAS_NO_BIDS = "F9";
-    // "AccountMiner: user has no bid";
-
     string public constant AF_EXTERNAL_ACCOUNTS_ARE_FORBIDDEN = "FA";
+
+    // Account Miner
+    string public constant AM_INCORRECT_PARAMS = "AM1";
+    // "AccountMiner: for account factory only";
 
     //
     // ADDRESS PROVIDER

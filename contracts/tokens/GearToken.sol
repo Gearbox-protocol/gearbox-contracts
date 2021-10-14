@@ -107,6 +107,7 @@ contract GearToken {
      * @param account The initial account to grant all the tokens
      */
     constructor(address account) {
+        require(account != address(0), "Zero address is not allowed");
         balances[account] = uint96(totalSupply);
         emit Transfer(address(0), account, totalSupply);
         manager = msg.sender;
@@ -126,6 +127,7 @@ contract GearToken {
         external
         managerOnly // T:[GT-3]
     {
+        require(_miner != address(0), "Zero address is not allowed");
         miner = _miner; // T:[GT-4]
         emit MinerSet(miner); // T:[GT-4]
     }

@@ -86,16 +86,22 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
      * @param addressProvider Address of address repository
      */
     constructor(address addressProvider) ACLTrait(addressProvider) {
+
+        require(
+            addressProvider != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
+
         _contractsRegister = ContractsRegister(
             AddressProvider(addressProvider).getContractsRegister()
         ); // T:[AF-1]
 
-        masterCreditAccount = address(new CreditAccount());  // T:[AF-1]
-        CreditAccount(masterCreditAccount).initialize();  // T:[AF-1]
+        masterCreditAccount = address(new CreditAccount()); // T:[AF-1]
+        CreditAccount(masterCreditAccount).initialize(); // T:[AF-1]
 
         addCreditAccount(); // T:[AF-1]
         head = tail; // T:[AF-1]
-        _nextCreditAccount[address(0)] = address(0); // ToDo: add check
+        _nextCreditAccount[address(0)] = address(0);  // T:[AF-1]
     }
 
     /**
@@ -325,6 +331,11 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     {
         require(!isMiningFinished, Errors.AF_MINING_IS_FINISHED); // T:[AF-17]
         for (uint256 i = 0; i < _miningApprovals.length; i++) {
+            require(
+                _miningApprovals[i].token != address(0) &&
+                    _miningApprovals[i].swapContract != address(0),
+                Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+            );
             DataTypes.MiningApproval memory item = DataTypes.MiningApproval(
                 _miningApprovals[i].token,
                 _miningApprovals[i].swapContract
