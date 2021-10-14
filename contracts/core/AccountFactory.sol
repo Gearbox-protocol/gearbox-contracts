@@ -279,7 +279,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
         if (head == creditAccount) {
             address prevHead = head;
             head = _nextCreditAccount[head]; // T:[AF-21] it exists cause we called _checkStock();
-            _nextCreditAccount[prevHead] = address(0);
+            _nextCreditAccount[prevHead] = address(0); // T:[AF-21]
         } else {
             require(
                 _nextCreditAccount[prev] == creditAccount,

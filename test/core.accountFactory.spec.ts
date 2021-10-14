@@ -430,6 +430,11 @@ describe("AccountFactory", function () {
     expect(await accountFactory.head(), "Incorrect list update").to.be.eq(
       accountAfter
     );
+
+    expect(await accountFactory.getNext(head), "Clear _nextAccount[head]").to.be.eq(
+      ADDRESS_0x0
+    );
+
     const creditAccountContract = ICreditAccount__factory.connect(
       head,
       deployer
