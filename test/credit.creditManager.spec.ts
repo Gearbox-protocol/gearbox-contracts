@@ -1634,4 +1634,20 @@ describe("CreditManager", function () {
       creditManager.connect(user).transferAccountOwnership(deployer.address)
     ).to.be.revertedWith(revertMsg);
   });
+
+  it("[CM-56]: liquidateCreditAccount reverts if zero-address was provided", async () => {
+    const revertMsg = await errors.ZERO_ADDRESS_IS_NOT_ALLOWED();
+
+    await ts.liquidationSetup();
+
+    await expect(
+      creditManager
+        .connect(liquidator)
+        .liquidateCreditAccount(user.address, ADDRESS_0x0, false)
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      creditManager.connect(user).repayCreditAccount(ADDRESS_0x0)
+    ).to.be.revertedWith(revertMsg);
+  });
 });

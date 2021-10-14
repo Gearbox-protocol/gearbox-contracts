@@ -385,8 +385,6 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     ) internal returns (uint256, uint256) {
         bool isLiquidated = operation == Constants.OPERATION_LIQUIDATION;
 
-        require(to != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
-
         (
             uint256 borrowedAmount,
             uint256 amountToPool,
@@ -562,6 +560,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     ) internal returns (uint256 totalValue, uint256 totalWeightedValue) {
         uint256 tokenMask;
         uint256 enabledTokens = creditFilter.enabledTokens(creditAccount);
+        require(to != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
 
         for (uint256 i = 0; i < creditFilter.allowedTokensCount(); i++) {
             tokenMask = 1 << i;
