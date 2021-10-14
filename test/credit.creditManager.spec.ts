@@ -217,7 +217,7 @@ describe("CreditManager", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CM-3]: openCreditAccount reverts if user has already opened account", async () => {
+  it("[CM-3]: openCreditAccount reverts if user has already opened account or provide zero addreess as onBelafOn", async () => {
     const revertMsg =
       await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
 
@@ -230,6 +230,12 @@ describe("CreditManager", function () {
       creditManager
         .connect(user)
         .openCreditAccount(amount, user.address, leverageFactor, referral)
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      creditManager
+        .connect(user)
+        .openCreditAccount(amount, ADDRESS_0x0, leverageFactor, referral)
     ).to.be.revertedWith(revertMsg);
   });
 

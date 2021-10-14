@@ -1264,7 +1264,7 @@ describe("CreditFilter", function () {
   });
 
   it("[CF-42]: checkCollateralChange reverts for non-fastcheck and Hf<1 after operation", async () => {
-    const revertMsg = await errors.CF_OPERATION_LOW_HEALTH_FACTOR();
+    const revertMsg = await errors.CF_INCORRECT_ARRAY_LENGTH();
 
     await creditManagerMockForFilter.connectFilter(
       creditFilter.address,
