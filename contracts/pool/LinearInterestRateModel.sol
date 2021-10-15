@@ -46,19 +46,19 @@ contract LinearInterestRateModel is IInterestRateModel {
     ) {
         require(
             U_optimal <= PercentageMath.PERCENTAGE_FACTOR,
-            Errors.LIM_INCORRECT_PARAMETER
+            Errors.INCORRECT_PARAMETER
         );
         require(
             R_base <= PercentageMath.PERCENTAGE_FACTOR,
-            Errors.LIM_INCORRECT_PARAMETER
+            Errors.INCORRECT_PARAMETER
         );
         require(
             R_slope1 <= PercentageMath.PERCENTAGE_FACTOR,
-            Errors.LIM_INCORRECT_PARAMETER
+            Errors.INCORRECT_PARAMETER
         );
         require(
             R_slope2 <= PercentageMath.PERCENTAGE_FACTOR,
-            Errors.LIM_INCORRECT_PARAMETER
+            Errors.INCORRECT_PARAMETER
         );
 
         // Convert percetns to WAD

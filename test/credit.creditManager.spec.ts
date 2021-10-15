@@ -1170,7 +1170,7 @@ describe("CreditManager", function () {
   it("[CM-40]: setParams reverts if minHeathFactor is too high", async () => {
     const revertMsg = await errors.CM_MAX_LEVERAGE_IS_TOO_HIGH();
     await expect(
-      creditManager.setParams(0, 1000, 1000, 0, 0, 9500)
+      creditManager.setParams(0, 1000, 1500, 0, 200, 9500)
     ).to.be.revertedWith(revertMsg);
   });
 
@@ -1680,7 +1680,7 @@ describe("CreditManager", function () {
   });
 
   it("[CM-57]: closeCreditAccount reverts if closePath.length !== allowedAccountCount()", async () => {
-    const revertMsg = await errors.CM_INCORRECT_CLOSE_PATH_LENGTH();
+    const revertMsg = await errors.INCORRECT_PATH_LENGTH();
 
     // Open default credit account
     await ts.openDefaultCreditAccount();
@@ -1713,9 +1713,8 @@ describe("CreditManager", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-
   it("[CM-59]: maxFactor =0 reverts", async () => {
-    const revertMsg = await errors.CM_INCORRECT_PARAMS()
+    const revertMsg = await errors.CM_INCORRECT_PARAMS();
 
     await expect(
       creditManager.setParams(0, 1, 0, 200, 200, 9500)

@@ -324,7 +324,7 @@ describe("CreditFilter", function () {
   });
 
   it("[CF-13]: connectCreditManager can be called only once", async () => {
-    const revertMsg = await errors.IMMUTABLE_CONFIG_CHANGES_FORBIDDEN();
+    const revertMsg = await errors.CF_CREDIT_MANAGER_IS_ALREADY_SET();
 
     const creditManager = await creditManagerDeployer.getCreditManager();
 
@@ -902,7 +902,7 @@ describe("CreditFilter", function () {
     expect(healthFactor).to.be.eq(expectedHealthFactor);
   });
 
-  it("[CF-28]:getCreditAccountTokenById returns correct token, amount, tv & twv", async () => {
+  it("[CF-28]: getCreditAccountTokenById returns correct token, amount, tv & twv", async () => {
     const chainlinkMock = await testDeployer.getChainlinkPriceFeedMock(
       BigNumber.from(10).mul(WAD),
       18
@@ -932,7 +932,7 @@ describe("CreditFilter", function () {
     // ToDo: Add one more token
   });
 
-  it("[CF-30]:setupFastCheckParameters set parameters correctly and emits event", async () => {
+  it("[CF-30]: setupFastCheckParameters set parameters correctly and emits event", async () => {
     const newChi = (await creditFilter.chiThreshold()).toNumber() + 5;
     const newFastCheckDelay =
       (await creditFilter.hfCheckInterval()).toNumber() - 1;
@@ -1233,7 +1233,7 @@ describe("CreditFilter", function () {
 
   it("[CF-41]: checkMultiTokenCollateral reverts for incorrect arrays length", async () => {
 
-    const revertMsg = await errors.CF_INCORRECT_ARRAY_LENGTH();
+    const revertMsg = await errors.INCORRECT_ARRAY_LENGTH();
 
     const creditAccount = await setupCreditAccount();
     const fakeContract = DUMB_ADDRESS2;
@@ -1264,7 +1264,7 @@ describe("CreditFilter", function () {
   });
 
   it("[CF-42]: checkCollateralChange reverts for non-fastcheck and Hf<1 after operation", async () => {
-    const revertMsg = await errors.CF_INCORRECT_ARRAY_LENGTH();
+    const revertMsg = await errors.INCORRECT_ARRAY_LENGTH();
 
     await creditManagerMockForFilter.connectFilter(
       creditFilter.address,

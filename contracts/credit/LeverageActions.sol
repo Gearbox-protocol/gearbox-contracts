@@ -74,7 +74,7 @@ contract LeveragedActions is ReentrancyGuard {
     modifier registeredCreditManagersOnly(address creditManager) {
         require(
             contractsRegister.isCreditManager(creditManager),
-            Errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER
+            Errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY
         );
         _;
     }
@@ -104,7 +104,7 @@ contract LeveragedActions is ReentrancyGuard {
         LongParameters calldata longParams,
         uint256 referralCode
     ) external payable nonReentrant {
-        require(path.length >= 2, Errors.LA_INCORRECT_PATH_LENGTH);
+        require(path.length >= 2, Errors.INCORRECT_PATH_LENGTH);
 
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x38ed1739), // "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
@@ -254,7 +254,7 @@ contract LeveragedActions is ReentrancyGuard {
                     address(this)
                 )
             ) >= amountOutMin,
-            Errors.LA_NOT_ENOUGH_AMOUNT_MIN
+            Errors.LA_LOWER_THAN_AMOUNT_MIN
         );
 
         // Transfers ownership to msg.sender
@@ -426,7 +426,7 @@ contract LeveragedActions is ReentrancyGuard {
 
         require(
             IERC20(asset).balanceOf(creditAccount) >= longParams.amountOutMin,
-            Errors.LA_NOT_ENOUGH_AMOUNT_MIN
+            Errors.LA_LOWER_THAN_AMOUNT_MIN
         );
 
         ICreditManager(longParams.creditManager).transferAccountOwnership(
@@ -461,7 +461,7 @@ contract LeveragedActions is ReentrancyGuard {
             require(msg.value == amountIn, Errors.LA_INCORRECT_VALUE); // M:[LA-12]
             IWETH(wethToken).deposit{value: msg.value}(); // M:[LA-2, ]
         } else {
-            require(msg.value == 0, Errors.LA_INCORRECT_MSG); // M:[LA-11]
+            require(msg.value == 0, Errors.LA_HAS_VALUE_WITH_TOKEN_TRANSFER); // M:[LA-11]
             IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn); // M:[LA-1,3,4,5,6,7,8]
         }
     }
@@ -513,7 +513,7 @@ contract LeveragedActions is ReentrancyGuard {
     {
         require(
             path.length >= 2 * ADDR_SIZE + FEE_SIZE,
-            Errors.LA_INCORRECT_PATH_LENGTH
+            Errors.INCORRECT_PATH_LENGTH
         );
 
         tokenA = path.toAddress(0);

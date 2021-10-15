@@ -44,7 +44,7 @@ import {
   UniV3helper,
 } from "@diesellabs/gearbox-leverage";
 
-describe("Actions test", function () {
+describe("LeveragedActions test (Mainnet test)", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);
@@ -916,7 +916,7 @@ describe("Actions test", function () {
   });
 
   it("[LA-9]: _openLong & openLP reverts for unknown creditManager", async () => {
-    const revertMsg = await errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER();
+    const revertMsg = await errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY();
 
     const ts2 = new CreditManagerTestSuite();
     await ts2.getSuite();
@@ -1025,7 +1025,7 @@ describe("Actions test", function () {
   });
 
   it("[LA-11]: action reverts if provided msg.value for non-wethtoken", async () => {
-    const revertMsg = await errors.LA_INCORRECT_MSG();
+    const revertMsg = await errors.LA_HAS_VALUE_WITH_TOKEN_TRANSFER()
     await expect(
       ts.leveragedActions.openLP(
         ts.creditManagerDAI.address,
@@ -1238,5 +1238,74 @@ describe("Actions test", function () {
     );
   });
 
-  it("[LA-14]: _openShort returns ETH for wethTokens", async () => {});
+  it("[LA-14]: _openShortUniV2 reverts if path.length <2 ", async () => {
+    const revertMsg = await errors.INCORRECT_PATH_LENGTH();
+
+    const longPath = [
+      tokenDataByNetwork.Mainnet.DAI.address,
+      WETHToken.Mainnet,
+    ];
+
+    const uniV2adapter = await UniV2helper.getHelper(
+      "UnswapV2",
+      UNISWAP_V2_ROUTER,
+      await ts.creditFilterDAI.contractToAdapter(UNISWAP_V2_ROUTER),
+      ADDRESS_0x0,
+      deployer
+    );
+
+    const tradePath = await uniV2adapter.getTradePath(
+      SwapType.ExactInput,
+      BigNumber.from(10000),
+      longPath
+    );
+
+    const calldata = await uniV2adapter.getCalldata(tradePath, 0, deployer);
+
+    await expect(
+      ts.leveragedActions.connect(user).openShortUniV2(
+        UNISWAP_V2_ROUTER,
+        100,
+        200,
+        [WETHToken.Mainnet],
+        {
+          amountOutMin: tradePath.expectedAmount,
+          creditManager: ts.creditManagerDAI.address,
+          leverageFactor,
+          swapInterface: AdapterInterface.UniswapV2,
+          swapContract: UNISWAP_V2_ROUTER,
+          swapCalldata: calldata,
+          lpInterface: AdapterInterface.NoSwap,
+          lpContract: ADDRESS_0x0,
+        },
+        referralCode,
+        { value: 100 }
+      )
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      ts.leveragedActions.connect(user).openShortUniV3(
+        UNISWAP_V3_ROUTER,
+        {
+          path: UniV3helper.pathToUniV3Path([WETHToken.Mainnet]),
+          recipient: deployer.address,
+          deadline: UniV3helper.getDeadline(),
+          amountIn: accountAmount,
+          amountOutMinimum: BigNumber.from(0),
+        },
+        {
+          amountOutMin: tradePath.expectedAmount,
+          creditManager: ts.creditManagerDAI.address,
+          leverageFactor,
+          swapInterface: AdapterInterface.UniswapV2,
+          swapContract: UNISWAP_V2_ROUTER,
+          swapCalldata: calldata,
+          lpInterface: AdapterInterface.NoSwap,
+          lpContract: ADDRESS_0x0,
+        },
+        referralCode,
+        { value: 100 }
+      )
+    ).to.be.revertedWith(revertMsg);
+  });
 });

@@ -99,15 +99,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         _;
     }
 
-    /// Restring any operations after setup is finalised
-    modifier duringConfigOnly() {
-        require(
-            creditManager == address(0),
-            Errors.IMMUTABLE_CONFIG_CHANGES_FORBIDDEN
-        ); // T:[CF-9,13]
-        _;
-    }
-
     constructor(address _addressProvider, address _underlyingToken)
         ACLTrait(_addressProvider)
     {
@@ -252,13 +243,17 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     function connectCreditManager(address _creditManager)
         external
         override
-        duringConfigOnly // T:[CF-13]
         configuratorOnly // T:[CF-1]
     {
         require(
             _creditManager != address(0),
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
         );
+
+        require(
+            creditManager == address(0),
+            Errors.CF_CREDIT_MANAGER_IS_ALREADY_SET
+        ); // T:[CF-9,13]
 
         creditManager = _creditManager; // T:[CF-14]
         poolService = ICreditManager(_creditManager).poolService(); //  T:[CF-14]
@@ -330,7 +325,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         require(
             amountIn.length == tokenIn.length &&
                 amountOut.length == tokenOut.length,
-            Errors.CF_INCORRECT_ARRAY_LENGTH
+            Errors.INCORRECT_ARRAY_LENGTH
         );
 
         for (uint256 i = 0; i < amountIn.length; i++) {

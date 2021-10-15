@@ -16,7 +16,7 @@ import { LEVERAGE_DECIMALS, MAX_INT, WAD } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
 
 
-describe("CreditManager test", function () {
+describe("CreditManager test (Mainnet test)", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);
@@ -50,7 +50,7 @@ describe("CreditManager test", function () {
     await r3.wait();
   });
 
-  it("[CM-1]: it opens creditAccount correctly", async function () {
+  it("M:[CM-1]: it opens creditAccount correctly", async function () {
     const poolBalance = await ts.daiToken.balanceOf(ts.poolDAI.address);
 
     await ts.creditManagerDAI.openCreditAccount(

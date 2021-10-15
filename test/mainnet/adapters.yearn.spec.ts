@@ -29,7 +29,7 @@ import { BigNumber } from "ethers";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
 import { YearnHelper } from "@diesellabs/gearbox-leverage";
 
-describe("YEARN adapter", function () {
+describe("YEARN adapter (Mainnet test)", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);

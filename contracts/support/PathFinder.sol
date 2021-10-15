@@ -36,7 +36,7 @@ contract PathFinder {
         // Could be optimised by adding internal list of creditManagers
         require(
             contractsRegister.isCreditManager(creditManager),
-            Errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER
+            Errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY
         ); // T:[WG-3]
 
         _;

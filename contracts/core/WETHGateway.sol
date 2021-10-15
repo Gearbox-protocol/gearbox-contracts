@@ -36,7 +36,7 @@ contract WETHGateway is IWETHGateway {
         // Could be optimised by adding internal list of pools
         require(
             _contractsRegister.isPool(pool),
-            Errors.WG_DESTINATION_IS_NOT_POOL
+            Errors.REGISTERED_POOLS_ONLY
         ); // T:[WG-1]
 
         require(
@@ -52,7 +52,7 @@ contract WETHGateway is IWETHGateway {
 
         require(
             _contractsRegister.isCreditManager(creditManager),
-            Errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER
+            Errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY
         ); // T:[WG-3]
 
         require(
@@ -69,7 +69,7 @@ contract WETHGateway is IWETHGateway {
 
         require(
             _contractsRegister.isCreditManager(creditManager),
-            Errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER
+            Errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY
         ); // T:[WG-3]
 
         _;

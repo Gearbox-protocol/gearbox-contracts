@@ -26,7 +26,7 @@ import {
 import { BigNumber } from "ethers";
 import { UniV2helper } from "@diesellabs/gearbox-leverage";
 
-describe("UniswapV2 adapter", function () {
+describe("UniswapV2 adapter (Mainnet test)", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);
@@ -78,6 +78,11 @@ describe("UniswapV2 adapter", function () {
       .connect(user)
       .approve(UNISWAP_V2_ROUTER, MAX_INT);
     await r6.wait();
+
+    const r7 = await ts.daiToken
+      .transfer(user.address, accountAmount.mul(20));
+    await r7.wait();
+
   });
 
   const openUserAccount = async () => {
@@ -166,6 +171,8 @@ describe("UniswapV2 adapter", function () {
         friend.address,
         UniV2helper.getDeadline()
       );
+
+    console.log("3")
 
     expect(expectAmountsRouter).to.be.eql(expectAmountsAdapter);
 

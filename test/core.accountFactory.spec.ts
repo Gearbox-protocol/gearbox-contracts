@@ -183,7 +183,7 @@ describe("AccountFactory", function () {
   });
 
   it("[AF-12]: takeCreditAccount, returns creditAccount reverts if was called by non creditManagers", async () => {
-    const revertMsg = await errors.CR_CREDIT_ACCOUNT_MANAGERS_ONLY();
+    const revertMsg = await errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY();
     await expect(accountFactory.takeCreditAccount(1, 2)).to.be.revertedWith(
       revertMsg
     );

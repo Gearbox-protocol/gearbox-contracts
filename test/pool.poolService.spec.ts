@@ -53,7 +53,7 @@ describe("PoolService", function () {
   beforeEach(async () => {
     ts = new PoolTestSuite();
     await ts.getSuite();
-    await ts.setupVanillaPoolService(true);
+    await ts.setupPoolService(true);
 
     deployer = ts.deployer;
     coreDeployer = ts.coreDeployer;
@@ -334,7 +334,7 @@ describe("PoolService", function () {
   });
 
   it("[PS-12]: lendCreditAccount, repayCreditAccount reverts if called non-CreditManager", async () => {
-    const revertMsg = await errors.POOL_CREDIT_MANAGERS_ONLY();
+    const revertMsg = await errors.POOL_CONNECTED_CREDIT_MANAGERS_ONLY();
     await expect(
       poolService.lendCreditAccount(0, DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);
@@ -344,7 +344,7 @@ describe("PoolService", function () {
   });
 
   it("[PS-13]: lendCreditAccount reverts of creditManagers was disallowed by forbidCreditManagerToBorrow", async () => {
-    const revertMsg = await errors.POOL_CREDIT_MANAGERS_ONLY();
+    const revertMsg = await errors.POOL_CONNECTED_CREDIT_MANAGERS_ONLY();
     const creditManagerMock =
       await ts.testDeployer.getCreditManagerMockForPoolTest(
         poolService.address

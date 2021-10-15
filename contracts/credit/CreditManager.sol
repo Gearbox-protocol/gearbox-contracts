@@ -723,6 +723,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         liquidationDiscount = _liquidationDiscount; // T:[CM-37]
 
         // Compute minHealthFactor: https://dev.gearbox.fi/developers/credit/credit_manager#increase-borrow-amount
+        // LT_U = liquidationDiscount - feeLiquidation
         minHealthFactor = liquidationDiscount
         .sub(feeLiquidation)
         .mul(maxLeverageFactor.add(Constants.LEVERAGE_DECIMALS))
@@ -811,7 +812,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
 
         require(
             paths.length == creditFilter.allowedTokensCount(),
-            Errors.CM_INCORRECT_CLOSE_PATH_LENGTH
+            Errors.INCORRECT_PATH_LENGTH
         ); // ToDo: check
 
         for (uint256 i = 1; i < paths.length; i++) {

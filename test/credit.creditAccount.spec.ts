@@ -18,7 +18,7 @@ describe("CreditAccount", function () {
   let creditAccount: CreditAccount;
   let errors: Errors;
 
-  beforeEach(async function () {
+  beforeEach(async () => {
     deployer = (await ethers.getSigners())[0] as SignerWithAddress;
     user = (await ethers.getSigners())[1];
     coreDeployer = new CoreDeployer({
@@ -32,7 +32,7 @@ describe("CreditAccount", function () {
     errors = await testDeployer.getErrors();
   });
 
-  it("[CA-1]: initialize reverts if called by non-owner", async function () {
+  it("[CA-1]: initialize reverts if called by non-owner", async () => {
     const revertMsg = await errors.CA_FACTORY_ONLY();
 
     await expect(
@@ -40,8 +40,8 @@ describe("CreditAccount", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CA-2]:  updateBorrowedAmount, approveTokenForContract, transfer reverts if call non credit Manager", async function () {
-    const revertMsg = await errors.CA_CREDIT_MANAGER_ONLY();
+  it("[CA-2]:  updateBorrowedAmount, approveTokenForContract, transfer reverts if call non credit Manager", async () => {
+    const revertMsg = await errors.CA_CONNECTED_CREDIT_MANAGER_ONLY();
 
     await expect(
       creditAccount.connect(user).updateBorrowedAmount(12)
@@ -56,19 +56,19 @@ describe("CreditAccount", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CA-3]: connectTo set parameters correctly", async function () {
+  it("[CA-3]: connectTo set parameters correctly", async () => {
     await creditAccount.connectTo(deployer.address, 100, 200);
     expect(await creditAccount.borrowedAmount()).to.be.eq(100);
     expect(await creditAccount.cumulativeIndexAtOpen()).to.be.eq(200);
   });
 
-  it("[CA-4]: updateBorrowAmount updates correctly", async function () {
+  it("[CA-4]: updateBorrowAmount updates correctly", async () => {
     await creditAccount.connectTo(deployer.address, 100, 200);
     await creditAccount.updateBorrowedAmount(454);
     expect(await creditAccount.borrowedAmount()).to.be.eq(454);
   });
 
-  it("[CA-5]: approveTokenForContract sets MAX allowance for provided token", async function () {
+  it("[CA-5]: approveTokenForContract sets MAX allowance for provided token", async () => {
     await creditAccount.connectTo(deployer.address, 1, 1);
     const tokenMock = await testDeployer.getTokenMock("TEST", "TEST");
 
@@ -78,7 +78,7 @@ describe("CreditAccount", function () {
     ).to.be.eq(MAX_INT);
   });
 
-  it("[CA-6]: transfer transfers tokens correctly", async function () {
+  it("[CA-6]: transfer transfers tokens correctly", async () => {
     await creditAccount.connectTo(deployer.address, 1, 1);
 
     const amountTransfer = 1000;
@@ -104,7 +104,7 @@ describe("CreditAccount", function () {
     );
   });
 
-  it("[CA-7]: connectTo() sets creditManager & since parameters correctly", async function () {
+  it("[CA-7]: connectTo() sets creditManager & since parameters correctly", async () => {
     const receipt = await creditAccount.connectTo(user.address, 101, 202);
 
     expect(await creditAccount.since()).to.be.eq(receipt.blockNumber);

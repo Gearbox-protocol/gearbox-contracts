@@ -43,10 +43,12 @@ describe("WETHGateway", function () {
       poolConfig: {
         interestModel: STANDARD_INTEREST_MODEL_PARAMS,
         underlyingToken: wethToken.address,
+        expectedLiquidityLimit: MAX_INT,
       },
       coreConfig: {
         weth: wethToken.address,
       },
+
     });
     await ts.getSuite();
     await ts.setupCreditManager();
@@ -76,6 +78,7 @@ describe("WETHGateway", function () {
           name: "DAI",
           symbol: "DAU TOKEN",
         },
+        expectedLiquidityLimit: MAX_INT,
       },
     });
 
@@ -89,7 +92,7 @@ describe("WETHGateway", function () {
   };
 
   it("[WG-1]: addLiquidityETH, removeLiquidityETH reverts if called for non-pool addresses", async () => {
-    const revertMsg = await errors.WG_DESTINATION_IS_NOT_POOL();
+    const revertMsg = await errors.REGISTERED_POOLS_ONLY();
 
     await expect(
       wethGateway.addLiquidityETH(DUMB_ADDRESS, DUMB_ADDRESS, 0)
@@ -115,7 +118,7 @@ describe("WETHGateway", function () {
   });
 
   it("[WG-3]: openCreditAccount, repayCreditAccount reverts if call for non-creditManager addresses ", async () => {
-    const revertMsg = await errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER();
+    const revertMsg = await errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY();
 
     await expect(
       wethGateway.openCreditAccountETH(DUMB_ADDRESS, DUMB_ADDRESS, 500, 0)
@@ -146,7 +149,7 @@ describe("WETHGateway", function () {
   });
 
   it("[WG-5]: unwrapWETH reverts if call from non-creditManager addresses ", async () => {
-    const revertMsg = await errors.WG_DESTINATION_IS_NOT_CREDIT_MANAGER();
+    const revertMsg = await errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY();
 
     await expect(wethGateway.unwrapWETH(DUMB_ADDRESS, 10)).to.be.revertedWith(
       revertMsg

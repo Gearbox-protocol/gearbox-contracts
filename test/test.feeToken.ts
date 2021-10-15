@@ -178,7 +178,7 @@ describe("CreditManager", function () {
   });
 
   it("[FT-3]: LeveragedActions.openLong works correct with fee tokens", async () => {
-    const rate = 10
+    const rate = 10;
     const amount = WAD.mul(2);
     const expectedAmount = amount
       .mul(5)
@@ -208,6 +208,8 @@ describe("CreditManager", function () {
 
     await feeToken.connect(user).approve(leverageActions.address, MAX_INT);
 
+    const currentBlockchainTime = await ethers.provider.getBlock("latest");
+
     const calldata =
       IUniswapV2Router02__factory.createInterface().encodeFunctionData(
         "swapExactTokensForTokens",
@@ -216,7 +218,7 @@ describe("CreditManager", function () {
           amount.mul(rate).mul(997).div(1000),
           [feeToken.address, tokenA.address],
           deployer.address,
-          UniV2helper.getDeadline(),
+          currentBlockchainTime.timestamp + 3600,
         ]
       );
 

@@ -21,7 +21,7 @@ const {
   swapAmountB,
 } = CreditManagerTestSuite;
 
-describe("UniswapV2 Adapter", function () {
+describe("UniswapV2 Adapter (Unit test)", function () {
   let ts: CreditManagerTestSuite;
 
   let deployer: SignerWithAddress;
@@ -110,7 +110,10 @@ describe("UniswapV2 Adapter", function () {
       RAY
     );
 
-    await expect(
+    ts.tokenForbidden.transfer(ts.uniswapMock.address, swapAmountB);
+
+    await
+      expect(
       uniswapV2Adapter
         .connect(user)
         .swapTokensForExactTokens(

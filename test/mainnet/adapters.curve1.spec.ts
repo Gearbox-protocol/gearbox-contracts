@@ -29,7 +29,7 @@ import { BigNumber } from "ethers";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
 import { CurveHelper } from "@diesellabs/gearbox-leverage";
 
-describe("CurveV1 adapter", function () {
+describe("CurveV1 adapter (Mainnet test)", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);

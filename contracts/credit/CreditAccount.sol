@@ -44,7 +44,7 @@ contract CreditAccount is ICreditAccount, Initializable {
 
     /// @dev Restricts operation for current credit manager only
     modifier creditManagerOnly {
-        require(msg.sender == creditManager, Errors.CA_CREDIT_MANAGER_ONLY);
+        require(msg.sender == creditManager, Errors.CA_CONNECTED_CREDIT_MANAGER_ONLY);
         _;
     }
 

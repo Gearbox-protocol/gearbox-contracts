@@ -97,7 +97,7 @@ describe("LinearInterestRateModel", function () {
   });
 
   it("[LR-5]: linear model revers with incorrect parameters", async () => {
-    const revertMsg = await errors.LIM_INCORRECT_PARAMETER();
+    const revertMsg = await errors.INCORRECT_PARAMETER();
 
     const testCases = [
       {

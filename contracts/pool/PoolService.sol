@@ -263,7 +263,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     {
         require(
             creditManagersCanBorrow[msg.sender],
-            Errors.POOL_CREDIT_MANAGERS_ONLY
+            Errors.POOL_CONNECTED_CREDIT_MANAGERS_ONLY
         ); // T:[PS-12, 13]
 
         // Transfer funds to credit account
@@ -295,7 +295,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     {
         require(
             creditManagersCanRepay[msg.sender],
-            Errors.POOL_CREDIT_MANAGERS_ONLY
+            Errors.POOL_CONNECTED_CREDIT_MANAGERS_ONLY
         ); // T:[PS-12]
 
         // For fee surplus we mint tokens for treasury

@@ -66,7 +66,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     modifier creditManagerOnly() {
         require(
             _contractsRegister.isCreditManager(msg.sender),
-            Errors.CR_CREDIT_ACCOUNT_MANAGERS_ONLY
+            Errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY
         );
         _;
     }

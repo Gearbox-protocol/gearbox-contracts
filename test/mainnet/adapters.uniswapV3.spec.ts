@@ -26,7 +26,7 @@ import {
 import { BigNumber } from "ethers";
 import { UniV3helper } from "@diesellabs/gearbox-leverage";
 
-describe("UniswapV3 adapter", function () {
+describe("UniswapV3 adapter (Mainnet test)", function () {
   this.timeout(0);
 
   const daiLiquidity = BigNumber.from(10000).mul(WAD);

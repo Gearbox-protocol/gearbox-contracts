@@ -23,7 +23,7 @@ import { expect } from "../../utils/expect";
 import { UniV2helper, UniV3helper } from "@diesellabs/gearbox-leverage";
 import * as dotenv from "dotenv";
 
-describe("Pathfinder", function () {
+describe("Pathfinder  (Mainnet test)", function () {
   this.timeout(0);
 
   let pathFinder: PathFinder;

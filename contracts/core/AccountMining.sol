@@ -29,7 +29,7 @@ contract AccountMining is IMerkleDistributor {
             token_ != address(0) &&
                 merkleRoot_.length > 0 &&
                 address(addressProvider) != address(0),
-            Errors.AM_INCORRECT_PARAMS
+            Errors.INCORRECT_PARAMETER
         );
         token = token_;
         merkleRoot = merkleRoot_;
