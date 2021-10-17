@@ -681,6 +681,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
     function approveAccountTransfers(address from, bool state) external override {
         transfersAllowed[from][msg.sender] = state;  // T:[CF-43]
+        emit TransferAccountAllowed(from, msg.sender, state); // T:[CF-43]
     }
 
     function allowanceForAccountTransfers(address from, address to) external view override returns(bool) {

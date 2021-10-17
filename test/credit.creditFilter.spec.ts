@@ -1328,17 +1328,20 @@ describe("CreditFilter", function () {
       )
     ).to.be.revertedWith(revertMsg);
 
-    await creditFilter.approveAccountTransfers(DUMB_ADDRESS, true);
+    await expect(creditFilter.approveAccountTransfers(DUMB_ADDRESS, true))
+      .to.emit(creditFilter, "TransferAccountAllowed")
+      .withArgs(DUMB_ADDRESS, deployer.address, true);
+
     expect(
       await creditFilter.allowanceForAccountTransfers(
         DUMB_ADDRESS,
         deployer.address
       )
     ).to.be.true;
-    await
-      creditFilter.revertIfAccountTransferIsNotAllowed(
-        DUMB_ADDRESS,
-        deployer.address);
+    await creditFilter.revertIfAccountTransferIsNotAllowed(
+      DUMB_ADDRESS,
+      deployer.address
+    );
 
     await creditFilter.approveAccountTransfers(DUMB_ADDRESS, false);
     expect(
@@ -1353,7 +1356,5 @@ describe("CreditFilter", function () {
         deployer.address
       )
     ).to.be.revertedWith(revertMsg);
-
-
   });
 });
