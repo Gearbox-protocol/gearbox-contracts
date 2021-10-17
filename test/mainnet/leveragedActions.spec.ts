@@ -12,8 +12,11 @@ import { expect } from "../../utils/expect";
 import {
   ERC20,
   Errors,
+  ICurvePool__factory,
+  IERC20__factory,
   IWETH__factory,
   IYVault__factory,
+  PoolService,
 } from "../../types/ethers-v5";
 import { TestDeployer } from "../../deployer/testDeployer";
 import { MainnetSuite } from "./helper";
@@ -35,7 +38,12 @@ import {
   YEARN_USDC_ADDRESS,
 } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
-import { DUMB_ADDRESS, DUMB_ADDRESS2 } from "../../core/constants";
+import {
+  DEFAULT_CREDIT_MANAGER,
+  DUMB_ADDRESS,
+  DUMB_ADDRESS2,
+  UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD,
+} from "../../core/constants";
 import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
 import { CreditManagerTestSuite } from "../../deployer/creditManagerTestSuite";
 import {
@@ -43,6 +51,10 @@ import {
   UniV2helper,
   UniV3helper,
 } from "@diesellabs/gearbox-leverage";
+import { STANDARD_INTEREST_MODEL_PARAMS } from "../../core/pool";
+import { CreditManagerDeployer } from "../../deployer/creditManagerDeployer";
+import { CoreDeployer } from "../../deployer/coreDeployer";
+import { TokenDeployer } from "../../deployer/tokenDeployer";
 
 describe("LeveragedActions test (Mainnet test)", function () {
   this.timeout(0);
@@ -92,6 +104,26 @@ describe("LeveragedActions test (Mainnet test)", function () {
       );
       await r5.wait();
     }
+
+    const r6 = await ts.creditFilterDAI.approveAccountTransfers(
+      ts.leveragedActions.address,
+      true
+    );
+    await r6.wait();
+    const r7 = await ts.creditFilterETH.approveAccountTransfers(
+      ts.leveragedActions.address,
+      true
+    );
+    await r7.wait();
+
+    const r8 = await ts.creditFilterDAI
+      .connect(user)
+      .approveAccountTransfers(ts.leveragedActions.address, true);
+    await r6.wait();
+    const r9 = await ts.creditFilterETH
+      .connect(user)
+      .approveAccountTransfers(ts.leveragedActions.address, true);
+    await r7.wait();
   });
 
   it("[LA-1]: openLong [UNI_V2] w/o LP works correctly", async () => {
@@ -545,6 +577,7 @@ describe("LeveragedActions test (Mainnet test)", function () {
         accountAmount,
         expectedAmountBeforeOpenAcc,
         shortPath,
+        UniV2helper.getDeadline(),
         {
           amountOutMin: expectedDAIAmount,
           creditManager: ts.creditManagerETH.address,
@@ -918,34 +951,80 @@ describe("LeveragedActions test (Mainnet test)", function () {
   it("[LA-9]: _openLong & openLP reverts for unknown creditManager", async () => {
     const revertMsg = await errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY();
 
-    const ts2 = new CreditManagerTestSuite();
-    await ts2.getSuite();
-    await ts2.getSuite();
-    await ts2.setupCreditManager();
+    const coreDeployer = new CoreDeployer({ weth: ts.wethToken.address });
+    const tokenDeployer = new TokenDeployer(new TestDeployer());
+    await tokenDeployer.loadTokens("Mainnet");
 
-    const r1 = await ts2.creditFilter.allowContract(
+    const priceOracle = await coreDeployer.getPriceOracle();
+
+    for (const sym of ["DAI"]) {
+      const tokenAddress = tokenDeployer.tokenAddress(sym);
+
+      const priceFeedContract = tokenDeployer.pricefeed(sym);
+      const receipt = await priceOracle.addPriceFeed(
+        tokenAddress,
+        priceFeedContract
+      );
+      await receipt.wait();
+    }
+
+    const creditManagerDeployer = new CreditManagerDeployer({
+      coreDeployer,
+      config: {
+        ...DEFAULT_CREDIT_MANAGER,
+        uniswapAddress: ts.uniswapV2.address,
+        allowedTokens: [
+          {
+            address: ts.daiToken.address,
+            liquidationThreshold: UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD / 100,
+          },
+          {
+            address: ts.wethToken.address,
+            liquidationThreshold: 80,
+          },
+        ],
+      },
+      poolService: ts.poolDAI,
+      realNetwork: true,
+    });
+
+    const creditFilter2 = await creditManagerDeployer.getCreditFilter();
+    const creditManager2 = await creditManagerDeployer.getCreditManager();
+
+    const r1 = await creditFilter2.allowContract(
       CURVE_3POOL_ADDRESS,
       DUMB_ADDRESS
     );
     await r1.wait();
 
-    const r2 = await ts2.creditFilter.allowContract(
+    const r2 = await creditFilter2.allowContract(
       UNISWAP_V3_ROUTER,
       DUMB_ADDRESS2
     );
     await r2.wait();
 
+    const usdcToken = IERC20__factory.connect(
+      tokenDeployer.tokenAddress("USDC"),
+      deployer
+    );
+
+    const r3 = await usdcToken.approve(ts.leveragedActions.address, MAX_INT);
+    await r3.wait();
+
+    console.log((await usdcToken.balanceOf(deployer.address)).toString());
+    console.log(accountAmount.toString());
+
     await expect(
       ts.leveragedActions.openShortCurve(
         CURVE_3POOL_ADDRESS,
-        0,
         1,
-        accountAmount,
+        0,
+        1000,
         0,
 
         {
           amountOutMin: BigNumber.from(0),
-          creditManager: ts2.creditManager.address,
+          creditManager: creditManager2.address,
           leverageFactor,
           swapInterface: AdapterInterface.UniswapV3,
           swapContract: UNISWAP_V3_ROUTER,
@@ -959,7 +1038,7 @@ describe("LeveragedActions test (Mainnet test)", function () {
 
     await expect(
       ts.leveragedActions.openLP(
-        ts2.creditManager.address,
+        creditManager2.address,
         leverageFactor,
         accountAmount,
         AdapterInterface.YearnV2,
@@ -1025,7 +1104,7 @@ describe("LeveragedActions test (Mainnet test)", function () {
   });
 
   it("[LA-11]: action reverts if provided msg.value for non-wethtoken", async () => {
-    const revertMsg = await errors.LA_HAS_VALUE_WITH_TOKEN_TRANSFER()
+    const revertMsg = await errors.LA_HAS_VALUE_WITH_TOKEN_TRANSFER();
     await expect(
       ts.leveragedActions.openLP(
         ts.creditManagerDAI.address,
@@ -1207,6 +1286,7 @@ describe("LeveragedActions test (Mainnet test)", function () {
       accAmount,
       expectedAmountBeforeOpenAcc,
       shortPath,
+      UniV2helper.getDeadline(),
       {
         amountOutMin: tradePath.expectedAmount,
         creditManager: ts.creditManagerDAI.address,
@@ -1268,6 +1348,7 @@ describe("LeveragedActions test (Mainnet test)", function () {
         100,
         200,
         [WETHToken.Mainnet],
+        UniV2helper.getDeadline(),
         {
           amountOutMin: tradePath.expectedAmount,
           creditManager: ts.creditManagerDAI.address,

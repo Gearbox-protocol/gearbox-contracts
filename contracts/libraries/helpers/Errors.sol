@@ -101,7 +101,7 @@ library Errors {
         "CFC";
     string public constant CF_ADAPTER_CAN_BE_USED_ONLY_ONCE = "CFD";
     string public constant CF_INCORRECT_PRICEFEED = "CFE";
-    string public constant CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED = "CFF";
+    string public constant CF_TRANSFER_IS_NOT_ALLOWED = "CFF";
     string public constant CF_CREDIT_MANAGER_IS_ALREADY_SET = "CFG";
 
     //
@@ -143,4 +143,5 @@ library Errors {
     string public constant LA_UNKNOWN_SWAP_INTERFACE = "LA3";
     string public constant LA_UNKNOWN_LP_INTERFACE = "LA4";
     string public constant LA_LOWER_THAN_AMOUNT_MIN = "LA5";
+    string public constant LA_TOKEN_OUT_IS_NOT_COLLATERAL = "LA6";
 }

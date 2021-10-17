@@ -87,6 +87,9 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     // Maxmimum allowed fast check operations between full health factor checks
     uint256 public hfCheckInterval;
 
+   // Allowed transfers
+    mapping(address => mapping(address=> bool)) transfersAllowed;
+
     /// Checks that sender is connected credit manager
     modifier creditManagerOnly {
         require(msg.sender == creditManager, Errors.CF_CREDIT_MANAGERS_ONLY); // T:[CF-20]
@@ -673,18 +676,24 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         require(
             calcCreditAccountHealthFactor(creditAccount) >= minHealthFactor,
             Errors.CM_CAN_UPDATE_WITH_SUCH_HEALTH_FACTOR
-        ); // T:[CM-28]}
+        ); // T:[CM-28]
+    }
+
+    function approveAccountTransfers(address from, bool state) external override {
+        transfersAllowed[from][msg.sender] = state;  // T:[CF-43]
+    }
+
+    function allowanceForAccountTransfers(address from, address to) external view override returns(bool) {
+        return transfersAllowed[from][to];  // T:[CF-43]
     }
 
     function revertIfAccountTransferIsNotAllowed(
         address owner,
-        address creditAccount
+        address newOwner
     ) external view override {
         require(
-            owner == addressProvider.getLeveragedActions() ||
-                calcCreditAccountHealthFactor(creditAccount) >
-                PercentageMath.PERCENTAGE_FACTOR,
-            Errors.CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED
-        );
+           transfersAllowed[owner][newOwner],
+            Errors.CF_TRANSFER_IS_NOT_ALLOWED
+        );  // T:[CF-43]
     }
 }

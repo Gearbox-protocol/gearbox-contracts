@@ -953,12 +953,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             newOwner != address(0) && !hasOpenedCreditAccount(newOwner),
             Errors.CM_INCORRECT_NEW_OWNER
         ); // T:[CM-52,53]
-        creditFilter.revertIfAccountTransferIsNotAllowed(
-            msg.sender,
-            creditAccount
-        );
-        delete creditAccounts[msg.sender]; // M:[LA-1,2,3,4,5,6,7,8]
-        creditAccounts[newOwner] = creditAccount; // M:[LA-1,2,3,4,5,6,7,8]
+        creditFilter.revertIfAccountTransferIsNotAllowed(msg.sender, newOwner); // T:[54,55]
+        delete creditAccounts[msg.sender]; // T:[CM-54], M:[LA-1,2,3,4,5,6,7,8]
+        creditAccounts[newOwner] = creditAccount; // T:[CM-54], M:[LA-1,2,3,4,5,6,7,8]
         emit TransferAccount(msg.sender, newOwner); // T:[CM-54]
     }
 }

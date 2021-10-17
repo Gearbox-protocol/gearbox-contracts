@@ -1634,6 +1634,8 @@ describe("CreditManager", function () {
     const revertMsg = await errors.CM_NO_OPEN_ACCOUNT();
     await ts.openDefaultCreditAccount();
 
+    await creditFilter.approveAccountTransfers(user.address, true);
+
     await expect(
       creditManager.connect(user).transferAccountOwnership(deployer.address)
     )
@@ -1646,18 +1648,10 @@ describe("CreditManager", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[CM-55]: account with hf<1 cannot be transffered", async () => {
-    const revertMsg = await errors.CF_TRANSFER_WITH_SUCH_HF_IS_NOT_ALLOWED();
+  it("[CM-55]:  transferAccountOwnership reverts if user do not provide allowance", async () => {
+    const revertMsg = await errors.CF_TRANSFER_IS_NOT_ALLOWED();
     await ts.openDefaultCreditAccount();
 
-    const creditAcc = await creditManager.getCreditAccountOrRevert(
-      user.address
-    );
-
-    await ts.creditFilter.allowToken(underlyingToken.address, 2);
-    expect(
-      await creditFilter.calcCreditAccountHealthFactor(creditAcc)
-    ).to.be.lt(PERCENTAGE_FACTOR);
     await expect(
       creditManager.connect(user).transferAccountOwnership(deployer.address)
     ).to.be.revertedWith(revertMsg);

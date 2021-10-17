@@ -157,6 +157,11 @@ describe("CreditManager", function () {
     await ts.creditFilter.allowContract(yVault.address, adapter.address);
 
     await feeToken.connect(user).approve(leverageActions.address, MAX_INT);
+    await creditFilter.approveAccountTransfers(leverageActions.address, true);
+
+    await creditFilter
+      .connect(user)
+      .approveAccountTransfers(leverageActions.address, true);
 
     await leverageActions
       .connect(user)
@@ -221,6 +226,10 @@ describe("CreditManager", function () {
           currentBlockchainTime.timestamp + 3600,
         ]
       );
+
+    await creditFilter
+      .connect(user)
+      .approveAccountTransfers(leverageActions.address, true);
 
     await leverageActions.connect(user).openLong(
       amount,

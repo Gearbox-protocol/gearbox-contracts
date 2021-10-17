@@ -179,4 +179,8 @@ interface ICreditFilter {
     function revertIfAccountTransferIsNotAllowed(address onwer, address creditAccount)
         external
         view;
+
+    function approveAccountTransfers(address from, bool state) external;
+
+    function allowanceForAccountTransfers(address from, address to) external view  returns(bool);
 }

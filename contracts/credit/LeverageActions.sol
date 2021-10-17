@@ -80,7 +80,10 @@ contract LeveragedActions is ReentrancyGuard {
     }
 
     constructor(address _addressProvider) {
-        require(_addressProvider != address (0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+        require(
+            _addressProvider != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         AddressProvider addressProvider = AddressProvider(_addressProvider);
         contractsRegister = ContractsRegister(
             addressProvider.getContractsRegister()
@@ -101,10 +104,18 @@ contract LeveragedActions is ReentrancyGuard {
         uint256 amountIn,
         uint256 amountOutMin,
         address[] memory path,
+        uint256 deadline,
         LongParameters calldata longParams,
         uint256 referralCode
     ) external payable nonReentrant {
-        require(path.length >= 2, Errors.INCORRECT_PATH_LENGTH);
+        address collateral = ICreditManager(longParams.creditManager)
+        .underlyingToken();
+
+        require(path.length > 1, Errors.INCORRECT_PATH_LENGTH);
+        require(
+            path[path.length - 1] == collateral,
+            Errors.LA_TOKEN_OUT_IS_NOT_COLLATERAL
+        );
 
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x38ed1739), // "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
@@ -112,10 +123,18 @@ contract LeveragedActions is ReentrancyGuard {
             amountOutMin,
             path,
             address(this),
-            block.timestamp
+            deadline
         ); // M:[LA-5]
 
-        _openShort(router, path[0], amountIn, data, longParams, referralCode); // M:[LA-5]
+        _openShort(
+            router,
+            path[0],
+            amountIn,
+            collateral,
+            data,
+            longParams,
+            referralCode
+        ); // M:[LA-5]
     }
 
     /// @dev Opens short position (for example, swap USDC to ETH, open credit account in ETH, then swap all ETH to USDC)
@@ -128,8 +147,15 @@ contract LeveragedActions is ReentrancyGuard {
         LongParameters calldata longParams,
         uint256 referralCode
     ) external payable nonReentrant {
+        address collateral = ICreditManager(longParams.creditManager)
+        .underlyingToken();
+
         // Getting initial token from short paremeters
-        (address tokenIn, ) = _extractTokensUniV3(paramsV3.path); // M:[LA-6]
+        (address tokenIn, address tokenOut) = _extractTokensUniV3(
+            paramsV3.path
+        ); // M:[LA-6]
+
+        require(tokenOut == collateral, Errors.LA_TOKEN_OUT_IS_NOT_COLLATERAL);
 
         // Changes recipient to this contract
         paramsV3.recipient = address(this); // M:[LA-6]
@@ -143,6 +169,7 @@ contract LeveragedActions is ReentrancyGuard {
             router,
             tokenIn,
             paramsV3.amountIn,
+            collateral,
             data,
             longParams,
             referralCode
@@ -166,7 +193,13 @@ contract LeveragedActions is ReentrancyGuard {
         LongParameters calldata longParams,
         uint256 referralCode
     ) external payable nonReentrant {
+        address collateral = ICreditManager(longParams.creditManager)
+        .underlyingToken();
+
         address tokenIn = ICurvePool(curvePool).coins(uint256(i)); // M:[LA-1]
+        address tokenOut = ICurvePool(curvePool).coins(uint256(j)); // M:[LA-1]
+
+        require(tokenOut == collateral, Errors.LA_TOKEN_OUT_IS_NOT_COLLATERAL);
 
         bytes memory data = abi.encodeWithSelector(
             bytes4(0x3df02124), //"exchange(int128,int128,uint256,uint256)"
@@ -180,6 +213,7 @@ contract LeveragedActions is ReentrancyGuard {
             curvePool,
             tokenIn,
             amountIn,
+            collateral,
             data,
             longParams,
             referralCode
@@ -198,8 +232,15 @@ contract LeveragedActions is ReentrancyGuard {
         address collateral = ICreditManager(longParams.creditManager)
         .underlyingToken(); // M:[LA-1]
 
+        uint256 balanceBefore = IERC20(collateral).balanceOf(address(this));
+
         _getTokenOrWrapETH(collateral, amountIn); // M:[LA-1]
-        (address asset, ) = _openLong(longParams, referralCode); // M:[LA-1]
+
+        address asset = _openLong(
+            IERC20(collateral).balanceOf(address(this)).sub(balanceBefore),
+            longParams,
+            referralCode
+        ); // M:[LA-1]
 
         emit Action(
             collateral,
@@ -231,6 +272,7 @@ contract LeveragedActions is ReentrancyGuard {
         // Gets collateral
         address collateral = ICreditManager(creditManager).underlyingToken(); // M:[LA-8]
 
+        uint256 balanceBefore = IERC20(collateral).balanceOf(address(this));
         // Transgers tokens / wraps ETH
         _getTokenOrWrapETH(collateral, amountIn); // M:[LA-8]
 
@@ -239,7 +281,7 @@ contract LeveragedActions is ReentrancyGuard {
 
         // Opens credit account
         ICreditManager(creditManager).openCreditAccount(
-            IERC20(collateral).balanceOf(address (this)),
+            IERC20(collateral).balanceOf(address(this)).sub(balanceBefore),
             address(this),
             leverageFactor,
             referralCode
@@ -277,6 +319,7 @@ contract LeveragedActions is ReentrancyGuard {
         address shortSwapContract,
         address tokenIn,
         uint256 amountIn,
+        address collateral,
         bytes memory shortSwapCalldata,
         LongParameters calldata longParams,
         uint256 referralCode
@@ -287,6 +330,7 @@ contract LeveragedActions is ReentrancyGuard {
         // Transfers tokens from msg.sender to contract
         _getTokenOrWrapETH(tokenIn, amountIn); // M:[LA-5, 6, 7]
 
+        uint256 balanceBefore = IERC20(collateral).balanceOf(address(this));
         // Provides enough allowance to swapContract
         _provideCreditAccountAllowance(shortSwapContract, tokenIn); // M:[LA-5, 6, 7]
 
@@ -294,7 +338,8 @@ contract LeveragedActions is ReentrancyGuard {
         shortSwapContract.functionCall(shortSwapCalldata); // M:[LA-5, 6, 7]
 
         // Opens long position and transfer ownership
-        (address asset, address collateral) = _openLong(
+        address asset = _openLong(
+            IERC20(collateral).balanceOf(address(this)).sub(balanceBefore),
             longParams,
             referralCode
         ); // M:[LA-5, 6, 7]
@@ -319,14 +364,19 @@ contract LeveragedActions is ReentrancyGuard {
     /// - opens account with desired leerage factor
     /// - transfers all assets using provided adapter to desired asset
     /// - executes lp operation, if provided
-    function _openLong(LongParameters calldata longParams, uint256 referralCode)
+    function _openLong(
+        uint256 amount,
+        LongParameters calldata longParams,
+        uint256 referralCode
+    )
         internal
         registeredCreditManagersOnly(longParams.creditManager)
-        returns (address asset, address collateral)
+        returns (address asset)
     {
-        collateral = ICreditManager(longParams.creditManager).underlyingToken(); // M:[LA-1]
+        address collateral = ICreditManager(longParams.creditManager)
+        .underlyingToken(); // M:[LA-1]
 
-        uint256 amount = IERC20(collateral).balanceOf(address(this)); // M:[LA-1]
+        //        uint256 amount = IERC20(collateral).balanceOf(address(this)); // M:[LA-1]
 
         _provideCreditAccountAllowance(longParams.creditManager, collateral); // M:[LA-1]
         ICreditManager(longParams.creditManager).openCreditAccount(
@@ -373,6 +423,8 @@ contract LeveragedActions is ReentrancyGuard {
                 deadline
             ); // M:[LA-1]
 
+            require(path[0] == collateral, Errors.INCORRECT_PARAMETER);
+
             asset = path[path.length - 1]; // M:[LA-1]
         }
         //
@@ -384,11 +436,11 @@ contract LeveragedActions is ReentrancyGuard {
                 (ISwapRouter.ExactInputParams)
             );
 
-            params.amountIn = leveragedAmount;
             params.amountOutMinimum = params
             .amountOutMinimum
             .mul(leveragedAmount)
             .div(params.amountIn);
+            params.amountIn = leveragedAmount;
             ISwapRouter(adapter).exactInput(params);
             (, asset) = _extractTokensUniV3(params.path);
         }
@@ -476,7 +528,7 @@ contract LeveragedActions is ReentrancyGuard {
                 IWETH(wethToken).withdraw(balance); // M:[LA-14]
                 payable(msg.sender).sendValue(balance); // M:[LA-14]
             } else {
-                IERC20(token).transfer(msg.sender, balance); // M:[LA-13]
+                IERC20(token).safeTransfer(msg.sender, balance); // M:[LA-13]
             }
         }
     }
@@ -535,6 +587,21 @@ contract LeveragedActions is ReentrancyGuard {
             IERC20(token).safeApprove(targetContract, 0); // M:[LA-1,2,3,4,]
             IERC20(token).safeApprove(targetContract, Constants.MAX_INT); // M:[LA-1,2,3,4]
         }
+    }
+
+    function isTransferAllowed(address creditManager)
+        external
+        view
+        returns (bool)
+    {
+        ICreditFilter creditFilter = ICreditFilter(
+            ICreditManager(creditManager).creditFilter()
+        );
+        return
+            creditFilter.allowanceForAccountTransfers(
+                address(this),
+                msg.sender
+            );
     }
 
     receive() external payable {} // M:[LA-14]

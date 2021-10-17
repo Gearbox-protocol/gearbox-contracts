@@ -1232,7 +1232,6 @@ describe("CreditFilter", function () {
   });
 
   it("[CF-41]: checkMultiTokenCollateral reverts for incorrect arrays length", async () => {
-
     const revertMsg = await errors.INCORRECT_ARRAY_LENGTH();
 
     const creditAccount = await setupCreditAccount();
@@ -1244,23 +1243,27 @@ describe("CreditFilter", function () {
       0
     );
 
-    await expect(creditFilter.checkMultiTokenCollateral(
-      creditAccount.address,
+    await expect(
+      creditFilter.checkMultiTokenCollateral(
+        creditAccount.address,
 
-      [0, 1],
-      [1, 1],
-      [tokenA.address],
-      [tokenA.address, tokenA.address]
-    )).to.be.revertedWith(revertMsg);
+        [0, 1],
+        [1, 1],
+        [tokenA.address],
+        [tokenA.address, tokenA.address]
+      )
+    ).to.be.revertedWith(revertMsg);
 
-    await expect(creditFilter.checkMultiTokenCollateral(
-      creditAccount.address,
+    await expect(
+      creditFilter.checkMultiTokenCollateral(
+        creditAccount.address,
 
-      [0],
-      [1],
-      [tokenA.address],
-      [tokenA.address, tokenA.address]
-    )).to.be.revertedWith(revertMsg);
+        [0],
+        [1],
+        [tokenA.address],
+        [tokenA.address, tokenA.address]
+      )
+    ).to.be.revertedWith(revertMsg);
   });
 
   it("[CF-42]: checkCollateralChange reverts for non-fastcheck and Hf<1 after operation", async () => {
@@ -1308,5 +1311,49 @@ describe("CreditFilter", function () {
         [tokenA.address]
       )
     ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[CF-43]: approveAccountTransfer approve transfers", async () => {
+    const revertMsg = await errors.CF_TRANSFER_IS_NOT_ALLOWED();
+    expect(
+      await creditFilter.allowanceForAccountTransfers(
+        DUMB_ADDRESS,
+        deployer.address
+      )
+    ).to.be.false;
+    await expect(
+      creditFilter.revertIfAccountTransferIsNotAllowed(
+        DUMB_ADDRESS,
+        deployer.address
+      )
+    ).to.be.revertedWith(revertMsg);
+
+    await creditFilter.approveAccountTransfers(DUMB_ADDRESS, true);
+    expect(
+      await creditFilter.allowanceForAccountTransfers(
+        DUMB_ADDRESS,
+        deployer.address
+      )
+    ).to.be.true;
+    await
+      creditFilter.revertIfAccountTransferIsNotAllowed(
+        DUMB_ADDRESS,
+        deployer.address);
+
+    await creditFilter.approveAccountTransfers(DUMB_ADDRESS, false);
+    expect(
+      await creditFilter.allowanceForAccountTransfers(
+        DUMB_ADDRESS,
+        deployer.address
+      )
+    ).to.be.false;
+    await expect(
+      creditFilter.revertIfAccountTransferIsNotAllowed(
+        DUMB_ADDRESS,
+        deployer.address
+      )
+    ).to.be.revertedWith(revertMsg);
+
+
   });
 });

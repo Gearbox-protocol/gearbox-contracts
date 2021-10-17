@@ -76,7 +76,12 @@ describe("Pathfinder  (Mainnet test)", function () {
 
     expect(solResult.rate).to.be.eq(jsResult.rate);
     expect(solResult.expectedAmount).to.be.eq(jsResult.expectedAmount);
-    expect(solResult.path).to.be.eql(jsResult.path);
+    expect(solResult.path.length).to.be.eq(jsResult.path.length);
+    for (let i = 0; i < solResult.path.length; i++) {
+      expect(solResult.path[i].toLowerCase()).to.be.eq(
+        jsResult.path[i].toLowerCase()
+      );
+    }
   });
 
   it("[PF-2]: unniswapV3 works correctly", async () => {
