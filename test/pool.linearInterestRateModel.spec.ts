@@ -118,12 +118,6 @@ describe("LinearInterestRateModel", function () {
         Rslope1: 100.1,
         Rslope2: 75,
       },
-      {
-        Uoptimal: 0,
-        Rbase: 0,
-        Rslope1: 99,
-        Rslope2: 100.1,
-      },
     ];
 
     for (let testCase of testCases) {

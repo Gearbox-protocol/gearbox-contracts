@@ -56,10 +56,6 @@ contract LinearInterestRateModel is IInterestRateModel {
             R_slope1 <= PercentageMath.PERCENTAGE_FACTOR,
             Errors.INCORRECT_PARAMETER
         );
-        require(
-            R_slope2 <= PercentageMath.PERCENTAGE_FACTOR,
-            Errors.INCORRECT_PARAMETER
-        );
 
         // Convert percetns to WAD
         uint256 U_optimal_WAD = WadRayMath.WAD.percentMul(U_optimal);
