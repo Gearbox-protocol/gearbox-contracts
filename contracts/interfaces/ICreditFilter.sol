@@ -3,8 +3,6 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
-import "./IPriceOracle.sol";
-
 interface ICreditFilter {
     // Emits each time token is allowed or liquidtion threshold changed
     event TokenAllowed(address indexed token, uint256 liquidityThreshold);
@@ -17,6 +15,12 @@ interface ICreditFilter {
 
     // Emits each time when fast check parameters are updated
     event NewFastCheckParameters(uint256 chiThreshold, uint256 fastCheckDelay);
+
+    event TransferAccountAllowed(
+        address indexed from,
+        address indexed to,
+        bool state
+    );
 
     //
     // STATE-CHANGING FUNCTIONS
@@ -176,11 +180,15 @@ interface ICreditFilter {
         uint256 minHealthFactor
     ) external view;
 
-    function revertIfAccountTransferIsNotAllowed(address onwer, address creditAccount)
-        external
-        view;
+    function revertIfAccountTransferIsNotAllowed(
+        address onwer,
+        address creditAccount
+    ) external view;
 
     function approveAccountTransfers(address from, bool state) external;
 
-    function allowanceForAccountTransfers(address from, address to) external view  returns(bool);
+    function allowanceForAccountTransfers(address from, address to)
+        external
+        view
+        returns (bool);
 }
