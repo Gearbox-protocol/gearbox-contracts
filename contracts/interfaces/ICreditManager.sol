@@ -64,7 +64,7 @@ interface ICreditManager is IAppCreditManager {
         uint256 liquidationDiscount
     );
 
-    event TransferAccount(address oldOwner, address newOwner);
+    event TransferAccount(address indexed oldOwner, address indexed newOwner);
 
     //
     // CREDIT ACCOUNT MANAGEMENT
