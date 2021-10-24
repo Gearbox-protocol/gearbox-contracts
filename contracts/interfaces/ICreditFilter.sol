@@ -22,6 +22,12 @@ interface ICreditFilter {
         bool state
     );
 
+    event TransferPluginAllowed(
+        address indexed pugin,
+        bool state
+    );
+
+
     //
     // STATE-CHANGING FUNCTIONS
     //

@@ -87,8 +87,11 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     // Maxmimum allowed fast check operations between full health factor checks
     uint256 public hfCheckInterval;
 
-   // Allowed transfers
-    mapping(address => mapping(address=> bool)) transfersAllowed;
+    // Allowed transfers
+    mapping(address => mapping(address => bool)) transfersAllowed;
+
+    // Allowed plugins
+    mapping(address => bool) public allowedPlugins;
 
     /// Checks that sender is connected credit manager
     modifier creditManagerOnly {
@@ -127,6 +130,8 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             Constants.CHI_THRESHOLD,
             Constants.HF_CHECK_INTERVAL_DEFAULT
         ); // T:[CF-21]
+
+        allowedPlugins[addressProvider.getWETHGateway()] = true;
     }
 
     //
@@ -679,22 +684,37 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         ); // T:[CM-28]
     }
 
-    function approveAccountTransfers(address from, bool state) external override {
-        transfersAllowed[from][msg.sender] = state;  // T:[CF-43]
+    function approveAccountTransfers(address from, bool state)
+        external
+        override
+    {
+        transfersAllowed[from][msg.sender] = state; // T:[CF-43]
         emit TransferAccountAllowed(from, msg.sender, state); // T:[CF-43]
     }
 
-    function allowanceForAccountTransfers(address from, address to) external view override returns(bool) {
-        return transfersAllowed[from][to];  // T:[CF-43]
+    function allowanceForAccountTransfers(address from, address to)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return transfersAllowed[from][to]; // T:[CF-43]
+    }
+
+    function allowPlugin(address plugin, bool state) external configuratorOnly {
+        allowedPlugins[plugin] = state;
+        emit TransferPluginAllowed(plugin, state);
     }
 
     function revertIfAccountTransferIsNotAllowed(
         address owner,
         address newOwner
     ) external view override {
-        require(
-           transfersAllowed[owner][newOwner],
-            Errors.CF_TRANSFER_IS_NOT_ALLOWED
-        );  // T:[CF-43]
+        if (!allowedPlugins[owner] || allowedPlugins[newOwner]) {
+            require(
+                transfersAllowed[owner][newOwner],
+                Errors.CF_TRANSFER_IS_NOT_ALLOWED
+            ); // T:[CF-43, 44]
+        }
     }
 }

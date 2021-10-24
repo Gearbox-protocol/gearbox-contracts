@@ -338,12 +338,12 @@ describe("CreditManager", function () {
     await expect(
       creditManager
         .connect(user)
-        .openCreditAccount(amount, friend.address, leverageFactor, referral)
+        .openCreditAccount(amount, user.address, leverageFactor, referral)
     )
       .to.emit(creditManager, "OpenCreditAccount")
       .withArgs(
         user.address,
-        friend.address,
+        user.address,
         nextVA,
         amount,
         borrowedAmount,
@@ -1605,7 +1605,7 @@ describe("CreditManager", function () {
   });
 
   it("[CM-52]: transferAccountOwnership reverts for ZERO_ADDRESS", async () => {
-    const revertMsg = await errors.CM_INCORRECT_NEW_OWNER();
+    const revertMsg = await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
     await ts.openDefaultCreditAccount();
 
     await expect(
@@ -1614,7 +1614,7 @@ describe("CreditManager", function () {
   });
 
   it("[CM-53]: transferAccountOwnership reverts for owner who has already credit account", async () => {
-    const revertMsg = await errors.CM_INCORRECT_NEW_OWNER();
+    const revertMsg = await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
     await ts.openDefaultCreditAccount();
 
     await underlyingToken.approve(creditManager.address, MAX_INT);

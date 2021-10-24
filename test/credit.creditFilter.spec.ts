@@ -138,6 +138,10 @@ describe("CreditFilter", function () {
     await expect(
       creditFilter.connect(user).connectCreditManager(DUMB_ADDRESS)
     ).to.be.revertedWith(revertMsg);
+
+    await expect(
+      creditFilter.connect(user).allowPlugin(DUMB_ADDRESS, true)
+    ).to.be.revertedWith(revertMsg);
   });
 
   it("[CF-2]: allowToken, forbidToken reverts to add token with zero addresses", async () => {
@@ -1350,6 +1354,47 @@ describe("CreditFilter", function () {
         deployer.address
       )
     ).to.be.false;
+    await expect(
+      creditFilter.revertIfAccountTransferIsNotAllowed(
+        DUMB_ADDRESS,
+        deployer.address
+      )
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[CF-44]: allowPlugin allows revertIfAccountTransferIsNotAllowed works without allowance", async () => {
+    const revertMsg = await errors.CF_TRANSFER_IS_NOT_ALLOWED();
+    await expect(
+      creditFilter.revertIfAccountTransferIsNotAllowed(
+        DUMB_ADDRESS,
+        deployer.address
+      )
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(creditFilter.allowPlugin(DUMB_ADDRESS, true))
+      .to.emit(creditFilter, "TransferPluginAllowed")
+      .withArgs(DUMB_ADDRESS, true);
+
+    await expect(creditFilter.allowPlugin(DUMB_ADDRESS2, true))
+      .to.emit(creditFilter, "TransferPluginAllowed")
+      .withArgs(DUMB_ADDRESS2, true);
+
+    await creditFilter.revertIfAccountTransferIsNotAllowed(
+      DUMB_ADDRESS,
+      deployer.address
+    );
+
+    await expect(
+      creditFilter.revertIfAccountTransferIsNotAllowed(
+        DUMB_ADDRESS,
+        DUMB_ADDRESS2
+      )
+    ).to.be.revertedWith(revertMsg);
+
+    await expect(creditFilter.allowPlugin(DUMB_ADDRESS, false))
+      .to.emit(creditFilter, "TransferPluginAllowed")
+      .withArgs(DUMB_ADDRESS, false);
+
     await expect(
       creditFilter.revertIfAccountTransferIsNotAllowed(
         DUMB_ADDRESS,

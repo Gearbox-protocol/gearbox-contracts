@@ -56,7 +56,7 @@ describe("CurveV1 adapter (Mainnet test)", function () {
 
     const testDeployer = new TestDeployer();
     errors = await testDeployer.getErrors();
-    const r1 = await ts.daiToken.approve(ts.creditManagerDAI.address, MAX_INT);
+    const r1 = await ts.daiToken.connect(user).approve(ts.creditManagerDAI.address, MAX_INT);
     await r1.wait();
     const r2 = await ts.daiToken.approve(ts.poolDAI.address, MAX_INT);
     await r2.wait();
@@ -76,15 +76,20 @@ describe("CurveV1 adapter (Mainnet test)", function () {
       );
       await r5.wait();
     }
+
+    const r6 = await ts.daiToken.transfer(user.address, accountAmount);
+    await r6.wait();
   });
 
   it("[CVA-1]: exchange works", async () => {
-    const r1 = await ts.creditManagerDAI.openCreditAccount(
-      accountAmount,
-      user.address,
-      leverageFactor,
-      referralCode
-    );
+    const r1 = await ts.creditManagerDAI
+      .connect(user)
+      .openCreditAccount(
+        accountAmount,
+        user.address,
+        leverageFactor,
+        referralCode
+      );
     await r1.wait();
 
     const amountOnAccount = accountAmount

@@ -56,7 +56,7 @@ describe("YEARN adapter (Mainnet test)", function () {
 
     const testDeployer = new TestDeployer();
     errors = await testDeployer.getErrors();
-    const r1 = await ts.daiToken.approve(ts.creditManagerDAI.address, MAX_INT);
+    const r1 = await ts.daiToken.connect(user).approve(ts.creditManagerDAI.address, MAX_INT);
     await r1.wait();
     const r2 = await ts.daiToken.approve(ts.poolDAI.address, MAX_INT);
     await r2.wait();
@@ -94,8 +94,11 @@ describe("YEARN adapter (Mainnet test)", function () {
       deployer
     );
 
-    if (!(await ts.creditManagerDAI.hasOpenedCreditAccount(deployer.address))) {
-      const r1 = await ts.creditManagerDAI.openCreditAccount(
+    const r0 = await ts.daiToken.transfer(user.address, accountAmount);
+    await r0.wait()
+
+    if (!(await ts.creditManagerDAI.hasOpenedCreditAccount(user.address))) {
+      const r1 = await ts.creditManagerDAI.connect(user).openCreditAccount(
         accountAmount,
         user.address,
         leverageFactor,

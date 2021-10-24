@@ -179,10 +179,12 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         ); // T:[CM-2]
 
         // Checks that user "onBehalfOf" has no opened accounts
-        require(
-            !hasOpenedCreditAccount(onBehalfOf) && onBehalfOf != address(0),
-            Errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT
-        ); // T:[CM-3]
+        //        require(
+        //            !hasOpenedCreditAccount(onBehalfOf) && onBehalfOf != address(0),
+        //            Errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT
+        //        ); // T:[CM-3]
+
+        _checkAccountTransfer(onBehalfOf);
 
         // borrowedAmount = amount * leverageFactor
         uint256 borrowedAmount = amount.mul(leverageFactor).div(
@@ -949,13 +951,22 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         nonReentrant
     {
         address creditAccount = getCreditAccountOrRevert(msg.sender); // M:[LA-1,2,3,4,5,6,7,8] // T:[CM-52,53, 54]
-        require(
-            newOwner != address(0) && !hasOpenedCreditAccount(newOwner),
-            Errors.CM_INCORRECT_NEW_OWNER
-        ); // T:[CM-52,53]
-        creditFilter.revertIfAccountTransferIsNotAllowed(msg.sender, newOwner); // T:[54,55]
+        _checkAccountTransfer(newOwner);
         delete creditAccounts[msg.sender]; // T:[CM-54], M:[LA-1,2,3,4,5,6,7,8]
         creditAccounts[newOwner] = creditAccount; // T:[CM-54], M:[LA-1,2,3,4,5,6,7,8]
         emit TransferAccount(msg.sender, newOwner); // T:[CM-54]
+    }
+
+    function _checkAccountTransfer(address newOwner) internal {
+        require(
+            newOwner != address(0) && !hasOpenedCreditAccount(newOwner),
+            Errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT
+        ); // T:[CM-52,53]
+        if (msg.sender != newOwner) {
+            creditFilter.revertIfAccountTransferIsNotAllowed(
+                msg.sender,
+                newOwner
+            ); // T:[54,55]
+        }
     }
 }
