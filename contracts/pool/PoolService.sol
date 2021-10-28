@@ -203,7 +203,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
 
         IERC20(underlyingToken).safeTransfer(to, amountSent); // T:[PS-3, 34]
 
-        if (amountTreasury > 1) {
+        if (amountTreasury > 0) {
             IERC20(underlyingToken).safeTransfer(
                 treasuryAddress,
                 amountTreasury

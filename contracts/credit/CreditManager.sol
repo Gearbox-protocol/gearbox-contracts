@@ -545,7 +545,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
             if (totalFunds > amountToPool) {
                 remainingFunds = totalFunds.sub(amountToPool).sub(1); // T:[CM-45]
             } else {
-                amountToPool = totalFunds; // T:[CM-45]
+                amountToPool = totalFunds.sub(1); // T:[CM-45]
             }
 
             profit = amountToPool.sub(borrowedAmountWithInterest); // T:[CM-45]
@@ -836,7 +836,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
 
                     bytes memory data = abi.encodeWithSelector(
                         bytes4(0x38ed1739), // "swapExactTokensForTokens(uint256,uint256,address[],address,uint256)",
-                        amount,
+                        amount.sub(1),
                         paths[i].amountOutMin, // T: [CM-45]
                         currentPath,
                         creditAccount,
