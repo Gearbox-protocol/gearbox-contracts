@@ -69,12 +69,13 @@ contract CreditAccount is ICreditAccount, Initializable {
 
     /// @dev Updates borrowed amount. Restricted for current credit manager only
     /// @param _borrowedAmount Amount which pool lent to credit account
-    function updateBorrowedAmount(uint256 _borrowedAmount)
+    function updateParameters(uint256 _borrowedAmount, uint256 _cumulativeIndexAtOpen)
         external
         override
         creditManagerOnly // T:[CA-2]
     {
         borrowedAmount = _borrowedAmount; // T:[CA-4]
+        cumulativeIndexAtOpen = _cumulativeIndexAtOpen;
     }
 
     /// @dev Approves token for 3rd party contract. Restricted for current credit manager only

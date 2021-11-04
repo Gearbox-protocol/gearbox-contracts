@@ -509,11 +509,19 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         return creditManagers.length; // T:[PS-11]
     }
 
-    function calcTimeDiscountedAmount(
+    function calcCumulativeIndexAtBorrowMore(
         uint256 amount,
+        uint256 dAmount,
         uint256 cumulativeIndexAtOpen
     ) external view override returns (uint256) {
         return
-            amount.mul(cumulativeIndexAtOpen).div(calcLinearCumulative_RAY());
+            calcLinearCumulative_RAY()
+                .mul(cumulativeIndexAtOpen)
+                .mul(amount.add(dAmount))
+                .div(
+                calcLinearCumulative_RAY().mul(amount).add(
+                    dAmount.mul(cumulativeIndexAtOpen)
+                )
+            );
     }
 }

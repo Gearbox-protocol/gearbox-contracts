@@ -191,8 +191,9 @@ interface IPoolService is IAppPoolService {
 
     function _cumulativeIndex_RAY() external view returns (uint256);
 
-    function calcTimeDiscountedAmount(
+    function calcCumulativeIndexAtBorrowMore(
         uint256 amount,
+        uint256 dAmount,
         uint256 cumulativeIndexAtOpen
     ) external view returns (uint256);
 

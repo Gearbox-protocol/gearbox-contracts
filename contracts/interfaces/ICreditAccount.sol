@@ -35,7 +35,10 @@ interface ICreditAccount {
 
     /// @dev Updates borrowed amount. Restricted to credit managers only
     /// @param _borrowedAmount Amount which pool lent to credit account
-    function updateBorrowedAmount(uint256 _borrowedAmount) external;
+    function updateParameters(
+        uint256 _borrowedAmount,
+        uint256 _cumulativeIndexAtOpen
+    ) external;
 
     /// @dev Approves particular token for swap contract
     /// @param token ERC20 token for allowance

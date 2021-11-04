@@ -643,11 +643,12 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         ) = getCreditAccountParameters(creditAccount); // T:[CM-30]
 
         //
-        uint256 newBorrowedAmount = borrowedAmount.add(
-            IPoolService(poolService).calcTimeDiscountedAmount(
-                amount,
-                cumulativeIndexAtOpen
-            )
+        uint256 newBorrowedAmount = borrowedAmount.add(amount);
+        uint256 newCumulativeIndex = IPoolService(poolService)
+        .calcCumulativeIndexAtBorrowMore(
+            borrowedAmount,
+            amount,
+            cumulativeIndexAtOpen
         ); // T:[CM-30]
 
         require(
@@ -661,7 +662,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         IPoolService(poolService).lendCreditAccount(amount, creditAccount); // T:[CM-29]
         //
         // Set parameters for new credit account
-        ICreditAccount(creditAccount).updateBorrowedAmount(newBorrowedAmount); // T:[CM-30]
+        ICreditAccount(creditAccount).updateParameters(
+            newBorrowedAmount,
+            newCumulativeIndex
+        ); // T:[CM-30]
 
         //
         creditFilter.revertIfCantIncreaseBorrowing(

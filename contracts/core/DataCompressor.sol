@@ -162,6 +162,7 @@ contract DataCompressor {
             DataTypes.TokenBalance memory balance;
             (balance.token, balance.balance, , ) = creditFilter
             .getCreditAccountTokenById(creditAccount, i);
+            balance.isAllowed = creditFilter.isTokenAllowed(balance.token);
             result.balances[i] = balance;
         }
 
