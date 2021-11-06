@@ -14,6 +14,7 @@ library DataTypes {
     struct TokenBalance {
         address token;
         uint256 balance;
+        bool isAllowed;
     }
 
     struct ContractAdapter {

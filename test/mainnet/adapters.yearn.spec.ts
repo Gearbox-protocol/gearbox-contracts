@@ -368,4 +368,22 @@ describe("YEARN adapter (Mainnet test)", function () {
       await repayUserAccount(amountOnAccount);
     });
   }
+
+  it("[YA-4]: price_share manipulation", async () => {
+    const { amountOnAccount, yVault } =
+      await openUserAccount();
+    await repayUserAccount(amountOnAccount);
+
+    const price = await yVault.pricePerShare();
+    const daiBalance = await ts.daiToken.balanceOf(deployer.address);
+    console.log(`Price: ${price}, Balance: ${daiBalance.div(WAD)}`);
+    await yVault["deposit()"]();
+
+    const price2 = await yVault.pricePerShare();
+    const daiBalance2 = await ts.daiToken.balanceOf(deployer.address);
+
+    console.log(`Price: ${price2}, Balance: ${daiBalance2}`);
+
+
+  });
 });

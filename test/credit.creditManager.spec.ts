@@ -888,7 +888,7 @@ describe("CreditManager", function () {
     ).to.be.eq(creditAccountAddress);
   });
 
-  it("[CM-30]: increaseBorrowedAmountCreditAccount correctly update borrowed amount and total borrow", async () => {
+  it("[CM-30]: increaseBorrowedAmountCreditAccount correctly update cumulativeIndex and borrowedAmount", async () => {
     await ts.openDefaultCreditAccount(1);
 
     const increasedAmount = BigNumber.from(1e5);
@@ -901,18 +901,27 @@ describe("CreditManager", function () {
 
     await creditManager.connect(user).increaseBorrowedAmount(increasedAmount);
 
-    const [borrowedAmountBefore2, ciAtOpen2, since2] =
+    const [borrowedAmountBefore2, ciAfterUpdate, since2] =
       await ts.getCreditAccountParameters(user.address);
 
     expect(
       borrowedAmountBefore2,
       "Borrowed amount wasn't update properly"
-    ).to.be.eq(
-      borrowedAmountBefore.add(increasedAmount.mul(ciAtOpen).div(ciAtIncrease))
-    );
+    ).to.be.eq(borrowedAmountBefore.add(increasedAmount));
+
+    const ciExpected = ciAtIncrease
+      .mul(ciAtOpen)
+      .mul(borrowedAmountBefore.add(increasedAmount))
+      .div(
+        borrowedAmountBefore
+          .mul(ciAtIncrease)
+          .add(increasedAmount.mul(ciAtOpen))
+      );
 
     expect(since, "Since was changed!").to.be.eq(since2);
-    expect(ciAtOpen, "ciAtOpen was changed!").to.be.eq(ciAtOpen2);
+    expect(ciAfterUpdate, "ciAtOpen was cnaged incorrectly!").to.be.eq(
+      ciExpected
+    );
   });
 
   it("[CM-31]: calcRepayAmount compute correctly", async () => {
@@ -1605,7 +1614,8 @@ describe("CreditManager", function () {
   });
 
   it("[CM-52]: transferAccountOwnership reverts for ZERO_ADDRESS", async () => {
-    const revertMsg = await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
+    const revertMsg =
+      await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
     await ts.openDefaultCreditAccount();
 
     await expect(
@@ -1614,7 +1624,8 @@ describe("CreditManager", function () {
   });
 
   it("[CM-53]: transferAccountOwnership reverts for owner who has already credit account", async () => {
-    const revertMsg = await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
+    const revertMsg =
+      await errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT();
     await ts.openDefaultCreditAccount();
 
     await underlyingToken.approve(creditManager.address, MAX_INT);
@@ -1713,5 +1724,54 @@ describe("CreditManager", function () {
     await expect(
       creditManager.setParams(0, 1, 0, 200, 200, 9500)
     ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[CM-60]: increaseBorrowedAmountCreditAccount comparison test", async () => {
+    await ts.openDefaultCreditAccount(100);
+
+    const increasedAmount = BigNumber.from(1e5);
+
+    const [borrowedAmountBefore, ciAtOpen, since] =
+      await ts.getCreditAccountParameters(user.address);
+
+    const ciAtIncrease = ciAtOpen.mul(122).div(100);
+    await poolService.setCumulative_RAY(ciAtIncrease);
+
+    await creditManager.connect(user).increaseBorrowedAmount(increasedAmount);
+
+    const borrowAmountAtMiddle = borrowedAmountBefore
+      .mul(ciAtIncrease)
+      .div(ciAtOpen)
+      .add(increasedAmount);
+
+    // Open credit account
+
+    await ts.underlyingToken
+      .connect(deployer)
+      .approve(creditManager.address, MAX_INT);
+
+    await creditManager
+      .connect(deployer)
+      .openCreditAccount(
+        borrowAmountAtMiddle,
+        deployer.address,
+        100,
+        CreditManagerTestSuite.referral
+      );
+
+    const [borrowedAmountMiddle, ciMiddle, sinceA] =
+      await ts.getCreditAccountParameters(user.address);
+
+    const [borrowedAmountMiddleDep, ciMiddleDep, sinceB] =
+      await ts.getCreditAccountParameters(deployer.address);
+
+    expect(borrowedAmountMiddleDep).to.be.eq(borrowAmountAtMiddle);
+
+    const ciAtEnd = ciAtOpen.mul(422).div(100);
+
+    const ba1 = borrowedAmountMiddle.mul(ciAtEnd).div(ciMiddle);
+    const ba2 = borrowedAmountMiddleDep.mul(ciAtEnd).div(ciMiddleDep);
+
+    expect(ba1).to.be.eq(ba2);
   });
 });

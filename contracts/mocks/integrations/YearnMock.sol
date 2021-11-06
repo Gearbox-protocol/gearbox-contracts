@@ -81,7 +81,7 @@ contract YearnMock is IYVault, ERC20, Ownable {
         uint256 maxLoss
     ) public override returns (uint256 amount) {
         _burn(msg.sender, maxShares);
-        amount = maxShares.mul(decimalsMul).div(pricePerShare);
+        amount = maxShares.mul(pricePerShare).div(decimalsMul);
         IERC20(token).safeTransfer(msg.sender, amount);
     }
 

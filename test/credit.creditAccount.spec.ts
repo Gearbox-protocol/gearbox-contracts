@@ -44,7 +44,7 @@ describe("CreditAccount", function () {
     const revertMsg = await errors.CA_CONNECTED_CREDIT_MANAGER_ONLY();
 
     await expect(
-      creditAccount.connect(user).updateBorrowedAmount(12)
+      creditAccount.connect(user).updateParameters(1,2)
     ).to.be.revertedWith(revertMsg);
 
     await expect(
@@ -64,8 +64,9 @@ describe("CreditAccount", function () {
 
   it("[CA-4]: updateBorrowAmount updates correctly", async () => {
     await creditAccount.connectTo(deployer.address, 100, 200);
-    await creditAccount.updateBorrowedAmount(454);
+    await creditAccount.updateParameters(454, 3455);
     expect(await creditAccount.borrowedAmount()).to.be.eq(454);
+    expect(await creditAccount.cumulativeIndexAtOpen()).to.be.eq(3455);
   });
 
   it("[CA-5]: approveTokenForContract sets MAX allowance for provided token", async () => {

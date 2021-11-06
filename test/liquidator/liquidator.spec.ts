@@ -35,8 +35,9 @@ import {
   WETHGateway__factory,
   WETHToken,
   YEARN_DAI_KOVAN_MOCK,
-  YEARN_USDC_KOVAN_MOCK
+  YEARN_USDC_KOVAN_MOCK,
 } from "@diesellabs/gearbox-sdk";
+import { ERC20 } from "../../types/ethers-v5";
 
 describe("Liquidator test", function () {
   this.timeout(0);
@@ -47,8 +48,10 @@ describe("Liquidator test", function () {
   const leverageFactor = 4 * LEVERAGE_DECIMALS;
   const referralCode = 888777;
 
-  let configurator: SignerWithAddress;
+  let deployer: SignerWithAddress;
   let user: SignerWithAddress;
+
+  let daiToken: ERC20;
 
   let creditManagerDAI: CreditManager;
   let creditManagerETH: CreditManager;
@@ -58,13 +61,14 @@ describe("Liquidator test", function () {
   let uniswapV2: IUniswapV2Router02;
   let uniswapV3: ISwapRouter;
   let yearnDAI: IYVault;
-  let yearnUSDC: IYVault
+  let yearnUSDC: IYVault;
 
   before(async () => {
     dotenv.config({ path: ".env.local" });
 
     const accounts = (await ethers.getSigners()) as Array<SignerWithAddress>;
-    const deployer = accounts[0];
+    deployer = accounts[0];
+    user = accounts[1];
 
     const apAddress = process.env.REACT_APP_ADDRESS_PROVIDER;
     if (!apAddress || apAddress === "")
@@ -142,16 +146,20 @@ describe("Liquidator test", function () {
     yearnDAI = IYVault__factory.connect(YEARN_DAI_KOVAN_MOCK, deployer);
     yearnUSDC = IYVault__factory.connect(YEARN_USDC_KOVAN_MOCK, deployer);
 
-    const daiToken = ERC20__factory.connect(
+    daiToken = ERC20__factory.connect(
       tokenDataByNetwork.Mainnet.DAI.address,
       deployer
-    );
+    ) as ERC20;
     const wethToken = ERC20__factory.connect(WETHToken.Mainnet, deployer);
 
-    const r1 = await daiToken.approve(creditManagerDAI.address, MAX_INT);
+    const r1 = await daiToken
+      .connect(user)
+      .approve(creditManagerDAI.address, MAX_INT);
     await r1.wait();
+
     const r2 = await daiToken.approve(poolDAI.address, MAX_INT);
     await r2.wait();
+
     const r3 = await poolDAI.addLiquidity(daiLiquidity, deployer.address, 3);
     await r3.wait();
 
@@ -169,6 +177,11 @@ describe("Liquidator test", function () {
 
     const r6 = await daiToken.connect(user).approve(UNISWAP_V2_ROUTER, MAX_INT);
     await r6.wait();
+
+    const r7 = await daiToken
+      .connect(deployer)
+      .transfer(user.address, accountAmount.mul(2));
+    await r7.wait();
   });
 
   const openUserAccount = async (
@@ -181,13 +194,15 @@ describe("Liquidator test", function () {
 
     const adapter = await creditFilter.contractToAdapter(UNISWAP_V2_ROUTER);
 
-    const r1 = await creditManager.openCreditAccount(
-      accountAmount,
-      user.address,
-      leverageFactor,  // 150, x400 = 150 + 150x4.00=750 as result
-      referralCode
-    );
-    await r1.wait();
+    if (!(await creditManager.hasOpenedCreditAccount(user.address))) {
+      const r1 = await creditManager.connect(user).openCreditAccount(
+        accountAmount,
+        user.address,
+        leverageFactor, // 150, x400 = 150 + 150x4.00=750 as result
+        referralCode
+      );
+      await r1.wait();
+    }
 
     const creditAccount = await creditManager.getCreditAccountOrRevert(
       user.address
@@ -212,34 +227,52 @@ describe("Liquidator test", function () {
   };
 
   it("[L-1]: liquidator works correctly for DAIU creditManage", async () => {
-    const { amountOnAccount, creditAccount, uniV2adapter } = await openUserAccount(
-      creditManagerDAI,
-      creditFilterDAI
-    );
+    const { amountOnAccount, creditAccount, uniV2adapter } =
+      await openUserAccount(creditManagerDAI, creditFilterDAI);
 
-    console.log(`Account ${creditAccount} should be liquidated`)
+    console.log(`Account ${creditAccount} should be liquidated`);
 
-    const path = [tokenDataByNetwork.Kovan.DAI.address, WETHToken.Kovan];
-    const r1 = await uniV2adapter.swapExactTokensForTokens(
-      amountOnAccount,
-      0,
-      path,
-      configurator.address,
-      Date.now() + 3600 * 24
-    );
+    const path = [tokenDataByNetwork.Mainnet.DAI.address, WETHToken.Mainnet];
 
-    await r1.wait();
+    const amount = await daiToken.balanceOf(creditAccount);
+
+    console.log(amount.toString());
+
+    if (amount.gt(1)) {
+      const BigLT = await creditFilterDAI.liquidationThresholds(
+        daiToken.address
+      );
+
+      // Reduce liquidation threshold to 1
+      const r0 = await creditFilterDAI
+        .connect(deployer)
+        .allowToken(WETHToken.Mainnet, BigLT.sub(1));
+      await r0.wait();
+
+      const r1 = await uniV2adapter
+        .connect(user)
+        .swapExactTokensForTokens(
+          amount,
+          0,
+          path,
+          deployer.address,
+          Date.now() + 3600 * 24
+        );
+
+      await r1.wait();
+    }
 
     const previousLT = await creditFilterDAI.liquidationThresholds(
-      WETHToken.Kovan
+      WETHToken.Mainnet
     );
 
     // Reduce liquidation threshold to 1
     const r2 = await creditFilterDAI
-      .connect(configurator)
-      .allowToken(WETHToken.Kovan, 1);
+      .connect(deployer)
+      .allowToken(WETHToken.Mainnet, 1);
     await r2.wait();
 
+    console.log("Waiting for liquidator");
     await waitToBeLiquidated(creditManagerDAI);
 
     //
@@ -248,9 +281,8 @@ describe("Liquidator test", function () {
 
     // Reduce lquidation thresold to 1
     const r3 = await creditFilterDAI
-      .connect(configurator)
-      .allowToken(WETHToken.Kovan, previousLT);
+      .connect(deployer)
+      .allowToken(WETHToken.Mainnet, previousLT);
     await r3.wait();
-
   });
 });
