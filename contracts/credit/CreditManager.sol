@@ -31,6 +31,14 @@ import "hardhat/console.sol";
 /// @notice It encapsulates business logic for managing credit accounts
 ///
 /// More info: https://dev.gearbox.fi/developers/credit/credit_manager
+///
+/// #define roughEq(uint256 a, uint256 b) bool =
+///     a == b || a + 1 == b || a == b + 1;
+///
+/// #define borrowedPlusInterest(address creditAccount) uint =
+///     let borrowedAmount, cumIndexAtOpen := getCreditAccountParameters(creditAccount) in
+///     let curCumulativeIndex := IPoolService(poolService).calcLinearCumulative_RAY() in
+///         borrowedAmount.mul(curCumulativeIndex).div(cumIndexAtOpen);
 contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     using SafeMath for uint256;
     using PercentageMath for uint256;
@@ -157,6 +165,26 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
      * @param leverageFactor Multiplier to borrowers own funds
      * @param referralCode Code used to register the integrator originating the operation, for potential rewards.
      *   0 if the action is executed directly by the user, without any middle-man
+     *
+     * #if_succeeds {:msg "A credit account with the correct balance is opened."}
+     *      let newAccount := creditAccounts[onBehalfOf] in
+     *      newAccount != address(0) &&
+     *          IERC20(underlyingToken).balanceOf(newAccount) >=
+     *          amount.add(amount.mul(leverageFactor).div(Constants.LEVERAGE_DECIMALS));
+     *
+     * #if_succeeds {:msg "Sender looses amount tokens." }
+     *      IERC20(underlyingToken).balanceOf(msg.sender) == old(IERC20(underlyingToken).balanceOf(msg.sender)) - amount;
+     *
+     * #if_succeeds {:msg "Pool provides correct leverage (amount x leverageFactor)." }
+     *      IERC20(underlyingToken).balanceOf(poolService) == old(IERC20(underlyingToken).balanceOf(poolService)) - amount.mul(leverageFactor).div(Constants.LEVERAGE_DECIMALS);
+     *
+     * #if_succeeds {:msg "The new account is healthy."}
+     *      creditFilter.calcCreditAccountHealthFactor(creditAccounts[onBehalfOf]) >= PercentageMath.PERCENTAGE_FACTOR;
+     *
+     * #if_succeeds {:msg "The new account has balance <= 1 for all tokens other than the underlying token."}
+     *     let newAccount := creditAccounts[onBehalfOf] in
+     *         forall (uint i in 1...creditFilter.allowedTokensCount())
+     *             IERC20(creditFilter.allowedTokens(i)).balanceOf(newAccount) <= 1;
      */
     function openCreditAccount(
         uint256 amount,
@@ -240,6 +268,12 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
      *
      * @param to Address to send remaining funds
      * @param paths Exchange type data which provides paths + amountMinOut
+     *
+     * #if_succeeds {:msg "Can only be called by account holder"} old(creditAccounts[msg.sender]) != address(0x0);
+     * #if_succeeds {:msg "Can only close healthy accounts" } old(creditFilter.calcCreditAccountHealthFactor(creditAccounts[msg.sender])) > PercentageMath.PERCENTAGE_FACTOR;
+     * #if_succeeds {:msg "If this succeeded the pool gets paid at least borrowed + interest"}
+     *    let minAmountOwedToPool := old(borrowedPlusInterest(creditAccounts[msg.sender])) in
+     *        IERC20(underlyingToken).balanceOf(poolService) >= old(IERC20(underlyingToken).balanceOf(poolService)).add(minAmountOwedToPool);
      */
     function closeCreditAccount(address to, DataTypes.Exchange[] calldata paths)
         external
@@ -279,6 +313,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
      *
      * @param borrower Borrower address
      * @param to Address to transfer all assets from credit account
+     *
+     * #if_succeeds {:msg "Can only be called by account holder"} old(creditAccounts[msg.sender]) != address(0x0);
+     * #if_succeeds {:msg "Can only liquidate an un-healthy accounts" } old(creditFilter.calcCreditAccountHealthFactor(creditAccounts[msg.sender])) < PercentageMath.PERCENTAGE_FACTOR;
      */
     function liquidateCreditAccount(
         address borrower,
@@ -325,6 +362,10 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     /// More info: https://dev.gearbox.fi/developers/credit/credit_manager#repay-credit-account
     ///
     /// @param to Address to send credit account assets
+    /// #if_succeeds {:msg "Can only be called by account holder"} old(creditAccounts[msg.sender]) != address(0x0);
+    /// #if_succeeds {:msg "If this succeeded the pool gets paid at least borrowed + interest"}
+    ///     let minAmountOwedToPool := old(borrowedPlusInterest(creditAccounts[msg.sender])) in
+    ///         IERC20(underlyingToken).balanceOf(poolService) >= old(IERC20(underlyingToken).balanceOf(poolService)).add(minAmountOwedToPool);
     function repayCreditAccount(address to)
         external
         override
@@ -338,6 +379,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     ///
     /// @param borrower Address of borrower
     /// @param to Address to send credit account assets
+    /// #if_succeeds {:msg "If this succeeded the pool gets paid at least borrowed + interest"}
+    ///     let minAmountOwedToPool := old(borrowedPlusInterest(creditAccounts[borrower])) in
+    ///         IERC20(underlyingToken).balanceOf(poolService) >= old(IERC20(underlyingToken).balanceOf(poolService)).add(minAmountOwedToPool);
     function repayCreditAccountETH(address borrower, address to)
         external
         override
@@ -377,6 +421,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
     }
 
     /// @dev Implementation for all closing account procedures
+    /// #if_succeeds {:msg "Credit account balances should be <= 1 for all allowed tokens after closing"}
+    ///     forall (uint i in 0...creditFilter.allowedTokensCount())
+    ///         IERC20(creditFilter.allowedTokens(i)).balanceOf(creditAccount) <= 1;
     function _closeCreditAccountImpl(
         address creditAccount,
         uint8 operation,

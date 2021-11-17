@@ -31,6 +31,11 @@ import "hardhat/console.sol";
 ///  - Managing diesel tokens & diesel rates
 ///  - Lend funds to credit manager
 ///
+/// #define currentBorrowRate() uint =
+///     let expLiq := expectedLiquidity() in
+///     let availLiq := availableLiquidity() in
+///         interestRateModel.calcBorrowRate(expLiq, availLiq);
+///
 /// More: https://dev.gearbox.fi/developers/pools/pool-service
 contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     using SafeMath for uint256;
@@ -135,6 +140,14 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
      * tokens is a different wallet
      * @param referralCode Code used to register the integrator originating the operation, for potential rewards.
      *   0 if the action is executed directly by the user, without any middle-man
+     *
+     * #if_succeeds {:msg "After addLiquidity() the pool gets the correct amoung of underlyingToken(s)"}
+     *      IERC20(underlyingToken).balanceOf(address(this)) == old(IERC20(underlyingToken).balanceOf(address(this))) + amount;
+     * #if_succeeds {:msg "After addLiquidity() onBehalfOf gets the right amount of dieselTokens"}
+     *      IERC20(dieselToken).balanceOf(onBehalfOf) == old(IERC20(dieselToken).balanceOf(onBehalfOf)) + old(toDiesel(amount));
+     * #if_succeeds {:msg "After addLiquidity() borrow rate decreases"}
+     *      amount > 0 ==> borrowAPY_RAY <= old(currentBorrowRate());
+     * #limit {:msg "Not more than 1 day since last borrow rate update"} block.timestamp <= _timestampLU + 3600 * 24;
      */
     function addLiquidity(
         uint256 amount,
@@ -186,6 +199,18 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
      *
      * @param amount Amount of tokens to be transfer
      * @param to Address to transfer liquidity
+     *
+     * #if_succeeds {:msg "For removeLiquidity() sender must have sufficient diesel"}
+     *      old(DieselToken(dieselToken).balanceOf(msg.sender)) >= amount;
+     * #if_succeeds {:msg "After removeLiquidity() `to` gets the liquidity in underlyingToken(s)"}
+     *      (to != address(this) && to != treasuryAddress) ==>
+     *          IERC20(underlyingToken).balanceOf(to) == old(IERC20(underlyingToken).balanceOf(to) + (let t:= fromDiesel(amount) in t.sub(t.percentMul(withdrawFee))));
+     * #if_succeeds {:msg "After removeLiquidity() treasury gets the withdraw fee in underlyingToken(s)"}
+     *      (to != address(this) && to != treasuryAddress) ==>
+     *          IERC20(underlyingToken).balanceOf(treasuryAddress) == old(IERC20(underlyingToken).balanceOf(treasuryAddress) + fromDiesel(amount).percentMul(withdrawFee));
+     * #if_succeeds {:msg "After removeLiquidity() borrow rate increases"}
+     *      (to != address(this) && amount > 0) ==> borrowAPY_RAY >= old(currentBorrowRate());
+     * #limit {:msg "Not more than 1 day since last borrow rate update"} block.timestamp <= _timestampLU + 3600 * 24;
      */
     function removeLiquidity(uint256 amount, address to)
         external
@@ -256,6 +281,10 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     ///
     /// @param borrowedAmount Borrowed amount for credit account
     /// @param creditAccount Credit account address
+    ///
+    /// #if_succeeds {:msg "After lendCreditAccount() borrow rate increases"}
+    ///      borrowedAmount > 0 ==> borrowAPY_RAY >= old(currentBorrowRate());
+    /// #limit {:msg "Not more than 1 day since last borrow rate update"} block.timestamp <= _timestampLU + 3600 * 24;
     function lendCreditAccount(uint256 borrowedAmount, address creditAccount)
         external
         override
@@ -284,6 +313,11 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     /// @param borrowedAmount Borrowed amount (without interest accrued)
     /// @param profit Represents PnL value if PnL > 0
     /// @param loss Represents PnL value if PnL <0
+    ///
+    /// #if_succeeds {:msg "Cant have both profit and loss"} !(profit > 0 && loss > 0);
+    /// #if_succeeds {:msg "After repayCreditAccount() if we are profitabe, or treasury can cover the losses, diesel rate doesn't decrease"}
+    ///      (profit > 0 || toDiesel(loss) >= DieselToken(dieselToken).balanceOf(treasuryAddress)) ==> getDieselRate_RAY() >= old(getDieselRate_RAY());
+    /// #limit {:msg "Not more than 1 day since last borrow rate update"} block.timestamp <= _timestampLU + 3600 * 24;
     function repayCreditAccount(
         uint256 borrowedAmount,
         uint256 profit,
@@ -468,6 +502,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
 
     /// @dev Sets the new interest rate model for pool
     /// @param _interestRateModel Address of new interest rate model contract
+    /// #limit {:msg "Disallow updating the interest rate model after the constructor"} address(interestRateModel) == address(0x0);
     function updateInterestRateModel(address _interestRateModel)
         public
         configuratorOnly // T:[PS-9]

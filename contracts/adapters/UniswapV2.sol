@@ -107,7 +107,20 @@ contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
      * deadline Unix timestamp after which the transaction will revert.
      * for more information check uniswap documentation: https://uniswap.org/docs/v2/smart-contracts/router02/
      */
-
+    /// #limit amountOutMin == 0 &&
+    ///     amountIn > 0 &&
+    ///     deadline > block.timestamp;
+    /// #hint path.length == 2 &&
+    ///     (path[0] == 0x0eb775F99A28cb591Fa449ca74eF8E7cEd3A609a ||
+    ///      path[0] == 0x47f93809340CAA8108f8D62A4E4f6C2A815e882E ||
+    ///      path[0] == 0xcFB04485A211b0573Ace62EBDCcC5cFC51107EaA ||
+    ///      path[0] == 0x7FA12843d541A1Fd905d620cD810D05BfDC3226e ||
+    ///      path[0] == 0x171A8DEa3fd87D46421DFc6F0d11Cc3c8C75f54D) &&
+    ///     (path[1] == 0x0eb775F99A28cb591Fa449ca74eF8E7cEd3A609a ||
+    ///      path[1] == 0x47f93809340CAA8108f8D62A4E4f6C2A815e882E ||
+    ///      path[1] == 0xcFB04485A211b0573Ace62EBDCcC5cFC51107EaA ||
+    ///      path[1] == 0x7FA12843d541A1Fd905d620cD810D05BfDC3226e ||
+    ///      path[1] == 0x171A8DEa3fd87D46421DFc6F0d11Cc3c8C75f54D);
     function swapExactTokensForTokens(
         uint256 amountIn,
         uint256 amountOutMin,
