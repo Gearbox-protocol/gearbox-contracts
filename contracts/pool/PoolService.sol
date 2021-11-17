@@ -183,7 +183,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         DieselToken(dieselToken).mint(onBehalfOf, toDiesel(amount)); // T:[PS-2, 7]
 
         _expectedLiquidityLU = _expectedLiquidityLU.add(amount); // T:[PS-2, 7]
-        _updateBorrowRate(); // T:[PS-2, 7]
+        _updateBorrowRate(0); // T:[PS-2, 7]
 
         emit AddLiquidity(msg.sender, onBehalfOf, amount, referralCode); // T:[PS-2, 7]
     }
@@ -238,7 +238,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         DieselToken(dieselToken).burn(msg.sender, amount); // T:[PS-3, 8]
 
         _expectedLiquidityLU = _expectedLiquidityLU.sub(underlyingTokensAmount); // T:[PS-3, 8]
-        _updateBorrowRate(); // T:[PS-3,8 ]
+        _updateBorrowRate(0); // T:[PS-3,8 ]
 
         emit RemoveLiquidity(msg.sender, to, amount); // T:[PS-3, 8]
 
@@ -299,7 +299,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         IERC20(underlyingToken).safeTransfer(creditAccount, borrowedAmount); // T:[PS-14]
 
         // Update borrow Rate
-        _updateBorrowRate(); // T:[PS-17]
+        _updateBorrowRate(0); // T:[PS-17]
 
         // Increase total borrowed amount
         totalBorrowed = totalBorrowed.add(borrowedAmount); // T:[PS-16]
@@ -358,13 +358,13 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
 
             // If treasury has enough funds, it just burns needed amount
             // to keep diesel rate on the same level
-            DieselToken(dieselToken).burn(treasuryAddress, amountToBurn); // T:[PS-19. 20]
+            DieselToken(dieselToken).burn(treasuryAddress, amountToBurn); // T:[PS-19, 20]
 
-            _expectedLiquidityLU = _expectedLiquidityLU.sub(loss); //T:[PS-19,20]
+//            _expectedLiquidityLU = _expectedLiquidityLU.sub(loss); //T:[PS-19,20]
         }
 
         // Update available liquidity
-        _updateBorrowRate(); // T:[PS-19, 20, 21]
+        _updateBorrowRate(loss); // T:[PS-19, 20, 21]
 
         // Reduce total borrowed. Should be after _updateBorrowRate() for correct calculations
         totalBorrowed = totalBorrowed.sub(borrowedAmount); // T:[PS-19, 20]
@@ -424,10 +424,10 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     ///  - compute how much interest were accrued from last update
     ///  - compute new cumulative index based on updated liquidity parameters
     ///  - stores new cumulative index and timestamp when it was updated
-    function _updateBorrowRate() internal {
+    function _updateBorrowRate(uint256 loss) internal {
         // Update total _expectedLiquidityLU
 
-        _expectedLiquidityLU = expectedLiquidity(); // T:[PS-27]
+        _expectedLiquidityLU = expectedLiquidity().sub(loss); // T:[PS-27]
 
         // Update cumulativeIndex
         _cumulativeIndex_RAY = calcLinearCumulative_RAY(); // T:[PS-27]
@@ -512,7 +512,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
         );
         interestRateModel = IInterestRateModel(_interestRateModel); // T:[PS-25]
-        _updateBorrowRate(); // T:[PS-26]
+        _updateBorrowRate(0); // T:[PS-26]
         emit NewInterestRateModel(_interestRateModel); // T:[PS-25]
     }
 

@@ -73,6 +73,6 @@ contract TestPoolService is IPoolService, PoolService {
     }
 
     function updateBorrowRate() external {
-        _updateBorrowRate();
+        _updateBorrowRate(0);
     }
 }
