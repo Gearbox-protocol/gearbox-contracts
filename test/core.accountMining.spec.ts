@@ -105,7 +105,17 @@ describe("AccountMining", function () {
     ).to.be.revertedWith(revertMsg);
   });
 
-  it("[AM-4]: it reverts if merkeProof lenght is zero", async () => {
+  it("[AM-4]: it reverts if merkeProof length is zero", async () => {
+    const revertMsg = "MerkleDistributor: Invalid proof.";
+
+    const claim = merkle.claims[user.address];
+
+    await expect(
+      accountMining.connect(deployer).claim(claim.index, claim.salt, [])
+    ).to.be.revertedWith(revertMsg);
+  });
+
+  it("[AM-4]: isCalimed returns true for unknown address", async () => {
     const revertMsg = "MerkleDistributor: Invalid proof.";
 
     const claim = merkle.claims[user.address];

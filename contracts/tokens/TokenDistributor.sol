@@ -16,6 +16,7 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 
 import {AddressProvider} from "../core/AddressProvider.sol";
 import {ACLTrait} from "../core/ACLTrait.sol";
+import {AccountMining} from "../core/AccountMining.sol";
 import {GearToken} from "../tokens/GearToken.sol";
 import {IGearToken} from "../interfaces/IGearToken.sol";
 import {StepVesting} from "../tokens/Vesting.sol";
@@ -43,6 +44,18 @@ contract TokenDistributor is ACLTrait {
     struct VestingContract {
         address contractAddress; // vesting contract address
         VotingPower votingPower; // enum for voting power(0 means "A", 1 means "B" and 2 means "ZERO VOTING")
+    }
+
+    address treasury; // treasury wallet address
+
+    struct TokenDistributionOpts {
+        TokenShare[] contributorsA;
+        TokenShare[] contributorsB;
+        uint256 treasuryAmount; // amount of tokens which should be transferred to Treasury wallet
+        address accountMiner;
+        uint256 accountsToBeMined; // Quantity of accounts to be mined
+        address testersAirdrop;
+        uint256 airdropAmount;
     }
 
     // Steps for StepVestring contract
@@ -89,31 +102,43 @@ contract TokenDistributor is ACLTrait {
         ACLTrait(address(addressProvider))
     {
         gearToken = GearToken(addressProvider.getGearToken()); // T:[TD-1]
+        treasury = addressProvider.getTreasuryContract();
         _updateVotingWeights(defaultWeightA, defaultWeightB); // T:[TD-1]
     }
 
     /// @dev Deploys vesting contracts and distributes tokens
-    /// @param contributorsA list of addresses and amounts for contributors type A
-    /// @param contributorsB list of addresses and amounts for contributors type B
-    function distributeTokens(
-        TokenShare[] memory contributorsA,
-        TokenShare[] memory contributorsB
-    )
+    /// @param opts - struct which describes token distribution
+    function distributeTokens(TokenDistributionOpts calldata opts)
         external
         configuratorOnly // T:[TD-2]
     {
-        for (uint256 i = 0; i < contributorsA.length; i++) {
-            _deployVestingContract(contributorsA[i], VotingPower.A); // T:[TD-3]
+        for (uint256 i = 0; i < opts.contributorsA.length; i++) {
+            _deployVestingContract(opts.contributorsA[i], VotingPower.A); // T:[TD-3]
         }
 
-        for (uint256 i = 0; i < contributorsB.length; i++) {
+        for (uint256 i = 0; i < opts.contributorsB.length; i++) {
             _deployVestingContract(
-                contributorsB[i],
-                contributorsB[i].isCompany
+                opts.contributorsB[i],
+                opts.contributorsB[i].isCompany
                     ? VotingPower.ZERO_VOTING_POWER
                     : VotingPower.B
             ); // T:[TD-3]
         }
+
+        AccountMining am = AccountMining(opts.accountMiner);
+        //        accountMining = new AccountMining(
+        //            address(gearToken),
+        //            opts.merkleRoot,
+        //            opts.rewardPerMinedAccount,
+        //            addressProvider
+        //        ); // T:[GD-1,2]
+
+        gearToken.transfer(treasury, opts.treasuryAmount); // T:[GD-1]
+        gearToken.transfer(opts.testersAirdrop, opts.airdropAmount); // T:[GD-1]
+        gearToken.transfer(
+            opts.accountMiner,
+            am.amount() * opts.accountsToBeMined
+        ); // T:[GD-1]
 
         require(
             gearToken.balanceOf(address(this)) == 0,
@@ -149,11 +174,11 @@ contract TokenDistributor is ACLTrait {
             contributorsSet.length()
         ); // T:[TD-11]
         for (uint256 i = 0; i < contributorsArray.length; i++) {
-            contributorsArray[i] = contributorsSet.at(i);  // T:[TD-11]
+            contributorsArray[i] = contributorsSet.at(i); // T:[TD-11]
         }
 
         for (uint256 i = 0; i < contributorsArray.length; i++) {
-            updateVestingHolder(contributorsArray[i]);  // T:[TD-11]
+            updateVestingHolder(contributorsArray[i]); // T:[TD-11]
         }
     }
 

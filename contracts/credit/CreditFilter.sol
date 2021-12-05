@@ -121,12 +121,12 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         liquidationThresholds[underlyingToken] = Constants
         .UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD; // T:[CF-21]
 
-        allowToken(
+        _allowToken(
             underlyingToken,
             Constants.UNDERLYING_TOKEN_LIQUIDATION_THRESHOLD
         ); // T:[CF-8, 21]
 
-        setFastCheckParameters(
+        _setFastCheckParameters(
             Constants.CHI_THRESHOLD,
             Constants.HF_CHECK_INTERVAL_DEFAULT
         ); // T:[CF-21]
@@ -142,10 +142,14 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     /// @param token Address of allowed token
     /// @param liquidationThreshold The credit Manager constant showing the maximum allowable ratio of Loan-To-Value for the i-th asset.
     function allowToken(address token, uint256 liquidationThreshold)
-        public
+        external
         override
         configuratorOnly // T:[CF-1]
     {
+        _allowToken(token, liquidationThreshold);
+    }
+
+    function _allowToken(address token, uint256 liquidationThreshold) internal {
         require(token != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED); // T:[CF-2]
 
         require(
@@ -434,9 +438,16 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         uint256 _chiThreshold,
         uint256 _hfCheckInterval
     )
-        public
+        external
         configuratorOnly // T:[CF-1]
     {
+        _setFastCheckParameters(_chiThreshold, _hfCheckInterval);
+    }
+
+    function _setFastCheckParameters(
+        uint256 _chiThreshold,
+        uint256 _hfCheckInterval
+    ) internal {
         chiThreshold = _chiThreshold; // T:[CF-30]
         hfCheckInterval = _hfCheckInterval; // T:[CF-30]
 

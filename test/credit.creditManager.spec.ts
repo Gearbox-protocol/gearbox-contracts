@@ -1045,14 +1045,25 @@ describe("CreditManager", function () {
 
   it("[CM-36]: setParams reverts for non-configurator and for incorrect values", async () => {
     const revertMsgNonConfig = await errors.ACL_CALLER_NOT_CONFIGURATOR();
-    const revertMsgIncorrect = await errors.CM_INCORRECT_FEES();
+    const revertMsgIncorrectParams = await errors.CM_INCORRECT_PARAMS();
+    const revertMsgIncorrectFees = await errors.CM_INCORRECT_FEES();
 
-    const incorrectValue = PERCENTAGE_FACTOR + 1;
+    const incorrectValue = PERCENTAGE_FACTOR;
     const maxLeverage = 400;
 
     await expect(
-      creditManager.setParams(0, 1000, maxLeverage, incorrectValue, 100, 100)
-    ).to.be.revertedWith(revertMsgIncorrect);
+      creditManager.connect(user).setParams(0, 1000, maxLeverage, 100, 100, 100)
+    ).to.be.revertedWith(revertMsgNonConfig);
+
+    await expect(
+      creditManager.setParams(1000, 0, maxLeverage, 100, 100, 100),
+      "maxAmount > minAmount case"
+    ).to.be.revertedWith(revertMsgIncorrectParams);
+
+    await expect(
+      creditManager.setParams(0, 1000, maxLeverage, incorrectValue, 100, 100),
+      "Incorrect interesting fee"
+    ).to.be.revertedWith(revertMsgIncorrectFees);
 
     await expect(
       creditManager.setParams(
@@ -1060,14 +1071,16 @@ describe("CreditManager", function () {
         1000,
         maxLeverage,
         100,
-        incorrectValue,
+        incorrectValue, // If liqudation discount < liquidatoin fee it generates safe math err
         incorrectValue
-      )
-    ).to.be.revertedWith(revertMsgIncorrect);
+      ),
+      "Incorrect fee liquidataion"
+    ).to.be.revertedWith(revertMsgIncorrectFees);
 
     await expect(
-      creditManager.setParams(0, 1000, maxLeverage, 100, 100, incorrectValue)
-    ).to.be.revertedWith(revertMsgIncorrect);
+      creditManager.setParams(0, 1000, maxLeverage, 100, 100, incorrectValue),
+      "Incorrect liquidation discount"
+    ).to.be.revertedWith(revertMsgIncorrectFees);
   });
 
   it("[CM-37]: setFees sets correct values & emits event", async () => {

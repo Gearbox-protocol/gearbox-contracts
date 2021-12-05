@@ -146,7 +146,16 @@ library Errors {
     string public constant LA_TOKEN_OUT_IS_NOT_COLLATERAL = "LA6";
 
     //
-    // YEARN PRICEFEED
+    // YEARN PRICE FEED
     //
     string public constant YPF_PRICE_PER_SHARE_OUT_OF_RANGE = "YP1";
+    string public constant YPF_INCORRECT_LIMITER_PARAMETERS = "YP2";
+
+    //
+    // TOKEN DISTRIBUTOR
+    //
+    string public constant TD_WALLET_IS_ALREADY_CONNECTED_TO_VC = "TD1";
+    string public constant TD_INCORRECT_WEIGHTS = "TD2";
+    string public constant TD_NON_ZERO_BALANCE_AFTER_DISTRIBUTION = "TD3";
+    string public constant TD_CONTRIBUTOR_IS_NOT_REGISTERED = "TD4";
 }

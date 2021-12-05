@@ -952,7 +952,7 @@ describe("LeveragedActions test (Mainnet test)", function () {
     const revertMsg = await errors.REGISTERED_CREDIT_ACCOUNT_MANAGERS_ONLY();
 
     const coreDeployer = new CoreDeployer({ weth: ts.wethToken.address });
-    const tokenDeployer = new TokenDeployer(new TestDeployer());
+    const tokenDeployer = new TokenDeployer();
     await tokenDeployer.loadTokens("Mainnet");
 
     const priceOracle = await coreDeployer.getPriceOracle();

@@ -1,13 +1,17 @@
 // @ts-ignore
 import { ethers } from "hardhat";
+import { WAD } from "@diesellabs/gearbox-sdk";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { CoreDeployer } from "../deployer/coreDeployer";
+import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
+import { TestDeployer } from "../deployer/testDeployer";
+import {
+  Errors, TokenMock,
+  YearnMock,
+  YearnPriceFeed
+} from "../types/ethers-v5";
 import { expect } from "../utils/expect";
 
-import { CoreDeployer } from "../deployer/coreDeployer";
-import { TestDeployer } from "../deployer/testDeployer";
-import { Errors, IYVault, TokenMock, YearnMock, YearnPriceFeed } from "../types/ethers-v5";
-import { IntegrationsDeployer } from "../deployer/integrationsDeployer";
-import { SECONDS_PER_YEAR, WAD } from "@diesellabs/gearbox-sdk";
 
 describe("YearnPriceFeed", function () {
   let deployer: SignerWithAddress;
@@ -38,11 +42,13 @@ describe("YearnPriceFeed", function () {
 
     token = await testDeployer.getTokenMock("USDC", "USDC");
     yVault = await integrationsDeployer.getYearnVaultMock(token.address);
-    await yVault.addUpdater(deployer.address)
+    await yVault.addUpdater(deployer.address);
     yearnPriceFeed = await integrationsDeployer.getYearnPriceFeed(
       addressProvider.address,
       yVault.address,
-      priceFeed.address
+      priceFeed.address,
+      12,
+      300
     );
 
     errors = await testDeployer.getErrors();
@@ -54,44 +60,27 @@ describe("YearnPriceFeed", function () {
     await expect(
       yearnPriceFeed.connect(trader).setLimiter(10, 10)
     ).to.be.revertedWith(revertMsg);
-
-
   });
 
   it("[YPF-2]: setLimiter sets parameters correctly", async function () {
-
     const tx = await yearnPriceFeed.setLimiter(12, 33);
 
-    const block = await deployer.provider?.getBlock(tx?.blockHash || "")
-
     expect(await yearnPriceFeed.lowerBound()).to.be.eq(12);
-    expect(await yearnPriceFeed.maxExpectedAPY()).to.be.eq(33);
-    expect(await yearnPriceFeed.timestampLimiter()).to.be.eq(block?.timestamp)
+    expect(await yearnPriceFeed.upperBound()).to.be.eq(33);
   });
 
-  it("[YPF-3]: setLimiter reverts of pricePerShare less than lower bound", async function () {
+  it("[YPF-3]: setLimiter reverts of pricePerShare is out of bounds", async function () {
     const revertMsg = await errors.YPF_PRICE_PER_SHARE_OUT_OF_RANGE();
     await yearnPriceFeed.setLimiter(12, 3300);
     await yVault.setPricePerShare(11);
-    await expect(yearnPriceFeed.latestRoundData()).to.be.revertedWith(revertMsg);
-  });
+    await expect(yearnPriceFeed.latestRoundData()).to.be.revertedWith(
+      revertMsg
+    );
 
-  it("[YPF-4]: setLimiter reverts of pricePerShare more than lower bound + k * t", async function () {
-    const revertMsg = await errors.YPF_PRICE_PER_SHARE_OUT_OF_RANGE();
-    const tx = await yearnPriceFeed.setLimiter(12, 3300);
-
-    const block = await deployer.provider?.getBlock(tx?.blockHash || "")
-
-
-
-    const oneYearLater = block!.timestamp + SECONDS_PER_YEAR-1;
-    await ethers.provider.send("evm_mine", [oneYearLater]);
-
-    await yVault.setPricePerShare(15);
-    await yearnPriceFeed.latestRoundData()
-
-    await yVault.setPricePerShare(66);
-    await expect(yearnPriceFeed.latestRoundData()).to.be.revertedWith(revertMsg);
+    await yVault.setPricePerShare(3301);
+    await expect(yearnPriceFeed.latestRoundData()).to.be.revertedWith(
+      revertMsg
+    );
   });
 
 

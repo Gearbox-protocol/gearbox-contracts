@@ -8,6 +8,8 @@ import { ethers } from "hardhat";
 import { expect } from "../utils/expect";
 
 import {
+  AccountMining,
+  AccountMining__factory,
   AddressProvider,
   Errors,
   GearToken,
@@ -26,9 +28,11 @@ import {
   VotingPower,
   WAD,
 } from "@diesellabs/gearbox-sdk";
-import { DUMB_ADDRESS, DUMB_ADDRESS2 } from "../core/constants";
+import { DUMB_ADDRESS, DUMB_ADDRESS2, DUMB_ADDRESS3, DUMB_ADDRESS4 } from "../core/constants";
 import { CoreDeployer } from "../deployer/coreDeployer";
 import { TestDeployer } from "../deployer/testDeployer";
+import { TokenDistributionOpts } from "../core/tokenDistributor";
+import { MerkleDistributorInfo, parseAccounts } from "../merkle/parse-accounts";
 
 describe("TokenDistributor", function () {
   let deployer: SignerWithAddress;
@@ -41,10 +45,16 @@ describe("TokenDistributor", function () {
   let gearToken: GearToken;
   let td: TokenDistributor;
 
-  let contributorsA: Array<TokenShare>;
+  let opts: TokenDistributionOpts;
   let contributorsB: Array<TokenShare>;
 
   const treasury = DUMB_ADDRESS;
+  let merkleInfo: MerkleDistributorInfo;
+  let accountMiner: AccountMining;
+
+  const treasuryAmount = WAD.mul(51e8);
+  const rewardPerMinedAccount = WAD.mul(1e5);
+  const accountsToBeMined = 1000;
 
   let errors: Errors;
 
@@ -59,6 +69,8 @@ describe("TokenDistributor", function () {
 
     addressProvider = await coreDeployer.getAddressProvider();
     await coreDeployer.getACL();
+    await coreDeployer.getAccountFactory();
+    await addressProvider.setTreasuryContract(treasury);
 
     const gearTokenFactory = (await ethers.getContractFactory(
       "GearToken"
@@ -79,26 +91,54 @@ describe("TokenDistributor", function () {
 
     await gearToken.setMiner(td.address);
 
-    contributorsA = [
-      {
-        holder: angel.address,
-        amount: WAD.mul(10e8),
-        isCompany: false,
-      },
+    const accountMinerFactory = (await ethers.getContractFactory(
+      "AccountMining"
+    )) as AccountMining__factory;
+
+    const accountsInMerkle = [
+      deployer.address,
+      angel.address,
+      user.address,
+      friend.address,
     ];
 
-    contributorsB = [
-      {
-        holder: user.address,
-        amount: WAD.mul(5e8),
-        isCompany: false,
-      },
-      {
-        holder: friend.address,
-        amount: WAD.mul(5e8),
-        isCompany: true,
-      },
-    ];
+    merkleInfo = parseAccounts(accountsInMerkle);
+
+    accountMiner = await accountMinerFactory.deploy(
+      gearToken.address,
+      merkleInfo.merkleRoot,
+      rewardPerMinedAccount,
+      addressProvider.address
+    );
+    await td.deployed();
+
+    opts = {
+      contributorsA: [
+        {
+          holder: angel.address,
+          amount: WAD.mul(10e8),
+          isCompany: false,
+        },
+      ],
+
+      contributorsB: [
+        {
+          holder: user.address,
+          amount: WAD.mul(5e8),
+          isCompany: false,
+        },
+        {
+          holder: friend.address,
+          amount: WAD.mul(5e8),
+          isCompany: true,
+        },
+      ],
+      treasuryAmount,
+      accountMiner: accountMiner.address,
+      accountsToBeMined,
+      testersAirdrop: DUMB_ADDRESS,
+      airdropAmount: WAD.mul(10e8),
+    };
 
     const testDeployer = new TestDeployer();
     errors = await testDeployer.getErrors();
@@ -145,14 +185,14 @@ describe("TokenDistributor", function () {
       td.connect(user).updateVotingWeights(100, 30)
     ).to.be.revertedWith(revertMsg);
 
-    await expect(td.connect(user).distributeTokens([], [])).to.be.revertedWith(
+    await expect(td.connect(user).distributeTokens(opts)).to.be.revertedWith(
       revertMsg
     );
   });
 
   it("[TD-3]: distributeTokens correctly deploys VestingContracts and transfers tokens", async () => {
-    await gearToken.transfer(td.address, WAD.mul(2e9));
-    await td.distributeTokens(contributorsA, contributorsB);
+    await gearToken.transfer(td.address, WAD.mul(82e8));
+    await td.distributeTokens(opts);
 
     const expectedResult = {
       [angel.address]: {
@@ -209,25 +249,26 @@ describe("TokenDistributor", function () {
 
   it("[TD-4]: distributeTokens reverts if not all tokens were distributed", async () => {
     const revertMsg = await errors.TD_NON_ZERO_BALANCE_AFTER_DISTRIBUTION();
-    await gearToken.transfer(td.address, WAD.mul(3e9));
-    await expect(
-      td.distributeTokens(contributorsA, contributorsB)
-    ).to.be.revertedWith(revertMsg);
+    await gearToken.transfer(td.address, WAD.mul(83e8));
+    await expect(td.distributeTokens(opts)).to.be.revertedWith(revertMsg);
   });
 
   it("[TD-5]: distributeTokens reverts if there are two contributors with the same address", async () => {
     const revertMsg = await errors.TD_WALLET_IS_ALREADY_CONNECTED_TO_VC();
     await gearToken.transfer(td.address, WAD.mul(3e9));
     await expect(
-      td.distributeTokens(contributorsA, [...contributorsB, contributorsA[0]])
+      td.distributeTokens({
+        ...opts,
+        contributorsB: [...opts.contributorsB, opts.contributorsA[0]],
+      })
     ).to.be.revertedWith(revertMsg);
   });
 
   it("[TD-6]: contributors votes counts correctly", async () => {
     await gearToken.transfer(independent.address, WAD.mul(1e9));
-    await gearToken.transfer(td.address, WAD.mul(2e9));
+    await gearToken.transfer(td.address, WAD.mul(82e8));
 
-    await td.distributeTokens(contributorsA, contributorsB);
+    await td.distributeTokens(opts);
 
     await expect(td.updateVotingWeights(2000, 1000))
       .to.emit(td, "NewWeights")
@@ -262,12 +303,12 @@ describe("TokenDistributor", function () {
   });
 
   it("[TD-7]: contributors votes as zero if receiver was changed but not updated in TokenDistributor, and correcyly after update", async () => {
-    const newUser = DUMB_ADDRESS;
+    const newUser = DUMB_ADDRESS2;
 
     await gearToken.transfer(independent.address, WAD.mul(1e9));
-    await gearToken.transfer(td.address, WAD.mul(2e9));
+    await gearToken.transfer(td.address, WAD.mul(82e8));
 
-    await td.distributeTokens(contributorsA, contributorsB);
+    await td.distributeTokens(opts);
 
     await expect(td.updateVotingWeights(2000, 1000));
 
@@ -286,11 +327,11 @@ describe("TokenDistributor", function () {
   });
 
   it("[TD-8]: updateVestingHolder correctly update contributor", async () => {
-    const newUser = DUMB_ADDRESS;
+    const newUser = DUMB_ADDRESS2;
 
-    await gearToken.transfer(td.address, WAD.mul(2e9));
+    await gearToken.transfer(td.address, WAD.mul(82e8));
 
-    await td.distributeTokens(contributorsA, contributorsB);
+    await td.distributeTokens(opts);
     await expect(td.updateVotingWeights(2000, 1000));
 
     expect(await td.balanceOf(newUser)).to.be.eq(0);
@@ -299,7 +340,7 @@ describe("TokenDistributor", function () {
 
     await expect(td.updateVestingHolder(user.address))
       .to.emit(td, "VestingContractHolderUpdate")
-      .withArgs(userVestingContract.address, user.address, DUMB_ADDRESS);
+      .withArgs(userVestingContract.address, user.address, newUser);
 
     await expectReceiverChanged(
       userVestingContract,
@@ -328,18 +369,18 @@ describe("TokenDistributor", function () {
 
   it("[TD-9]: updateVestingHolder revers if prevHolder isn't in the set", async () => {
     const revertMsg = await errors.TD_CONTRIBUTOR_IS_NOT_REGISTERED();
-    await gearToken.transfer(td.address, WAD.mul(2e9));
+    await gearToken.transfer(td.address, WAD.mul(82e8));
 
-    await td.distributeTokens(contributorsA, contributorsB);
+    await td.distributeTokens(opts);
     await expect(td.updateVestingHolder(DUMB_ADDRESS)).to.be.revertedWith(
       revertMsg
     );
   });
 
   it("[TD-10]: updateVestingHolder do nothing if address is not changed", async () => {
-    await gearToken.transfer(td.address, WAD.mul(2e9));
+    await gearToken.transfer(td.address, WAD.mul(82e8));
 
-    await td.distributeTokens(contributorsA, contributorsB);
+    await td.distributeTokens(opts);
     await td.updateVestingHolder(user.address);
 
     const filter = td.filters.VestingContractHolderUpdate();
@@ -349,12 +390,12 @@ describe("TokenDistributor", function () {
   });
 
   it("[TD-11]: updateVestingHolder correctly update contributor", async () => {
-    const newUser = DUMB_ADDRESS;
-    const newFriend = DUMB_ADDRESS2;
+    const newUser = DUMB_ADDRESS3;
+    const newFriend = DUMB_ADDRESS4;
 
-    await gearToken.transfer(td.address, WAD.mul(2e9));
+    await gearToken.transfer(td.address, WAD.mul(82e8));
 
-    await td.distributeTokens(contributorsA, contributorsB);
+    await td.distributeTokens(opts);
     await expect(td.updateVotingWeights(2000, 1000));
 
     expect(await td.balanceOf(newUser)).to.be.eq(0);
@@ -362,13 +403,14 @@ describe("TokenDistributor", function () {
     const userVestingContract = await changeReceiver(user, newUser);
     const friendVestingContract = await changeReceiver(friend, newFriend);
 
+
     await expect(td.updateContributors())
       .to.emit(td, "VestingContractHolderUpdate")
       .withArgs(userVestingContract.address, user.address, newUser)
       .to.emit(td, "VestingContractHolderUpdate")
       .withArgs(friendVestingContract.address, friend.address, newFriend);
 
-    await expectReceiverChanged(
+        await expectReceiverChanged(
       userVestingContract,
       user,
       newUser,
@@ -426,9 +468,9 @@ describe("TokenDistributor", function () {
 
   it("[TD-14]: updateVestingHolder revers if new wallet could replace previous", async () => {
     const revertMsg = await errors.TD_WALLET_IS_ALREADY_CONNECTED_TO_VC();
-    await gearToken.transfer(td.address, WAD.mul(2e9));
+    await gearToken.transfer(td.address, WAD.mul(82e8));
 
-    await td.distributeTokens(contributorsA, contributorsB);
+    await td.distributeTokens(opts);
 
     await changeReceiver(user, friend.address);
 
@@ -436,9 +478,36 @@ describe("TokenDistributor", function () {
       revertMsg
     );
 
-    await expect(td.updateContributors()).to.be.revertedWith(
-      revertMsg
-    );
+    await expect(td.updateContributors()).to.be.revertedWith(revertMsg);
+  });
 
+  it("[TD-15]: credit account mining works correctly after deploy", async () => {
+    await gearToken.transfer(td.address, WAD.mul(82e8));
+
+    await td.distributeTokens(opts);
+
+    await gearToken.setMiner(accountMiner.address);
+
+    for (let miner of [angel, user, friend]) {
+      const claim = merkleInfo.claims[miner.address];
+
+      expect(
+        await accountMiner.connect(miner).isClaimed(claim.index),
+        "Is claimed"
+      ).to.be.false;
+
+      await accountMiner
+        .connect(miner)
+        .claim(claim.index, claim.salt, claim.proof);
+
+      expect(
+        await accountMiner.connect(miner).isClaimed(claim.index),
+        "Is claimed"
+      ).to.be.true;
+
+      expect(await gearToken.balanceOf(miner.address)).to.be.eq(
+        rewardPerMinedAccount
+      );
+    }
   });
 });

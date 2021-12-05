@@ -42,21 +42,32 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-wit
 import { DUMB_ADDRESS } from "../../core/constants";
 import {
   CURVE_3POOL_ADDRESS,
+  MAX_INT,
   SUSHISWAP_MAINNET,
   tokenDataByNetwork,
   UNISWAP_V2_ROUTER,
   UNISWAP_V3_ROUTER,
+  WAD,
   WETHToken,
   YEARN_DAI_ADDRESS,
   YEARN_USDC_ADDRESS
 } from "@diesellabs/gearbox-sdk";
+import { waitForTransaction } from "../../utils/transaction";
+import { BigNumber } from "ethers";
+
+const daiLiquidity = BigNumber.from(10000).mul(WAD);
+const ethLiquidity = BigNumber.from(50).mul(WAD);
 
 export class MainnetSuite {
+
   static async getSuite(): Promise<MainnetSuite> {
     dotenv.config({ path: ".env.local" });
 
     const accounts = (await ethers.getSigners()) as Array<SignerWithAddress>;
     const deployer = accounts[0];
+    const user = accounts[1];
+    const liquidator = accounts[2];
+    const friend = accounts[3];
 
     const apAddress = process.env.REACT_APP_ADDRESS_PROVIDER;
     if (!apAddress || apAddress === "")
@@ -159,6 +170,26 @@ export class MainnetSuite {
     );
     const wethToken = ERC20__factory.connect(WETHToken.Mainnet, deployer);
 
+
+    await waitForTransaction(daiToken.connect(user).approve(creditManagerDAI.address, MAX_INT));
+    await waitForTransaction(daiToken.approve(poolDAI.address, MAX_INT));
+    await waitForTransaction(poolDAI.addLiquidity(daiLiquidity, deployer.address, 3));
+    await waitForTransaction(daiToken.approve(leveragedActions.address, MAX_INT));
+
+    const poolAmount = await poolETH.availableLiquidity();
+
+    if (poolAmount.lt(ethLiquidity)) {
+      await waitForTransaction(wethGateway.addLiquidityETH(
+        poolETH.address,
+        deployer.address,
+        2,
+        { value: ethLiquidity.sub(poolAmount) }
+      ));
+
+    }
+
+
+
     return new MainnetSuite({
       addressProvider,
       dataCompressor,
@@ -180,8 +211,18 @@ export class MainnetSuite {
       yearnUSDC,
       daiToken,
       wethToken,
+      deployer,
+      user,
+      liquidator,
+      friend
     });
   }
+
+
+  public readonly deployer: SignerWithAddress;
+  public readonly user: SignerWithAddress;
+  public readonly liquidator: SignerWithAddress;
+  public readonly friend: SignerWithAddress;
 
   public readonly addressProvider: AddressProvider;
   public readonly dataCompressor: DataCompressor;
@@ -229,7 +270,17 @@ export class MainnetSuite {
     yearnUSDC: IYVault;
     daiToken: ERC20;
     wethToken: ERC20;
+    deployer: SignerWithAddress;
+    user: SignerWithAddress;
+    liquidator: SignerWithAddress;
+    friend: SignerWithAddress;
   }) {
+
+    this.deployer = opts.deployer
+    this.user = opts.user;
+    this.liquidator = opts.liquidator;
+    this.friend = opts.friend;
+
     this.addressProvider = opts.addressProvider;
     this.dataCompressor = opts.dataCompressor;
     this.accountFactory = opts.accountFactory;
@@ -251,6 +302,16 @@ export class MainnetSuite {
     this.daiToken = opts.daiToken;
     this.wethToken = opts.wethToken;
   }
+
+  async repayUserAccount(amountOnAccount: BigNumber) {
+    await waitForTransaction(this.daiToken.transfer(this.user.address, amountOnAccount));
+    await waitForTransaction(this.daiToken
+      .connect(this.user)
+      .approve(this.creditManagerDAI.address, MAX_INT));
+
+    await waitForTransaction(this.creditManagerDAI.connect(this.user).repayCreditAccount(this.friend.address));
+  };
+
 }
 
 async function makeSuite(): Promise<CreditManagerTestSuite> {

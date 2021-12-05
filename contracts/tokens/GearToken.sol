@@ -2,6 +2,7 @@
 pragma solidity ^0.7.4;
 pragma experimental ABIEncoderV2;
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import "hardhat/console.sol";
 
 /// @dev Governance Gearbox token
 /// based on https://github.com/Uniswap/governance/blob/master/contracts/Uni.sol
@@ -16,7 +17,7 @@ contract GearToken {
     uint8 public constant decimals = 18;
 
     /// @notice Total number of tokens in circulation
-    uint256 public constant totalSupply = 500_000_000e18; // 0.5 billion Gear
+    uint256 public constant totalSupply = 10_000_000_000e18; // 10 billion Gear
 
     // Allowance amounts on behalf of others
     mapping(address => mapping(address => uint96)) internal allowances;
@@ -423,6 +424,7 @@ contract GearToken {
         address dst,
         uint96 amount
     ) internal {
+
         require(
             transfersAllowed || msg.sender == manager || msg.sender == miner,
             "Gear::transfers are forbidden"

@@ -168,57 +168,57 @@ contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
     }
 
     function removeLiquidityETHSupportingFeeOnTransferTokens(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
-    ) external override returns (uint256 amountETH) {
+        address, // token,
+        uint256, // liquidity,
+        uint256, // amountTokenMin,
+        uint256, // amountETHMin,
+        address, // to,
+        uint256 // deadline
+    ) external pure override returns (uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external override returns (uint256 amountETH) {
+        address, // token,
+        uint256, // liquidity,
+        uint256, // amountTokenMin,
+        uint256, // amountETHMin,
+        address, // to,
+        uint256, // deadline,
+        bool, // approveMax,
+        uint8, // v,
+        bytes32, // r,
+        bytes32 // s
+    ) external pure override returns (uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external override {
+        uint256, // amountIn,
+        uint256, // amountOutMin,
+        address[] calldata, // path,
+        address, // to,
+        uint256 // deadline
+    ) external pure override {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
+        uint256, // amountOutMin,
+        address[] calldata, // path,
+        address, // to,
+        uint256 // deadline
     ) external payable override {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external override {
+        uint256, // amountIn,
+        uint256, // amountOutMin,
+        address[] calldata, // path,
+        address, // to,
+        uint256 // deadline
+    ) external pure override {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
@@ -231,135 +231,136 @@ contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
     }
 
     function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
+        address, // tokenA,
+        address, // tokenB,
+        uint256, // amountADesired,
+        uint256, // amountBDesired,
+        uint256, // amountAMin,
+        uint256, // amountBMin,
+        address, // to,
+        uint256 // deadline
     )
         external
+        pure
         override
         returns (
-            uint256 amountA,
-            uint256 amountB,
-            uint256 liquidity
+            uint256,
+            uint256,
+            uint256
         )
     {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function addLiquidityETH(
-        address token,
-        uint256 amountTokenDesired,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
+        address, // token,
+        uint256, // amountTokenDesired,
+        uint256, // amountTokenMin,
+        uint256, // amountETHMin,
+        address, // to,
+        uint256 // deadline
     )
         external
         payable
         override
         returns (
-            uint256 amountToken,
-            uint256 amountETH,
-            uint256 liquidity
+            uint256,
+            uint256,
+            uint256
         )
     {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function removeLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external override returns (uint256 amountA, uint256 amountB) {
+        address, // tokenA,
+        address, // tokenB,
+        uint256, // liquidity,
+        uint256, // amountAMin,
+        uint256, // amountBMin,
+        address, // to,
+        uint256 // deadline
+    ) external pure override returns (uint256, uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function removeLiquidityETH(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
-    ) external override returns (uint256 amountToken, uint256 amountETH) {
+        address, // token,
+        uint256, // liquidity,
+        uint256, // amountTokenMin,
+        uint256, // amountETHMin,
+        address, // to,
+        uint256 // deadline
+    ) external pure override returns (uint256, uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function removeLiquidityWithPermit(
-        address tokenA,
-        address tokenB,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external override returns (uint256 amountA, uint256 amountB) {
+        address, // tokenA,
+        address, // tokenB,
+        uint256, // liquidity,
+        uint256, // amountAMin,
+        uint256, // amountBMin,
+        address, // to,
+        uint256, // deadline,
+        bool, // approveMax,
+        uint8, // v,
+        bytes32, // r,
+        bytes32 // s
+    ) external pure override returns (uint256, uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function removeLiquidityETHWithPermit(
-        address token,
-        uint256 liquidity,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline,
-        bool approveMax,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external override returns (uint256 amountToken, uint256 amountETH) {
+        address, // token,
+        uint256, // liquidity,
+        uint256, // amountTokenMin,
+        uint256, // amountETHMin,
+        address, // to,
+        uint256, // deadline,
+        bool, // approveMax,
+        uint8, // v,
+        bytes32, // r,
+        bytes32 // s
+    ) external pure override returns (uint256, uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function swapExactETHForTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable override returns (uint256[] memory amounts) {
+        uint256, // amountOutMin,
+        address[] calldata, // path,
+        address, // to,
+        uint256 // deadline
+    ) external payable override returns (uint256[] memory) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function swapTokensForExactETH(
-        uint256 amountOut,
-        uint256 amountInMax,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external override returns (uint256[] memory amounts) {
+        uint256, // amountOut,
+        uint256, // amountInMax,
+        address[] calldata, // path,
+        address, // to,
+        uint256 // deadline
+    ) external pure override returns (uint256[] memory) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function swapExactTokensForETH(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external override returns (uint256[] memory amounts) {
+        uint256, // amountIn,
+        uint256, //amountOutMin,
+        address[] calldata, // path,
+        address, // to,
+        uint256 // deadline
+    ) external pure override returns (uint256[] memory) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function swapETHForExactTokens(
-        uint256 amountOut,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external payable override returns (uint256[] memory amounts) {
+        uint256, // amountOut,
+        address[] calldata, // path,
+        address, // to,
+        uint256 // deadline
+    ) external payable override returns (uint256[] memory) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 

@@ -32,6 +32,7 @@ library Constants {
 
     // Seconds in a year
     uint256 constant SECONDS_PER_YEAR = 365 days;
+    uint256 constant SECONDS_PER_ONE_AND_HALF_YEAR = SECONDS_PER_YEAR * 3 /2;
 
     // 1e18
     uint256 constant RAY = 1e27;

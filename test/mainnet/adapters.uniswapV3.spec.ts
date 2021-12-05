@@ -25,12 +25,11 @@ import {
 } from "@diesellabs/gearbox-sdk";
 import { BigNumber } from "ethers";
 import { UniV3helper } from "@diesellabs/gearbox-leverage";
+import { waitForTransaction } from "../../utils/transaction";
 
 describe("UniswapV3 adapter (Mainnet test)", function () {
   this.timeout(0);
 
-  const daiLiquidity = BigNumber.from(10000).mul(WAD);
-  const ethLiquidity = BigNumber.from(50).mul(WAD);
   const accountAmount = BigNumber.from(1000).mul(WAD);
   const leverageFactor = 4 * LEVERAGE_DECIMALS;
   const referralCode = 888777;
@@ -45,38 +44,18 @@ describe("UniswapV3 adapter (Mainnet test)", function () {
 
   before(async () => {
     ts = await MainnetSuite.getSuite();
-    const accounts = (await ethers.getSigners()) as Array<SignerWithAddress>;
-    deployer = accounts[0];
-    user = accounts[1];
-    liquidator = accounts[2];
-    friend = accounts[3];
+    deployer = ts.deployer
+    user = ts.user
+    liquidator = ts.liquidator
+    friend = ts.friend
 
     const testDeployer = new TestDeployer();
     errors = await testDeployer.getErrors();
-    const r1 = await ts.daiToken.connect(user).approve(ts.creditManagerDAI.address, MAX_INT);
-    await r1.wait();
-    const r2 = await ts.daiToken.approve(ts.poolDAI.address, MAX_INT);
-    await r2.wait();
-    const r3 = await ts.poolDAI.addLiquidity(daiLiquidity, deployer.address, 3);
-    await r3.wait();
-    const r4 = await ts.daiToken.approve(ts.leveragedActions.address, MAX_INT);
-    await r4.wait();
-
-    const poolAmount = await ts.poolETH.availableLiquidity();
-
-    if (poolAmount.lt(ethLiquidity)) {
-      const r5 = await ts.wethGateway.addLiquidityETH(
-        ts.poolETH.address,
-        deployer.address,
-        2,
-        { value: ethLiquidity.sub(poolAmount) }
-      );
-      await r5.wait();
-    }
-    const r6 = await ts.daiToken
+   
+    await waitForTransaction(ts.daiToken
       .connect(user)
-      .approve(UNISWAP_V3_ROUTER, MAX_INT);
-    await r6.wait();
+      .approve(UNISWAP_V3_ROUTER, MAX_INT));
+
   });
 
   const openUserAccount = async () => {
@@ -97,18 +76,18 @@ describe("UniswapV3 adapter (Mainnet test)", function () {
       deployer
     );
 
-    const r0 = await ts.daiToken.transfer(user.address, accountAmount);
-    await r0.wait();
+    await waitForTransaction(ts.daiToken.transfer(user.address, accountAmount));
 
-    const r1 = await ts.creditManagerDAI
+
+    await waitForTransaction(ts.creditManagerDAI
       .connect(user)
       .openCreditAccount(
         accountAmount,
         user.address,
         leverageFactor,
         referralCode
-      );
-    await r1.wait();
+      ));
+
 
     const creditAccount = await ts.creditManagerDAI.getCreditAccountOrRevert(
       user.address
@@ -129,15 +108,6 @@ describe("UniswapV3 adapter (Mainnet test)", function () {
       adapter: adapterContract,
       router,
     };
-  };
-
-  const repayUserAccount = async (amountOnAccount: BigNumber) => {
-    await ts.daiToken.transfer(user.address, amountOnAccount);
-    await ts.daiToken
-      .connect(user)
-      .approve(ts.creditManagerDAI.address, MAX_INT);
-
-    await ts.creditManagerDAI.connect(user).repayCreditAccount(friend.address);
   };
 
   it("[UV3-1]: exactInput works correctly", async () => {
@@ -167,13 +137,12 @@ describe("UniswapV3 adapter (Mainnet test)", function () {
       .callStatic.exactInput(params);
     expect(expectedAmountAdapter).to.be.eq(expectedAmountRouter);
 
-    const r2 = await adapter.exactInput(params);
-    await r2.wait();
+    await waitForTransaction(adapter.exactInput(params));
 
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(2);
     expect(await ts.wethToken.balanceOf(creditAccount)).to.be.gte(ethAmount);
 
-    await repayUserAccount(amountOnAccount);
+    await ts.repayUserAccount(amountOnAccount);
   });
 
   it("[UV3-2]: exactInputSingle works correctly", async () => {
@@ -215,7 +184,7 @@ describe("UniswapV3 adapter (Mainnet test)", function () {
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.lte(2);
     expect(await ts.wethToken.balanceOf(creditAccount)).to.be.gte(ethAmount);
 
-    await repayUserAccount(amountOnAccount);
+    await ts.repayUserAccount(amountOnAccount);
   });
 
   it("[UV3-3]: exactOutput works correctly", async () => {
@@ -258,7 +227,7 @@ describe("UniswapV3 adapter (Mainnet test)", function () {
       ethAmountOut.sub(await ts.wethToken.balanceOf(creditAccount)).abs()
     ).to.be.lte(2);
 
-    await repayUserAccount(amountOnAccount);
+    await ts.repayUserAccount(amountOnAccount);
   });
 
   it("[UV3-4]: exactOutputSingle works correctly", async () => {
@@ -306,6 +275,6 @@ describe("UniswapV3 adapter (Mainnet test)", function () {
       ethAmountOut.sub(await ts.wethToken.balanceOf(creditAccount)).abs()
     ).to.be.lte(2);
 
-    await repayUserAccount(amountOnAccount);
+    await ts.repayUserAccount(amountOnAccount);
   });
 });

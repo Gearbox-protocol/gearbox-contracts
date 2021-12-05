@@ -133,7 +133,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         defaultSwapContract = _defaultSwapContract; // T:[CM-1]
         _accountFactory = IAccountFactory(addressProvider.getAccountFactory()); // T:[CM-1]
 
-        setParams(
+        _setParams(
             _minAmount,
             _maxAmount,
             _maxLeverage,
@@ -761,6 +761,24 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         public
         configuratorOnly // T:[CM-36]
     {
+        _setParams(
+            _minAmount,
+            _maxAmount,
+            _maxLeverageFactor,
+            _feeInterest,
+            _feeLiquidation,
+            _liquidationDiscount
+        );
+    }
+
+    function _setParams(
+        uint256 _minAmount,
+        uint256 _maxAmount,
+        uint256 _maxLeverageFactor,
+        uint256 _feeInterest,
+        uint256 _feeLiquidation,
+        uint256 _liquidationDiscount
+    ) internal {
         require(
             _minAmount <= _maxAmount && _maxLeverageFactor > 0,
             Errors.CM_INCORRECT_PARAMS
@@ -1008,7 +1026,7 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
         emit TransferAccount(msg.sender, newOwner); // T:[CM-54]
     }
 
-    function _checkAccountTransfer(address newOwner) internal {
+    function _checkAccountTransfer(address newOwner) internal view {
         require(
             newOwner != address(0) && !hasOpenedCreditAccount(newOwner),
             Errors.CM_ZERO_ADDRESS_OR_USER_HAVE_ALREADY_OPEN_CREDIT_ACCOUNT

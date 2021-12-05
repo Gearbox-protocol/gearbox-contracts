@@ -22,13 +22,17 @@ contract YearnPriceFeed is AggregatorV3Interface, ACLTrait {
     IYVault public yVault;
     uint256 public decimalsDivider;
     uint256 public lowerBound;
-    uint256 public maxExpectedAPY;
+    uint256 public upperBound;
     uint256 public timestampLimiter;
+
+    event NewLimiterParams(uint256 lowerBound, uint256 upperBound);
 
     constructor(
         address addressProvider,
         address _yVault,
-        address _priceFeed
+        address _priceFeed,
+        uint256 _lowerBound,
+        uint256 _upperBound
     ) ACLTrait(addressProvider) {
         require(
             _yVault != address(0) && _priceFeed != address(0),
@@ -37,6 +41,7 @@ contract YearnPriceFeed is AggregatorV3Interface, ACLTrait {
         yVault = IYVault(_yVault);
         priceFeed = AggregatorV3Interface(_priceFeed);
         decimalsDivider = 10**yVault.decimals();
+        _setLimiter(_lowerBound, _upperBound);
     }
 
     function decimals() external view override returns (uint8) {
@@ -51,16 +56,16 @@ contract YearnPriceFeed is AggregatorV3Interface, ACLTrait {
         return priceFeed.version();
     }
 
-    function getRoundData(uint80 _roundId)
+    function getRoundData(uint80)
         external
-        view
+        pure
         override
         returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
+            uint80, // roundId,
+            int256, // answer,
+            uint256, // startedAt,
+            uint256, // updatedAt,
+            uint80 // answeredInRound
         )
     {
         revert("Function is not supported");
@@ -83,11 +88,7 @@ contract YearnPriceFeed is AggregatorV3Interface, ACLTrait {
 
         uint256 pricePerShare = yVault.pricePerShare();
 
-        uint256 upperBound = (lowerBound *
-            (PercentageMath.PERCENTAGE_FACTOR +
-                (maxExpectedAPY * (block.timestamp - timestampLimiter)) /
-                Constants.SECONDS_PER_YEAR)) / PercentageMath.PERCENTAGE_FACTOR;
-
+    
         require(
             pricePerShare >= lowerBound && pricePerShare <= upperBound,
             Errors.YPF_PRICE_PER_SHARE_OUT_OF_RANGE
@@ -97,12 +98,22 @@ contract YearnPriceFeed is AggregatorV3Interface, ACLTrait {
         );
     }
 
-    function setLimiter(uint256 _lowerBound, uint256 _maxExpectedAPY)
+    function setLimiter(uint256 _lowerBound, uint256 _upperBound)
         external
         configuratorOnly
     {
+        _setLimiter(_lowerBound, _upperBound);
+    }
+
+    function _setLimiter(uint256 _lowerBound, uint256 _upperBound)
+        internal
+    {
+        require(
+            _lowerBound > 0 && _upperBound > _lowerBound,
+            Errors.YPF_INCORRECT_LIMITER_PARAMETERS
+        );
         lowerBound = _lowerBound;
-        maxExpectedAPY = _maxExpectedAPY;
-        timestampLimiter = block.timestamp;
+        upperBound = _upperBound;
+        emit NewLimiterParams(lowerBound, upperBound);
     }
 }

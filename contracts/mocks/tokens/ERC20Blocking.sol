@@ -11,7 +11,6 @@ contract ERC20BlockingMock is ERC20, Ownable {
     bool public isBlocked;
 
     constructor(string memory name_, string memory symbol_)
-        public
         ERC20(name_, symbol_)
     {
         _mint(msg.sender, 1e24);

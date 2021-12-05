@@ -61,7 +61,7 @@ contract MockPoolService is IPoolService {
     uint256 public repayLoss;
     uint256 public withdrawMultiplier;
 
-    uint256 cumulativeIndex_RAY;
+
     uint256 public override withdrawFee;
     uint256 public _expectedLiquidityLU;
     uint256 public calcLinearIndex_RAY;
@@ -76,15 +76,15 @@ contract MockPoolService is IPoolService {
     constructor(address _underlyingToken) {
         underlyingToken = _underlyingToken;
         borrowAPY_RAY = WadRayMath.RAY.div(10);
-        cumulativeIndex_RAY = WadRayMath.RAY;
+        _cumulativeIndex_RAY = WadRayMath.RAY;
     }
 
-    function setCumulative_RAY(uint256 _cumulativeIndex_RAY) external {
-        cumulativeIndex_RAY = _cumulativeIndex_RAY;
+    function setCumulative_RAY(uint256 cumulativeIndex_RAY) external {
+        _cumulativeIndex_RAY = cumulativeIndex_RAY;
     }
 
     function calcLinearCumulative_RAY() public view override returns (uint256) {
-        return cumulativeIndex_RAY;
+        return _cumulativeIndex_RAY;
     }
 
     function lendCreditAccount(uint256 borrowedAmount, address creditAccount)
@@ -184,7 +184,7 @@ contract MockPoolService is IPoolService {
      * @param amount Amount in underlying tokens to be converted to diesel tokens
      * @return Amount in diesel tokens
      */
-    function toDiesel(uint256 amount) public view override returns (uint256) {
+    function toDiesel(uint256 amount) public pure override returns (uint256) {
         return amount.rayDiv(getDieselRate_RAY()); // T:[PS-24]
     }
 
@@ -194,7 +194,7 @@ contract MockPoolService is IPoolService {
      * @param amount Amount in diesel tokens to be converted to diesel tokens
      * @return Amount in underlying tokens
      */
-    function fromDiesel(uint256 amount) public view override returns (uint256) {
+    function fromDiesel(uint256 amount) public pure override returns (uint256) {
         return amount.rayMul(getDieselRate_RAY()); // T:[PS-24]
     }
 
@@ -204,7 +204,7 @@ contract MockPoolService is IPoolService {
 
     function setExpectedLiquidityLimit(uint256 num) external {}
 
-    function paused() external view returns (bool) {
+    function paused() external pure returns (bool) {
         return false;
     }
 

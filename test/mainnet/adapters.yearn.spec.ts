@@ -4,36 +4,30 @@
  * (c) Gearbox.fi, 2021
  */
 
-// @ts-ignore
-import { ethers } from "hardhat";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { expect } from "../../utils/expect";
-
+import { YearnHelper } from "@diesellabs/gearbox-leverage";
 import {
-  Errors,
-  IYVault__factory,
-  YearnAdapter__factory,
-} from "../../types/ethers-v5";
-import { TestDeployer } from "../../deployer/testDeployer";
-import { MainnetSuite } from "./helper";
-import {
-  LEVERAGE_DECIMALS,
-  MAX_INT,
-  PERCENTAGE_FACTOR,
+  LEVERAGE_DECIMALS, MAX_INT, PERCENTAGE_FACTOR,
   SwapType,
   tokenDataByNetwork,
   WAD,
-  YEARN_DAI_ADDRESS,
+  YEARN_DAI_ADDRESS
 } from "@diesellabs/gearbox-sdk";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { BigNumber } from "ethers";
-import { ERC20__factory } from "@diesellabs/gearbox-sdk/lib/types";
-import { YearnHelper } from "@diesellabs/gearbox-leverage";
+import { TestDeployer } from "../../deployer/testDeployer";
+import {
+  Errors,
+  IYVault__factory,
+  YearnAdapter__factory
+} from "../../types/ethers-v5";
+import { expect } from "../../utils/expect";
+import { waitForTransaction } from "../../utils/transaction";
+import { MainnetSuite } from "./helper";
+
 
 describe("YEARN adapter (Mainnet test)", function () {
   this.timeout(0);
 
-  const daiLiquidity = BigNumber.from(10000).mul(WAD);
-  const ethLiquidity = BigNumber.from(50).mul(WAD);
   const accountAmount = BigNumber.from(1000).mul(WAD);
   const leverageFactor = 4 * LEVERAGE_DECIMALS;
   const referralCode = 888777;
@@ -48,34 +42,15 @@ describe("YEARN adapter (Mainnet test)", function () {
 
   before(async () => {
     ts = await MainnetSuite.getSuite();
-    const accounts = (await ethers.getSigners()) as Array<SignerWithAddress>;
-    deployer = accounts[0];
-    user = accounts[1];
-    liquidator = accounts[2];
-    friend = accounts[3];
+    deployer = ts.deployer
+    user = ts.user
+    liquidator = ts.liquidator
+    friend = ts.friend
 
     const testDeployer = new TestDeployer();
     errors = await testDeployer.getErrors();
-    const r1 = await ts.daiToken.connect(user).approve(ts.creditManagerDAI.address, MAX_INT);
-    await r1.wait();
-    const r2 = await ts.daiToken.approve(ts.poolDAI.address, MAX_INT);
-    await r2.wait();
-    const r3 = await ts.poolDAI.addLiquidity(daiLiquidity, deployer.address, 3);
-    await r3.wait();
-    const r4 = await ts.daiToken.approve(YEARN_DAI_ADDRESS, MAX_INT);
-    await r4.wait();
 
-    const poolAmount = await ts.poolETH.availableLiquidity();
 
-    if (poolAmount.lt(ethLiquidity)) {
-      const r5 = await ts.wethGateway.addLiquidityETH(
-        ts.poolETH.address,
-        deployer.address,
-        2,
-        { value: ethLiquidity.sub(poolAmount) }
-      );
-      await r5.wait();
-    }
   });
 
   const openUserAccount = async () => {
@@ -94,17 +69,17 @@ describe("YEARN adapter (Mainnet test)", function () {
       deployer
     );
 
-    const r0 = await ts.daiToken.transfer(user.address, accountAmount);
-    await r0.wait()
+    await waitForTransaction(ts.daiToken.transfer(user.address, accountAmount));
+
 
     if (!(await ts.creditManagerDAI.hasOpenedCreditAccount(user.address))) {
-      const r1 = await ts.creditManagerDAI.connect(user).openCreditAccount(
+      await waitForTransaction(ts.creditManagerDAI.connect(user).openCreditAccount(
         accountAmount,
         user.address,
         leverageFactor,
         referralCode
-      );
-      await r1.wait();
+      ));
+
     }
 
     const creditAccount = await ts.creditManagerDAI.getCreditAccountOrRevert(
@@ -120,6 +95,8 @@ describe("YEARN adapter (Mainnet test)", function () {
 
     const yVault = IYVault__factory.connect(YEARN_DAI_ADDRESS, deployer);
 
+    await waitForTransaction(ts.daiToken.approve(yVault.address, MAX_INT))
+
     return {
       amountOnAccount,
       creditAccount,
@@ -129,14 +106,6 @@ describe("YEARN adapter (Mainnet test)", function () {
     };
   };
 
-  const repayUserAccount = async (amountOnAccount: BigNumber) => {
-    await ts.daiToken.transfer(user.address, amountOnAccount);
-    await ts.daiToken
-      .connect(user)
-      .approve(ts.creditManagerDAI.address, MAX_INT);
-
-    await ts.creditManagerDAI.connect(user).repayCreditAccount(friend.address);
-  };
 
   it("[YA-1]: deposit() converts whole DAI amount to yDAI", async () => {
     const { amountOnAccount, creditAccount, yearnHelper, adapter, yVault } =
@@ -148,8 +117,8 @@ describe("YEARN adapter (Mainnet test)", function () {
       amountOnAccount
     );
 
-    const r2 = await adapter["deposit()"]();
-    await r2.wait();
+    await waitForTransaction(adapter["deposit()"]());
+
 
     expect(await ts.daiToken.balanceOf(creditAccount)).to.be.eq(0);
 
@@ -161,13 +130,15 @@ describe("YEARN adapter (Mainnet test)", function () {
         .abs()
     ).lte(2);
 
-    await repayUserAccount(amountOnAccount);
+    await ts.repayUserAccount(amountOnAccount);
   });
 
   for (let func of ["deposit(uint256)", "deposit(uint256,address)"]) {
     it(`[YA-2]: ${func} converts exact DAI amount to yDAI`, async () => {
       const { amountOnAccount, creditAccount, yearnHelper, adapter, yVault } =
         await openUserAccount();
+
+
 
       const amountToDeposit = amountOnAccount.div(2);
 
@@ -177,29 +148,31 @@ describe("YEARN adapter (Mainnet test)", function () {
         amountToDeposit
       );
 
-      const r2 =
+      await waitForTransaction(
         func === "deposit(uint256)"
-          ? await adapter["deposit(uint256)"](amountToDeposit)
-          : await adapter["deposit(uint256,address)"](
-              amountToDeposit,
-              friend.address
-            );
-      await r2.wait();
+          ? adapter["deposit(uint256)"](amountToDeposit)
+          : adapter["deposit(uint256,address)"](
+            amountToDeposit,
+            friend.address
+          ));
+
 
       const sharesAdapter =
         func === "deposit(uint256)"
           ? await adapter.callStatic["deposit(uint256)"](amountToDeposit)
           : await adapter.callStatic["deposit(uint256,address)"](
-              amountToDeposit,
-              friend.address
-            );
+            amountToDeposit,
+            friend.address
+          );
+
+
       const sharesVault =
         func === "deposit(uint256)"
           ? await yVault.callStatic["deposit(uint256)"](amountToDeposit)
           : await yVault.callStatic["deposit(uint256,address)"](
-              amountToDeposit,
-              friend.address
-            );
+            amountToDeposit,
+            friend.address
+          );
 
       expect(sharesAdapter).to.be.eq(sharesVault);
 
@@ -217,7 +190,8 @@ describe("YEARN adapter (Mainnet test)", function () {
           .abs()
       ).lte(2);
 
-      await repayUserAccount(amountOnAccount);
+
+      await ts.repayUserAccount(amountOnAccount);
     });
   }
 
@@ -233,8 +207,7 @@ describe("YEARN adapter (Mainnet test)", function () {
       amountToDeposit
     );
 
-    const r2 = await adapter["deposit(uint256)"](amountToDeposit);
-    await r2.wait();
+    await waitForTransaction(adapter["deposit(uint256)"](amountToDeposit));
 
     const daiBalance = await ts.daiToken.balanceOf(creditAccount);
     const yDAIBalance = await adapter.balanceOf(creditAccount);
@@ -255,8 +228,6 @@ describe("YEARN adapter (Mainnet test)", function () {
 
     await adapter["withdraw()"]();
 
-    console.log((await adapter.balanceOf(creditAccount)).toString());
-
     const daiBalance2 = await ts.daiToken.balanceOf(creditAccount);
 
     expect(
@@ -267,7 +238,7 @@ describe("YEARN adapter (Mainnet test)", function () {
       "DAI balance after withdraw"
     ).to.be.lte(2);
 
-    await repayUserAccount(amountOnAccount);
+    await ts.repayUserAccount(amountOnAccount);
   });
 
   for (let func of [
@@ -288,12 +259,10 @@ describe("YEARN adapter (Mainnet test)", function () {
       );
 
       // Deposit money to YEARN
-      const r1 = await yVault["deposit(uint256)"](amountToDeposit);
-      await r1.wait();
+      await waitForTransaction(yVault["deposit(uint256)"](amountToDeposit));
 
       // Deposit money to YEARN
-      const r2 = await adapter["deposit(uint256)"](amountToDeposit);
-      await r2.wait();
+      await waitForTransaction(adapter["deposit(uint256)"](amountToDeposit));
 
       const yDAIBalance = await adapter.balanceOf(creditAccount);
       const amountToWithdraw = yDAIBalance.div(2);
@@ -310,8 +279,7 @@ describe("YEARN adapter (Mainnet test)", function () {
 
           expect(sharesAdapter).to.be.eq(sharesVault);
 
-          const r2 = await adapter["withdraw(uint256)"](amountToWithdraw);
-          await r2.wait();
+          await waitForTransaction(adapter["withdraw(uint256)"](amountToWithdraw));
           break;
         case "withdraw(uint256,address)":
           const sharesAdapter2 = await adapter.callStatic[
@@ -323,11 +291,11 @@ describe("YEARN adapter (Mainnet test)", function () {
 
           expect(sharesAdapter2).to.be.eq(sharesVault2);
 
-          const r3 = await adapter["withdraw(uint256,address)"](
+          await waitForTransaction(adapter["withdraw(uint256,address)"](
             amountToWithdraw,
             friend.address
-          );
-          await r3.wait();
+          ));
+
           break;
         case "withdraw(uint256,address,uint)":
           const sharesAdapter3 = await adapter.callStatic[
@@ -339,12 +307,11 @@ describe("YEARN adapter (Mainnet test)", function () {
 
           expect(sharesAdapter3).to.be.eq(sharesVault3);
 
-          const r4 = await adapter["withdraw(uint256,address,uint256)"](
+          await waitForTransaction(adapter["withdraw(uint256,address,uint256)"](
             amountToWithdraw,
             friend.address,
             10
-          );
-          await r4.wait();
+          ));
 
           break;
       }
@@ -365,19 +332,23 @@ describe("YEARN adapter (Mainnet test)", function () {
         "DAI balance after withdraw"
       ).to.be.lte(2);
 
-      await repayUserAccount(amountOnAccount);
+      await ts.repayUserAccount(amountOnAccount);
     });
   }
 
   it("[YA-4]: price_share manipulation", async () => {
     const { amountOnAccount, yVault } =
       await openUserAccount();
-    await repayUserAccount(amountOnAccount);
+    await ts.repayUserAccount(amountOnAccount);
 
     const price = await yVault.pricePerShare();
     const daiBalance = await ts.daiToken.balanceOf(deployer.address);
     console.log(`Price: ${price}, Balance: ${daiBalance.div(WAD)}`);
-    await yVault["deposit()"]();
+
+
+    // await waitForTransaction(ts.daiToken.transfer(yVault.address, daiBalance.div(2)));
+
+    //yVault["deposit()"]());
 
     const price2 = await yVault.pricePerShare();
     const daiBalance2 = await ts.daiToken.balanceOf(deployer.address);

@@ -31,6 +31,7 @@ import {
 } from "@diesellabs/gearbox-sdk";
 import { STANDARD_INTEREST_MODEL_PARAMS } from "../core/pool";
 import { UniV2helper } from "@diesellabs/gearbox-leverage";
+import { BigNumber } from "ethers";
 
 const { addLiquidity } = PoolTestSuite;
 const fee = 4000; // 40%
@@ -131,13 +132,7 @@ describe("CreditManager", function () {
     await feeToken.connect(user).approve(poolService.address, MAX_INT);
 
     const leverageActions = await ts.coreDeployer.getLeveragedActions();
-
-    const yearnArtifact = (await ethers.getContractFactory(
-      "YearnMock"
-    )) as YearnMock__factory;
-
-    const yVault = await yearnArtifact.deploy(feeToken.address);
-    await yVault.deployed();
+    const yVault = await integrationsDeployer.getYearnVaultMock(feeToken.address);
 
     const adapter = await ts.integrationsDeployer.getYearnAdapter(
       yVault.address
@@ -145,9 +140,13 @@ describe("CreditManager", function () {
 
     const priceFeed = await ts.priceOracle.priceFeeds(feeToken.address);
 
-    const yPriceFeed = await integrationsDeployer.getYearnPriceFeed(
+    const addressProvider = await coreDeployer.getAddressProvider();
+
+    const yPriceFeed = await integrationsDeployer.getYearnPriceFeed(addressProvider.address,
       yVault.address,
-      priceFeed
+      priceFeed,
+      1,
+      BigNumber.from(10).pow(await yVault.decimals()).mul(2)
     );
 
     await ts.priceOracle.addPriceFeed(yVault.address, yPriceFeed.address);

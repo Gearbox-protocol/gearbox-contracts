@@ -119,7 +119,7 @@ describe("CreditManager", function () {
     uniMock = await integrationsDeployer.getUniswapMock();
     uniAdapter = await integrationsDeployer.getUniswapV2Adapter(
       uniMock.address
-    );
+    ) as unknown as IUniswapV2Router02;
 
     await uniMock.setRate(
       underlyingToken.address,
@@ -193,7 +193,7 @@ describe("CreditManager", function () {
       tokenA.address,
     ]);
     const curveAdapter: ICurvePool =
-      await ts.integrationsDeployer.getCurveV1Adapter(curveMock.address);
+      await ts.integrationsDeployer.getCurveV1Adapter(curveMock.address) as unknown as ICurvePool;
 
     await creditFilter.allowContract(curveMock.address, curveAdapter.address);
 

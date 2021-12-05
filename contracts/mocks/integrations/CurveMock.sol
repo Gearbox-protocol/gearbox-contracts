@@ -41,19 +41,19 @@ contract CurveMock is ICurvePool {
     }
 
     function exchange_underlying(
-        int128 i,
-        int128 j,
-        uint256 dx,
-        uint256 min_dy
-    ) external override {
+        int128, //i,
+        int128, //j,
+        uint256, // dx,
+        uint256 // min_dy
+    ) external pure override {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
     function get_dy_underlying(
-        int128 i,
-        int128 j,
-        uint256 dx
-    ) external view override returns (uint256) {
+        int128, //i,
+        int128, //j,
+        uint256 //dx
+    ) external pure override returns (uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
@@ -65,7 +65,7 @@ contract CurveMock is ICurvePool {
         return rates[uint256(i)][uint256(j)].mul(dx);
     }
 
-    function get_virtual_price() external view override returns (uint256) {
+    function get_virtual_price() external pure override returns (uint256) {
         revert(Errors.NOT_IMPLEMENTED);
     }
 }

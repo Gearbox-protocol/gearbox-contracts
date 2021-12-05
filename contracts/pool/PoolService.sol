@@ -117,7 +117,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         treasuryAddress = addressProvider.getTreasuryContract();
 
         _cumulativeIndex_RAY = WadRayMath.RAY; // T:[PS-5]
-        updateInterestRateModel(_interestRateModelAddress);
+        _updateInterestRateModel(_interestRateModelAddress);
         expectedLiquidityLimit = _expectedLiquidityLimit;
     }
 
@@ -360,7 +360,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
             // to keep diesel rate on the same level
             DieselToken(dieselToken).burn(treasuryAddress, amountToBurn); // T:[PS-19, 20]
 
-//            _expectedLiquidityLU = _expectedLiquidityLU.sub(loss); //T:[PS-19,20]
+            //            _expectedLiquidityLU = _expectedLiquidityLU.sub(loss); //T:[PS-19,20]
         }
 
         // Update available liquidity
@@ -507,6 +507,10 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
         public
         configuratorOnly // T:[PS-9]
     {
+        _updateInterestRateModel(_interestRateModel);
+    }
+
+    function _updateInterestRateModel(address _interestRateModel) internal {
         require(
             _interestRateModel != address(0),
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED

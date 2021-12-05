@@ -15,7 +15,7 @@ contract TokenFeeMock is ERC20, Ownable {
         string memory name_,
         string memory symbol_,
         uint256 fee_
-    ) public ERC20(name_, symbol_) {
+    ) ERC20(name_, symbol_) {
         _mint(msg.sender, 1e24);
         fee = fee_;
         require(fee < PercentageMath.PERCENTAGE_FACTOR, "Incorrect fee");

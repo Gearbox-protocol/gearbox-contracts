@@ -25,7 +25,6 @@ contract YearnMock is IYVault, ERC20, Ownable {
     uint256 decimalsMul;
 
     constructor(address _token)
-        public
         ERC20(
             string(abi.encodePacked("yearn ", ERC20(_token).name())),
             string(abi.encodePacked("yv", ERC20(_token).symbol()))
@@ -77,8 +76,8 @@ contract YearnMock is IYVault, ERC20, Ownable {
 
     function withdraw(
         uint256 maxShares,
-        address recipient,
-        uint256 maxLoss
+        address, // recipient,
+        uint256 // maxLoss
     ) public override returns (uint256 amount) {
         _burn(msg.sender, maxShares);
         amount = maxShares.mul(pricePerShare).div(decimalsMul);

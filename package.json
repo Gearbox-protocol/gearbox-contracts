@@ -11,7 +11,7 @@
     "url": "https://github.com/Gearbox-protocol/gearbox-contracts"
   },
   "engines": {
-    "node": "^14.0"
+    "node": "^16.0"
   },
   "license": "BSL",
   "devDependencies": {
@@ -50,10 +50,10 @@
   },
   "scripts": {
     "build": "yarn clean && yarn compile && yarn update_abi",
-    "deploy-local": "yarn build && npx hardhat run scripts/localDeploy.ts --network localhost",
     "deploy-fork": "yarn build && npx hardhat run scripts/forkDeploy.ts --network localhost",
-    "deploy-kovan": "yarn build && npx hardhat run scripts/kovanDeploy.ts --network kovan",
-    "deploy-kovan-cntd": "npx hardhat run scripts/kovanDeploy.ts --network kovan",
+    "deploy-fast": "yarn build && npx hardhat run scripts/configForkDeploy.ts --network localhost",
+    "deploy-kovan": "yarn build && npx hardhat run scripts/configKovanDeploy.ts --network kovan",
+    "deploy-kovan-fast": "yarn build && npx hardhat run scripts/fastKovanDeploy.ts --network kovan",
     "chainlink-test": "npx hardhat run scripts/chainlinkTest.ts --network mainnet",
     "faucet": "npx hardhat run scripts/faucetGetData.ts --network mainnet",
     "faucet-mint": "npx hardhat run scripts/faucetMint.ts --network kovan",
@@ -73,8 +73,8 @@
     "coverage": "yarn build && npx hardhat coverage --temp artifacts"
   },
   "dependencies": {
-    "@diesellabs/gearbox-leverage": "^0.0.87",
-    "@diesellabs/gearbox-sdk": "^0.0.198",
+    "@diesellabs/gearbox-leverage": "^0.0.95",
+    "@diesellabs/gearbox-sdk": "^0.0.222",
     "deep-eql": "^4.0.0",
     "ethereumjs-util": "^7.1.0"
   }

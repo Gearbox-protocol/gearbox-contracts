@@ -3,25 +3,26 @@
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
+import {Initializable} from "@openzeppelin/contracts/proxy/Initializable.sol";
 import {Math} from "@openzeppelin/contracts/math/Math.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {IGearToken} from "../interfaces/IGearToken.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
-contract StepVesting {
+contract StepVesting is Initializable {
     using SafeMath for uint256;
     using SafeERC20 for IGearToken;
 
     event ReceiverChanged(address oldWallet, address newWallet);
 
-    uint256 public immutable started;
-    IGearToken public immutable token;
-    uint256 public immutable cliffDuration;
-    uint256 public immutable stepDuration;
-    uint256 public immutable cliffAmount;
-    uint256 public immutable stepAmount;
-    uint256 public immutable numOfSteps;
+    uint256 public started;
+    IGearToken public token;
+    uint256 public cliffDuration;
+    uint256 public stepDuration;
+    uint256 public cliffAmount;
+    uint256 public stepAmount;
+    uint256 public numOfSteps;
 
     address public receiver;
     uint256 public claimed;
@@ -31,7 +32,7 @@ contract StepVesting {
         _;
     }
 
-    constructor(
+    function initialize(
         IGearToken _token,
         uint256 _started,
         uint256 _cliffDuration,
@@ -40,7 +41,7 @@ contract StepVesting {
         uint256 _stepAmount,
         uint256 _numOfSteps,
         address _receiver
-    ) {
+    ) external initializer {
         require(
             address(_token) != address(0) && _receiver != address(0),
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED

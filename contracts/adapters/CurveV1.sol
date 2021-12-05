@@ -91,11 +91,11 @@ contract CurveV1Adapter is ICurvePool, ReentrancyGuard {
     }
 
     function exchange_underlying(
-        int128 i,
-        int128 j,
-        uint256 dx,
-        uint256 min_dy
-    ) external override {
+        int128 , // i
+        int128 , // j
+        uint256 , // dx
+        uint256 // min_dy
+    ) external pure override {
         revert(Errors.NOT_IMPLEMENTED);
     }
 
