@@ -7,6 +7,9 @@ interface ICreditFilter {
     // Emits each time token is allowed or liquidtion threshold changed
     event TokenAllowed(address indexed token, uint256 liquidityThreshold);
 
+   // Emits each time token is allowed or liquidtion threshold changed
+    event TokenForbidden(address indexed token);
+
     // Emits each time contract is allowed or adapter changed
     event ContractAllowed(address indexed protocol, address indexed adapter);
 
@@ -27,6 +30,7 @@ interface ICreditFilter {
         bool state
     );
 
+    event PriceOracleUpdated(address indexed newPriceOracle);
 
     //
     // STATE-CHANGING FUNCTIONS

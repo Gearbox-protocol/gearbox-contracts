@@ -32,7 +32,6 @@ import "hardhat/console.sol";
 ///
 /// More: https://dev.gearbox.fi/developers/credit/credit-filter
 contract CreditFilter is ICreditFilter, ACLTrait {
-    using PercentageMath for uint256;
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -42,7 +41,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     address public creditManager;
 
     // Allowed tokens list
-    mapping(address => bool) public _allowedTokensMap;
+    mapping(address => bool) public override isTokenAllowed;
 
     // Allowed tokens array
     address[] public override allowedTokens;
@@ -165,7 +164,6 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
         // Checks that contract has balanceOf method and it returns uint256
         require(IERC20(token).balanceOf(address(this)) >= 0); // T:[CF-11]
-        // ToDo: check
 
         // Checks that pair token - underlyingToken has priceFeed
         require(
@@ -175,15 +173,13 @@ contract CreditFilter is ICreditFilter, ACLTrait {
 
         // we add allowed tokens to array if it wasn't added before
         // T:[CF-6] controls that
-        if (!_allowedTokensMap[token]) {
-            _allowedTokensMap[token] = true; // T:[CF-4]
-
+        if (!isTokenAllowed[token]) {
+            isTokenAllowed[token] = true; // T:[CF-4]
             tokenMasksMap[token] = 1 << allowedTokens.length; // T:[CF-4]
             allowedTokens.push(token); // T:[CF-4]
         }
 
         liquidationThresholds[token] = liquidationThreshold; // T:[CF-4, 6]
-
         emit TokenAllowed(token, liquidationThreshold); // T:[CF-4]
     }
 
@@ -193,7 +189,8 @@ contract CreditFilter is ICreditFilter, ACLTrait {
         external
         configuratorOnly // T:[CF-1]
     {
-        _allowedTokensMap[token] = false; // T: [CF-35, 36]
+        isTokenAllowed[token] = false; // T: [CF-35, 36]
+        emit TokenForbidden(token);
     }
 
     /// @dev Adds contract and adapter to the list of allowed contracts
@@ -274,6 +271,11 @@ contract CreditFilter is ICreditFilter, ACLTrait {
             IPoolService(poolService).underlyingToken() == underlyingToken,
             Errors.CF_UNDERLYING_TOKEN_FILTER_CONFLICT
         ); // T:[CF-16]
+    }
+
+    function upgradePriceOracle() external configuratorOnly {
+        priceOracle = addressProvider.getPriceOracle(); // ToDo:
+        emit PriceOracleUpdated(priceOracle);
     }
 
     /// @dev Checks the financial order and reverts if tokens aren't in list or collateral protection alerts
@@ -411,7 +413,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     function checkAndEnableToken(address creditAccount, address token)
         external
         override
-        creditManagerOnly // [CF-20]
+        creditManagerOnly // T:[CF-20]
     {
         _checkAndEnableToken(creditAccount, token); // T:[CF-22, 23]
     }
@@ -544,7 +546,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     {
         uint256 tokenMask;
         uint256 eTokens = enabledTokens[creditAccount];
-        for (uint256 i = 0; i < allowedTokensCount(); i++) {
+        for (uint256 i = 0; i < allowedTokens.length; i++) {
             tokenMask = 1 << i; // T:[CF-17]
             if (eTokens & tokenMask > 0) {
                 (, , uint256 tv, ) = getCreditAccountTokenById(
@@ -568,7 +570,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     {
         uint256 tokenMask;
         uint256 eTokens = enabledTokens[creditAccount];
-        for (uint256 i = 0; i < allowedTokensCount(); i++) {
+        for (uint256 i = 0; i < allowedTokens.length; i++) {
             tokenMask = 1 << i; // T:[CF-18]
             if (eTokens & tokenMask > 0) {
                 (, , , uint256 twv) = getCreditAccountTokenById(
@@ -582,18 +584,13 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     }
 
     /// @dev Returns quantity of tokens in allowed list
-    function allowedTokensCount() public view override returns (uint256) {
+    function allowedTokensCount() external view override returns (uint256) {
         return allowedTokens.length; // T:[CF-4, 6]
-    }
-
-    /// @dev Returns true if token is in allowed list otherwise false
-    function isTokenAllowed(address token) public view override returns (bool) {
-        return _allowedTokensMap[token]; // T:[CF-4, 6]
     }
 
     /// @dev Reverts if token isn't in token allowed list
     function revertIfTokenNotAllowed(address token) public view override {
-        require(isTokenAllowed(token), Errors.CF_TOKEN_IS_NOT_ALLOWED); // T:[CF-7, 36]
+        require(isTokenAllowed[token], Errors.CF_TOKEN_IS_NOT_ALLOWED); // T:[CF-7, 36]
     }
 
     /// @dev Returns quantity of contracts in allowed list
