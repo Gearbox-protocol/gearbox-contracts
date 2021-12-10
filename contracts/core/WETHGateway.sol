@@ -31,6 +31,8 @@ contract WETHGateway is IWETHGateway {
     address public wethAddress;
     ContractsRegister internal _contractsRegister;
 
+    event WithdrawETH(address indexed pool, address indexed to);
+
     /// @dev Checks that pool is registered and underlying token is WETH
     modifier wethPoolOnly(address pool) {
         // Could be optimised by adding internal list of pools
@@ -140,6 +142,8 @@ contract WETHGateway is IWETHGateway {
             address(this)
         ); // T: [WG-9]
         _unwrapWETH(to, amountGet); // T: [WG-9]
+
+        emit WithdrawETH(pool, to);
     }
 
     /// @dev Opens credit account in ETH
