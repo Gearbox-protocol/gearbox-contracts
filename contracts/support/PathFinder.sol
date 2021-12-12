@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSL-1.1
+// SPDX-License-Identifier: BUSL-1.1
 // Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
 // (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
@@ -16,7 +16,7 @@ import {AddressProvider} from "../core/AddressProvider.sol";
 import {ContractsRegister} from "../core/ContractsRegister.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
-
+import {PriceOracle} from "../oracles/PriceOracle.sol";
 import "hardhat/console.sol";
 
 contract PathFinder {
@@ -24,6 +24,8 @@ contract PathFinder {
     using BytesLib for bytes;
     AddressProvider public addressProvider;
     ContractsRegister public immutable contractsRegister;
+    PriceOracle public priceOracle;
+    address public wethToken;
 
     struct TradePath {
         address[] path;
@@ -47,6 +49,9 @@ contract PathFinder {
         contractsRegister = ContractsRegister(
             addressProvider.getContractsRegister()
         );
+
+        priceOracle = PriceOracle(addressProvider.getPriceOracle());
+        wethToken = addressProvider.getWethToken();
     }
 
     function bestUniPath(
@@ -300,6 +305,20 @@ contract PathFinder {
                     connectorTokens
                 );
             }
+        }
+    }
+
+    function getPrices(address[] calldata tokens)
+        external
+        returns (uint256[] memory prices)
+    {
+        prices = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            prices[i] = priceOracle.convert(
+                Constants.WAD,
+                wethToken,
+                tokens[i]
+            );
         }
     }
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 // Gearbox. Undercollateralized protocol for margin trading & yield farming focused on gas efficiency.
 pragma solidity ^0.7.4;
 

@@ -10,6 +10,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {IGearToken} from "../interfaces/IGearToken.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
+
+// Based on https://github.com/1inch/governance-contracts/blob/master/contracts/StepVesting.sol
 contract StepVesting is Initializable {
     using SafeMath for uint256;
     using SafeERC20 for IGearToken;

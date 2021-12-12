@@ -9,19 +9,21 @@ import "hardhat/console.sol";
 
 /// @title Credit Filter Mock for testing CreditFilter
 /// @notice provide extra setters for unit-testing
-contract CreditFilterMock is CreditFilter{
-
+contract CreditFilterMock is CreditFilter {
+    
     constructor(address _addressProvider, address _underlyingToken)
-    CreditFilter(_addressProvider, _underlyingToken)
+        CreditFilter(_addressProvider, _underlyingToken)
     {}
 
-    function setEnabledTokens(address creditAccount, uint256 tokenMask) external
+    function setEnabledTokens(address creditAccount, uint256 tokenMask)
+        external
     {
         enabledTokens[creditAccount] = tokenMask;
     }
 
-    function setFastCheckBlock(address creditAccount, uint256 blockNum) external {
+    function setFastCheckBlock(address creditAccount, uint256 blockNum)
+        external
+    {
         fastCheckCounter[creditAccount] = blockNum;
     }
-
 }
