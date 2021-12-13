@@ -92,6 +92,9 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     // Allowed plugins
     mapping(address => bool) public allowedPlugins;
 
+    // Contract version
+    uint constant public version = 1;
+
     /// Checks that sender is connected credit manager
     modifier creditManagerOnly {
         require(msg.sender == creditManager, Errors.CF_CREDIT_MANAGERS_ONLY); // T:[CF-20]

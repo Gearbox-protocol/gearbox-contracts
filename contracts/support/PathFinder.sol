@@ -26,6 +26,7 @@ contract PathFinder {
     ContractsRegister public immutable contractsRegister;
     PriceOracle public priceOracle;
     address public wethToken;
+    uint constant public version = 1;
 
     struct TradePath {
         address[] path;

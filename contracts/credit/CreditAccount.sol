@@ -42,6 +42,9 @@ contract CreditAccount is ICreditAccount, Initializable {
     // Block number when it was initialised last time
     uint256 public override since;
 
+    // Contract version
+    uint constant public version = 1;
+
     /// @dev Restricts operation for current credit manager only
     modifier creditManagerOnly {
         require(msg.sender == creditManager, Errors.CA_CONNECTED_CREDIT_MANAGER_ONLY);

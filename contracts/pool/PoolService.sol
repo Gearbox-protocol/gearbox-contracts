@@ -86,6 +86,9 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     // Withdraw fee in PERCENTAGE FORMAT
     uint256 public override withdrawFee;
 
+    // Contract version
+    uint constant public version = 1;
+
     //
     // CONSTRUCTOR
     //

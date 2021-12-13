@@ -13,6 +13,9 @@ contract ACL is Ownable {
     mapping(address => bool) public pausableAdminSet;
     mapping(address => bool) public unpausableAdminSet;
 
+    // Contract version
+    uint constant public version = 1;
+
     // emits each time when new pausable admin added
     event PausableAdminAdded(address indexed newAdmin);
 

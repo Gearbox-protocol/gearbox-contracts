@@ -19,6 +19,9 @@ contract ContractsRegister is ACLTrait {
     address[] public creditManagers;
     mapping(address => bool) public isCreditManager;
 
+    // Contract version
+    uint constant public version = 1;
+
     // emits each time when new pool was added to register
     event NewPoolAdded(address indexed pool);
 

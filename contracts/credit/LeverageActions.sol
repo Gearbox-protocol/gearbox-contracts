@@ -71,6 +71,9 @@ contract LeveragedActions is ReentrancyGuard {
         uint256 referralCode
     );
 
+    // Contract version
+    uint constant public version = 1;
+
     modifier registeredCreditManagersOnly(address creditManager) {
         require(
             contractsRegister.isCreditManager(creditManager),

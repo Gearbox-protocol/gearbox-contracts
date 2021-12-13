@@ -63,6 +63,9 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     // Flag that there is no mining yet
     bool public isMiningFinished;
 
+    // Contract version
+    uint constant public version = 1;
+
     modifier creditManagerOnly() {
         require(
             _contractsRegister.isCreditManager(msg.sender),

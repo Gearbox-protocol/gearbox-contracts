@@ -33,6 +33,9 @@ contract PriceOracle is ACLTrait, IPriceOracle {
     mapping(address => uint256) public decimalsMultipliers;
     mapping(address => uint256) public decimalsDividers;
 
+    // Contract version
+    uint constant public version = 1;
+
     constructor(address addressProvider) ACLTrait(addressProvider) {
         wethAddress = AddressProvider(addressProvider).getWethToken();
         decimalsMultipliers[wethAddress] = 1;

@@ -33,6 +33,10 @@ contract DataCompressor {
     ContractsRegister public immutable contractsRegister;
     address public immutable WETHToken;
 
+    // Contract version
+    uint constant public version = 1;
+
+
     /// @dev Allows provide data for registered pools only to eliminated usage for non-gearbox contracts
     modifier registeredPoolOnly(address pool) {
         // Could be optimised by adding internal list of pools

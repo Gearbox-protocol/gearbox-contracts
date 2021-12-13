@@ -33,6 +33,9 @@ contract LinearInterestRateModel is IInterestRateModel {
     // R_Slope2 in Ray
     uint256 public immutable _R_slope2_RAY;
 
+    // Contract version
+    uint constant public version = 1;
+
     /// @dev Constructor
     /// @param U_optimal Optimal U in percentage format: x10.000 - percentage plus two decimals
     /// @param R_base R_base in percentage format: x10.000 - percentage plus two decimals @param R_slope1 R_Slope1 in Ray

@@ -87,6 +87,9 @@ contract CreditManager is ICreditManager, ACLTrait, ReentrancyGuard {
 
     uint256 public override liquidationDiscount;
 
+    // Contract version
+    uint constant public version = 1;
+
     //
     // MODIFIERS
     //

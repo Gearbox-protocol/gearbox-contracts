@@ -31,6 +31,9 @@ contract WETHGateway is IWETHGateway {
     address public wethAddress;
     ContractsRegister internal _contractsRegister;
 
+    // Contract version
+    uint constant public version = 1;
+
     event WithdrawETH(address indexed pool, address indexed to);
 
     /// @dev Checks that pool is registered and underlying token is WETH
