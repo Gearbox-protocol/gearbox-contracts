@@ -12,7 +12,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {IYVault} from "../../integrations/yearn/IYVault.sol";
 import {WadRayMath} from "../../libraries/math/WadRayMath.sol";
 
-import "hardhat/console.sol";
+
 
 contract YearnMock is IYVault, ERC20, Ownable {
     using SafeMath for uint256;

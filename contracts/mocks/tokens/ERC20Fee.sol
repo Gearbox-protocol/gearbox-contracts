@@ -6,7 +6,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {PercentageMath} from "../../libraries/math/PercentageMath.sol";
-import "hardhat/console.sol";
+
 
 contract TokenFeeMock is ERC20, Ownable {
     using SafeMath for uint256;

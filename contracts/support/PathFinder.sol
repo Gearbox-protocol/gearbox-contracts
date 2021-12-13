@@ -17,7 +17,6 @@ import {ContractsRegister} from "../core/ContractsRegister.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {PriceOracle} from "../oracles/PriceOracle.sol";
-import "hardhat/console.sol";
 
 contract PathFinder {
     using SafeMath for uint256;
@@ -26,7 +25,9 @@ contract PathFinder {
     ContractsRegister public immutable contractsRegister;
     PriceOracle public priceOracle;
     address public wethToken;
-    uint constant public version = 1;
+
+    // Contract version
+    uint256 public constant version = 1;
 
     struct TradePath {
         address[] path;

@@ -12,8 +12,6 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "hardhat/console.sol";
-
 /// @title UniswapV2 Router adapter
 contract UniswapV2Adapter is IUniswapV2Router02, ReentrancyGuard {
     using SafeMath for uint256;

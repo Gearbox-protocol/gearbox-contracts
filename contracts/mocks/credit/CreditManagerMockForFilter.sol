@@ -8,7 +8,7 @@ import {IAccountFactory} from "../../interfaces/IAccountFactory.sol";
 import {IWETHGateway} from "../../interfaces/IWETHGateway.sol";
 import {ICreditFilter} from "../../interfaces/ICreditFilter.sol";
 
-import "hardhat/console.sol";
+
 
 /**
  * @title Credit Manager Mock for testing CreditManager Filter

@@ -22,8 +22,6 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {DataTypes} from "../libraries/data/Types.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
-import "hardhat/console.sol";
-
 /// @title Abstract reusable credit accounts factory
 /// @notice Creates, holds & lend credit accounts to pool contract
 contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
@@ -64,7 +62,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
     bool public isMiningFinished;
 
     // Contract version
-    uint constant public version = 1;
+    uint256 public constant version = 1;
 
     modifier creditManagerOnly() {
         require(
@@ -298,7 +296,7 @@ contract AccountFactory is IAccountFactory, ACLTrait, ReentrancyGuard {
             _nextCreditAccount[creditAccount] = address(0); // T:[AF-16]
         }
         ICreditAccount(creditAccount).connectTo(to, 0, 0); // T:[AF-16, 21]
-        creditAccountsSet.remove(creditAccount);  // T:[AF-16]
+        creditAccountsSet.remove(creditAccount); // T:[AF-16]
         emit TakeForever(creditAccount, to); // T:[AF-16, 21]
     }
 

@@ -2,7 +2,6 @@
 pragma solidity ^0.7.4;
 pragma experimental ABIEncoderV2;
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import "hardhat/console.sol";
 
 /// @dev Governance Gearbox token
 /// based on https://github.com/Uniswap/governance/blob/master/contracts/Uni.sol
@@ -424,7 +423,6 @@ contract GearToken {
         address dst,
         uint96 amount
     ) internal {
-
         require(
             transfersAllowed || msg.sender == manager || msg.sender == miner,
             "Gear::transfers are forbidden"

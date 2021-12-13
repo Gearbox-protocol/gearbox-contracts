@@ -23,8 +23,6 @@ import {DieselToken} from "../tokens/DieselToken.sol";
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
-import "hardhat/console.sol";
-
 /// @title Pool Service
 /// @notice Encapsulates business logic for:
 ///  - Adding/removing pool liquidity
@@ -87,7 +85,7 @@ contract PoolService is IPoolService, ACLTrait, ReentrancyGuard {
     uint256 public override withdrawFee;
 
     // Contract version
-    uint constant public version = 1;
+    uint256 public constant version = 1;
 
     //
     // CONSTRUCTOR

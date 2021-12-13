@@ -25,7 +25,7 @@ import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 import {DataTypes} from "../libraries/data/Types.sol";
 
-import "hardhat/console.sol";
+
 
 /// @title Credit Manager
 /// @notice It encapsulates business logic for managing credit accounts

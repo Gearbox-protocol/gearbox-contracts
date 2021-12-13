@@ -6,8 +6,6 @@ pragma solidity ^0.7.4;
 import {Errors} from "../libraries/helpers/Errors.sol";
 import {ACLTrait} from "./ACLTrait.sol";
 
-import "hardhat/console.sol";
-
 /// @title Pools & Contract managers registry
 /// @notice Keeps pools & contract manager addresses
 contract ContractsRegister is ACLTrait {
@@ -20,7 +18,7 @@ contract ContractsRegister is ACLTrait {
     mapping(address => bool) public isCreditManager;
 
     // Contract version
-    uint constant public version = 1;
+    uint256 public constant version = 1;
 
     // emits each time when new pool was added to register
     event NewPoolAdded(address indexed pool);
@@ -36,7 +34,10 @@ contract ContractsRegister is ACLTrait {
         external
         configuratorOnly // T:[CR-1]
     {
-        require(newPoolAddress != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+        require(
+            newPoolAddress != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
         require(!isPool[newPoolAddress], Errors.CR_POOL_ALREADY_ADDED); // T:[CR-2]
         pools.push(newPoolAddress); // T:[CR-3]
         isPool[newPoolAddress] = true; // T:[CR-3]
@@ -60,8 +61,10 @@ contract ContractsRegister is ACLTrait {
         external
         configuratorOnly // T:[CR-1]
     {
-
-        require(newCreditManager != address(0), Errors.ZERO_ADDRESS_IS_NOT_ALLOWED);
+        require(
+            newCreditManager != address(0),
+            Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
+        );
 
         require(
             !isCreditManager[newCreditManager],

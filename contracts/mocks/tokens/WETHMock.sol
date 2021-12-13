@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.7.4;
 
-import "hardhat/console.sol";
+
 
 contract WETHMock {
     string public name     = "Wrapped Ether";

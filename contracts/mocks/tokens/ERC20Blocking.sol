@@ -5,7 +5,7 @@ pragma solidity ^0.7.4;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import "hardhat/console.sol";
+
 
 
 contract ERC20BlockingMock is ERC20, Ownable {

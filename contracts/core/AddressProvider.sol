@@ -29,8 +29,7 @@ contract AddressProvider is Ownable, IAppAddressProvider {
     bytes32 public constant LEVERAGED_ACTIONS = "LEVERAGED_ACTIONS";
 
     // Contract version
-    uint constant public version = 1;
-
+    uint256 public constant version = 1;
 
     constructor() {
         // @dev Emits first event for contract discovery

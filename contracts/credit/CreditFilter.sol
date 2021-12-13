@@ -20,8 +20,6 @@ import {ACLTrait} from "../core/ACLTrait.sol";
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
-import "hardhat/console.sol";
-
 /// @title CreditFilter
 /// @notice Implements filter logic for allowed tokens & contract-adapters
 ///   - Sets/Gets tokens for allowed tokens list
@@ -93,7 +91,7 @@ contract CreditFilter is ICreditFilter, ACLTrait {
     mapping(address => bool) public allowedPlugins;
 
     // Contract version
-    uint constant public version = 1;
+    uint256 public constant version = 1;
 
     /// Checks that sender is connected credit manager
     modifier creditManagerOnly {

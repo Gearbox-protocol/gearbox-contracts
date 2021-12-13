@@ -13,7 +13,7 @@ import {AddressProvider} from "../core/AddressProvider.sol";
 
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
-import "hardhat/console.sol";
+
 import {ACLTrait} from "../core/ACLTrait.sol";
 
 /// @title Price Oracle based on Chainlink's price feeds

@@ -9,12 +9,11 @@ import {Errors} from "../libraries/helpers/Errors.sol";
 /// @title ACL keeps admins addresses
 /// More info: https://dev.gearbox.fi/security/roles
 contract ACL is Ownable {
-
     mapping(address => bool) public pausableAdminSet;
     mapping(address => bool) public unpausableAdminSet;
 
     // Contract version
-    uint constant public version = 1;
+    uint256 public constant version = 1;
 
     // emits each time when new pausable admin added
     event PausableAdminAdded(address indexed newAdmin);

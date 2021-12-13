@@ -16,8 +16,6 @@ import {CreditManager} from "../credit/CreditManager.sol";
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 
-import "hardhat/console.sol";
-
 /// @title CurveV1 adapter
 contract CurveV1Adapter is ICurvePool, ReentrancyGuard {
     using SafeMath for uint256;
@@ -91,9 +89,9 @@ contract CurveV1Adapter is ICurvePool, ReentrancyGuard {
     }
 
     function exchange_underlying(
-        int128 , // i
-        int128 , // j
-        uint256 , // dx
+        int128, // i
+        int128, // j
+        uint256, // dx
         uint256 // min_dy
     ) external pure override {
         revert(Errors.NOT_IMPLEMENTED);

@@ -10,7 +10,7 @@ import {WadRayMath} from "../../libraries/math/WadRayMath.sol";
 import {Errors} from "../../libraries/helpers/Errors.sol";
 
 import {ICurvePool} from "../../integrations/curve/ICurvePool.sol";
-import "hardhat/console.sol";
+
 
 contract CurveMock is ICurvePool {
     using SafeMath for uint256;

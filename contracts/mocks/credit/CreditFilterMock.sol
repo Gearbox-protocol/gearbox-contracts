@@ -5,7 +5,7 @@ pragma solidity ^0.7.4;
 
 import {CreditFilter} from "../../credit/CreditFilter.sol";
 
-import "hardhat/console.sol";
+
 
 /// @title Credit Filter Mock for testing CreditFilter
 /// @notice provide extra setters for unit-testing

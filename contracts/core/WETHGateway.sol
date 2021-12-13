@@ -19,8 +19,6 @@ import {IWETHGateway} from "../interfaces/IWETHGateway.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
 import {Constants} from "../libraries/helpers/Constants.sol";
 
-import "hardhat/console.sol";
-
 /// @title WETHGateway
 /// @notice Used for converting ETH <> WETH
 contract WETHGateway is IWETHGateway {
@@ -32,17 +30,14 @@ contract WETHGateway is IWETHGateway {
     ContractsRegister internal _contractsRegister;
 
     // Contract version
-    uint constant public version = 1;
+    uint256 public constant version = 1;
 
     event WithdrawETH(address indexed pool, address indexed to);
 
     /// @dev Checks that pool is registered and underlying token is WETH
     modifier wethPoolOnly(address pool) {
         // Could be optimised by adding internal list of pools
-        require(
-            _contractsRegister.isPool(pool),
-            Errors.REGISTERED_POOLS_ONLY
-        ); // T:[WG-1]
+        require(_contractsRegister.isPool(pool), Errors.REGISTERED_POOLS_ONLY); // T:[WG-1]
 
         require(
             IPoolService(pool).underlyingToken() == wethAddress,
