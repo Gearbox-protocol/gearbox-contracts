@@ -3,7 +3,7 @@
 ## Gearbox protocol
 
 Official site: https://gearbox.fi  
-Discord: https://discord.com/invite/jJuABVH9Pg
+Discord: https://discord.com/invite/jJuABVH9Pg  
 Twitter: https://twitter.com/GearboxProtocol  
 Telegram: https://t.me/GearboxProtocol  
 
