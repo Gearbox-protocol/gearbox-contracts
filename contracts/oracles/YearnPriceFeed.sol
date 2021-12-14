@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
-// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
-// (c) Gearbox.fi, 2021
+// Gearbox Protocol. Generalized leverage for DeFi protocols
+// (c) Gearbox Holdings, 2021
 pragma solidity ^0.7.4;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
@@ -88,7 +88,7 @@ contract YearnPriceFeed is AggregatorV3Interface, ACLTrait {
 
         uint256 pricePerShare = yVault.pricePerShare();
 
-    
+
         require(
             pricePerShare >= lowerBound && pricePerShare <= upperBound,
             Errors.YPF_PRICE_PER_SHARE_OUT_OF_RANGE

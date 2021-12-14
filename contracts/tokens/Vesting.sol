@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
-// (c) Gearbox.fi, 2021
 pragma solidity ^0.7.4;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/Initializable.sol";
@@ -9,6 +7,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {IGearToken} from "../interfaces/IGearToken.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
+
 
 // Based on https://github.com/1inch/governance-contracts/blob/master/contracts/StepVesting.sol
 contract StepVesting is Initializable {

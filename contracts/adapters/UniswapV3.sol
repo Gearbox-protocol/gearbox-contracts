@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
-// (c) Gearbox.fi, 2021
+// Gearbox Protocol. Generalized leverage for DeFi protocols
+// (c) Gearbox Holdings, 2021
 pragma solidity ^0.7.4;
 pragma abicoder v2;
 
@@ -13,6 +13,7 @@ import {ICreditFilter} from "../interfaces/ICreditFilter.sol";
 import {ICreditManager} from "../interfaces/ICreditManager.sol";
 import {CreditManager} from "../credit/CreditManager.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
+
 
 /// @title UniswapV3 Router adapter
 contract UniswapV3Adapter is ISwapRouter, ReentrancyGuard {

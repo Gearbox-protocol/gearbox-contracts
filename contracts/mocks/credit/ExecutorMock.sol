@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-// Gearbox. Undercollateralized protocol for margin trading & yield farming focused on gas efficiency.
-// (c) Gearbox.fi, 2021
+// Gearbox Protocol. Generalized leverage for DeFi protocols
+// (c) Gearbox Holdings, 2021
 pragma solidity ^0.7.4;
+
 
 contract ExecutorMock {
     address public calledBy;

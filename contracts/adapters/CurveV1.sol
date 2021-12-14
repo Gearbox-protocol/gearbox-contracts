@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
-// (c) Gearbox.fi, 2021
+// Gearbox Protocol. Generalized leverage for DeFi protocols
+// (c) Gearbox Holdings, 2021
 pragma solidity ^0.7.4;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
@@ -15,6 +15,7 @@ import {CreditManager} from "../credit/CreditManager.sol";
 
 import {Constants} from "../libraries/helpers/Constants.sol";
 import {Errors} from "../libraries/helpers/Errors.sol";
+
 
 /// @title CurveV1 adapter
 contract CurveV1Adapter is ICurvePool, ReentrancyGuard {

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
+// Gearbox Protocol. Generalized leverage for DeFi protocols
+// (c) Gearbox Holdings, 2021
 pragma solidity ^0.7.4;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

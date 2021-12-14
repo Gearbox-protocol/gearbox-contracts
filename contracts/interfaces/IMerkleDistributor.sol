@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.7.4;
 
+
 // Allows anyone to claim a token if they exist in a merkle root.
 interface IMerkleDistributor {
+
     // Returns the address of the token distributed by this contract.
     function token() external view returns (address);
 

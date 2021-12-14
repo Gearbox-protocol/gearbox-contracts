@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
-// Gearbox. Generalized leverage protocol that allows to take leverage and then use it across other DeFi protocols and platforms in a composable way.
-// (c) Gearbox.fi, 2021
+// Gearbox Protocol. Generalized leverage for DeFi protocols
+// (c) Gearbox Holdings, 2021
 pragma solidity ^0.7.4;
 
 import {Errors} from "../libraries/helpers/Errors.sol";
 import {ACLTrait} from "./ACLTrait.sol";
+
 
 /// @title Pools & Contract managers registry
 /// @notice Keeps pools & contract manager addresses

@@ -3,9 +3,8 @@
 ## Gearbox protocol
 
 Official site: https://gearbox.fi  
-Discord: https://discord.com/invite/jJuABVH9Pg  
+Discord: https://discord.com/invite/Gearbox
 Twitter: https://twitter.com/GearboxProtocol  
-Telegram: https://t.me/GearboxProtocol  
 
 Gearbox protocol is Marketmake ETHGlobal hackathon finalist.
 

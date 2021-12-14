@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-// Gearbox. Undercollateralized protocol for margin trading & yield farming focused on gas efficiency.
+// Gearbox Protocol. Generalized leverage for DeFi protocols
+// (c) Gearbox Holdings, 2021
 pragma solidity ^0.7.4;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 
 contract TokenMock is ERC20, Ownable {
     constructor(string memory name_,
