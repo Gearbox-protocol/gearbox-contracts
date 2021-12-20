@@ -63,7 +63,7 @@ Instructions for running fuzzing tests will be published soon.
 
 The primary license for the Gearbox-Contracts is the Business Source License 1.1 (BUSL-1.1), see [LICENSE](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/LICENSE). The files licensed under the BUSL-1.1 have appropriate SPDX headers.
 
-###
+### Exceptions
 
 - The files in `contracts/adapters`, `contracts/fuzzing`, `contracts/interfaces`, `contracts/support` are licensed under GPL-2.0-or-later.
 - The files in `contracts/libraries` are licensed under GPL-2.0-or-later or GNU AGPL 3.0 (as indicated in their SPDX headers).
@@ -71,6 +71,15 @@ The primary license for the Gearbox-Contracts is the Business Source License 1.1
 - The file `contracts/tokens/GearToken.sol` is based on [`Uni.sol`](https://github.com/Uniswap/governance/blob/master/contracts/Uni.sol) and distributed under the BSD 3-clause license.  
  -The files in `audits`, `scripts`, `test`, `contracts/mocks` are unlicensed.
 
+
+## Useful links
+Website: [https://gearbox.fi/](https://gearbox.fi/)  
+Docs: [https://docs.gearbox.finance/](https://docs.gearbox.finance/)  
+Forum: [https://gov.gearbox.fi/t/start-here-forum-rules/](https://gov.gearbox.fi/t/start-here-forum-rules/)  
+Blog: [https://medium.com/@gearboxprotocol](https://medium.com/@gearboxprotocol)  
+Twitter: [https://twitter.com/GearboxProtocol](https://twitter.com/GearboxProtocol)  
+Snapshot page: [https://snapshot.org/#/gearbox.eth](https://snapshot.org/#/gearbox.eth)  
+Developer Docs: [https://dev.gearbox.fi/](https://dev.gearbox.fi/)  
 
 ## Disclaimer
 
