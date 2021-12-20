@@ -2,24 +2,62 @@
 
 ## Gearbox protocol
 
-Official site: https://gearbox.fi  
-Discord: https://discord.com/invite/Gearbox
-Twitter: https://twitter.com/GearboxProtocol  
+This repository contains the smart contracts source code for Gearbox Protocol V1.
+
+### What is Gearbox protocol?
+
+Gearbox is a generalized leverage protocol: it allows you to take leverage in one place and then use it across various 
+DeFi protocols and platforms in a composable way. The protocol has two sides to it: passive liquidity providers who earn higher APY 
+by providing liquidity; active traders, farmers, or even other protocols who can borrow those assets to trade or farm with x4+ leverage.
 
 Gearbox protocol is Marketmake ETHGlobal hackathon finalist.
 
-##  Running tests
+## Bug bounty
+
+This repository is subject to the Gearbox bug bounty program, per the terms defined [here]().
+
+## Documentation
+
+The documentation of Gearbox Protocol is in the following [documentation link](https://docs.gearbox.fi). Developers documentation, which
+has more tech-related infromation about the protocol, see the contract interfaces, integration guides and audits are available on
+[gearbox dev protal](https://dev.gearbox.fi)
+
+
+## Audits
+- Consensys Diligence Fuzzing (04/10/2021- 13/12/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/ConsensysDiligence%20_Fuzzing_report.pdf)
+- ChainSecurity (31/08/2021 - 13/12/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/ChainSecurity_Gearbox_audit.pdf)
+- Peckshield (22/07/2021 - 10/08/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/Peckshield-10.08.2021.pdf)
+- Peckshield (09/04/2021 - 03/05/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/Peckshield-03.05.2021.pdf)
+
+##  Connect with the community
+
+
+## Kovan playground
+Gearbox protocol is currently deployed on Kovan network, for testing your interations you can use of following deployemnts:
+
+| Deployment          | Address Provider                            | PathFinder                                 |
+|---------------------|---------------------------------------------|--------------------------------------------|
+ | Public test version | 0xA526311C39523F60b184709227875b5f34793bD4  | 0x434895faaf71004841869b5B3A8AD7C9CB79Ae94 | 
+
+Third eye server API for Kovan playground is available on: [https://kovan.gearbox-api.com](https://kovan.gearbox-api.com).  
+For more information about third-eye analytics check its [repo](https://github.com/Gearbox-protocol/third-eye).
+
+## Testing
 
 ### Unit tests
 
-yarn test
+```yarn test```
 
-### Mainnet test
+### Mainnet fork tests
 
 1. Start mainnet fork with
 ```yarn fork```
-2. In other terminal run ```yarn mainnet-test``` to deploy contracts and charge accounts.
+2. Open new terminal window & run ```yarn mainnet-test``` to deploy contracts and charge accounts.
 3. Then ```yarn test test/mainnet/*.spec.ts --network localhost``` to run tests.
+
+### Fuzzing testing
+
+Instructions for running fuzzing tests will be published soon.
 
 ## Licensing
 
