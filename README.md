@@ -14,7 +14,7 @@ Gearbox protocol is Marketmake ETHGlobal hackathon finalist.
 
 ## Bug bounty
 
-This repository is subject to the Gearbox bug bounty program, per the terms defined [here]().
+This repository is subject to the Gearbox bug bounty program, per the terms defined [here](https://docs.gearbox.finance/risk-and-security/audits-bug-bounty).
 
 ## Documentation
 
@@ -31,6 +31,14 @@ has more tech-related infromation about the protocol, see the contract interface
 
 ##  Connect with the community
 
+Website: [https://gearbox.fi/](https://gearbox.fi/)  
+Docs: [https://docs.gearbox.finance/](https://docs.gearbox.finance/)  
+Forum: [https://gov.gearbox.fi/t/start-here-forum-rules/](https://gov.gearbox.fi/t/start-here-forum-rules/)  
+Blog: [https://medium.com/@gearboxprotocol](https://medium.com/@gearboxprotocol)  
+Twitter: [https://twitter.com/GearboxProtocol](https://twitter.com/GearboxProtocol)  
+Snapshot page: [https://snapshot.org/#/gearbox.eth](https://snapshot.org/#/gearbox.eth)  
+Developer Docs: [https://dev.gearbox.fi/](https://dev.gearbox.fi/)  
+
 
 ## Kovan playground
 Gearbox protocol is currently deployed on Kovan network, for testing your interations you can use of following deployemnts:
@@ -41,6 +49,8 @@ Gearbox protocol is currently deployed on Kovan network, for testing your intera
 
 Third eye server API for Kovan playground is available on: [https://kovan.gearbox-api.com](https://kovan.gearbox-api.com).  
 For more information about third-eye analytics check its [repo](https://github.com/Gearbox-protocol/third-eye).
+
+More information: https://docs.gearbox.finance/overview/launch-phases/kovan-testing-with-degenscore#list-of-tokens-we-created-on-kovan-for-testing
 
 ## Testing
 
@@ -71,15 +81,6 @@ The primary license for the Gearbox-Contracts is the Business Source License 1.1
 - The file `contracts/tokens/GearToken.sol` is based on [`Uni.sol`](https://github.com/Uniswap/governance/blob/master/contracts/Uni.sol) and distributed under the BSD 3-clause license.  
  -The files in `audits`, `scripts`, `test`, `contracts/mocks` are unlicensed.
 
-
-## Useful links
-Website: [https://gearbox.fi/](https://gearbox.fi/)  
-Docs: [https://docs.gearbox.finance/](https://docs.gearbox.finance/)  
-Forum: [https://gov.gearbox.fi/t/start-here-forum-rules/](https://gov.gearbox.fi/t/start-here-forum-rules/)  
-Blog: [https://medium.com/@gearboxprotocol](https://medium.com/@gearboxprotocol)  
-Twitter: [https://twitter.com/GearboxProtocol](https://twitter.com/GearboxProtocol)  
-Snapshot page: [https://snapshot.org/#/gearbox.eth](https://snapshot.org/#/gearbox.eth)  
-Developer Docs: [https://dev.gearbox.fi/](https://dev.gearbox.fi/)  
 
 ## Disclaimer
 
