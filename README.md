@@ -31,6 +31,7 @@ has more tech-related infromation about the protocol, see the contract interface
 
 ##  Connect with the community
 
+Discord: [https://discord.com/invite/gearbox](https://discord.com/invite/gearbox)
 Website: [https://gearbox.fi/](https://gearbox.fi/)  
 Docs: [https://docs.gearbox.finance/](https://docs.gearbox.finance/)  
 Forum: [https://gov.gearbox.fi/t/start-here-forum-rules/](https://gov.gearbox.fi/t/start-here-forum-rules/)  
@@ -50,7 +51,7 @@ Gearbox protocol is currently deployed on Kovan network, for testing your intera
 Third eye server API for Kovan playground is available on: [https://kovan.gearbox-api.com](https://kovan.gearbox-api.com).  
 For more information about third-eye analytics check its [repo](https://github.com/Gearbox-protocol/third-eye).
 
-More information: https://docs.gearbox.finance/overview/launch-phases/kovan-testing-with-degenscore#list-of-tokens-we-created-on-kovan-for-testing
+More information about [Kovan tokens](https://docs.gearbox.finance/overview/launch-phases/kovan-testing-with-degenscore#list-of-tokens-we-created-on-kovan-for-testing)
 
 ## Testing
 
