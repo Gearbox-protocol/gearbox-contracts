@@ -31,7 +31,7 @@ has more tech-related infromation about the protocol, see the contract interface
 
 ##  Connect with the community
 
-Discord: [https://discord.com/invite/gearbox](https://discord.com/invite/gearbox)
+Discord: [https://discord.com/invite/gearbox](https://discord.com/invite/gearbox)  
 Website: [https://gearbox.fi/](https://gearbox.fi/)  
 Docs: [https://docs.gearbox.finance/](https://docs.gearbox.finance/)  
 Forum: [https://gov.gearbox.fi/t/start-here-forum-rules/](https://gov.gearbox.fi/t/start-here-forum-rules/)  
