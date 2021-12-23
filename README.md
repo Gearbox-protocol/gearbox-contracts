@@ -24,6 +24,7 @@ has more tech-related infromation about the protocol, see the contract interface
 
 
 ## Audits
+- MixBytes (31/08/2021 - 23/12/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/MixBytes_security_audit_report.pdf)
 - Consensys Diligence Fuzzing (04/10/2021- 13/12/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/ConsensysDiligence%20_Fuzzing_report.pdf)
 - ChainSecurity (31/08/2021 - 13/12/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/ChainSecurity_Gearbox_audit.pdf)
 - Peckshield (22/07/2021 - 10/08/2021): [report](https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/audits/Peckshield-10.08.2021.pdf)
