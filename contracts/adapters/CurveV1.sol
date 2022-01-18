@@ -31,7 +31,7 @@ contract CurveV1Adapter is ICurvePool, ReentrancyGuard {
     /// @param _curvePool Address of curve-compatible pool
     constructor(address _creditManager, address _curvePool) {
         require(
-            _creditManager != address(0) && _creditManager != address(0),
+            _creditManager != address(0) && _curvePool != address(0),
             Errors.ZERO_ADDRESS_IS_NOT_ALLOWED
         );
         creditManager = ICreditManager(_creditManager);
